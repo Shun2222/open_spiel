@@ -1,4 +1,4 @@
-import os
+
 # 
 os.environ["OMP_NUM_THREADS"] = "4" # export OMP_NUM_THREADS=4
 os.environ["OPENBLAS_NUM_THREADS"] = "4" # export OPENBLAS_NUM_THREADS=4 
@@ -440,7 +440,7 @@ if __name__ == "__main__":
         env.update_mfg_distribution(distrib)
         
 
-    if best_model >= Nash_con_vect[-1]:    
+if best_model >= Nash_con_vect[-1]:    
         #save the distribution and weights for further analysis 
         filename = os.path.join(fname, f"distribution_{run_name}.pkl")
         utils.save_parametric_distribution(distrib, filename)   

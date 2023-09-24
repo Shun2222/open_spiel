@@ -14,16 +14,16 @@ RUN apt-get -y install \
 RUN mkdir repo
 WORKDIR /repo
 
-RUN sudo pip3 install --upgrade pip
-RUN sudo pip3 install matplotlib
+RUN sudo pip install --upgrade pip
+RUN sudo pip install matplotlib
 
 # install
 COPY . .
 RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
 RUN ./install.sh
-RUN pip3 install --upgrade setuptools testresources
-RUN pip3 install --upgrade -r requirements.txt
-RUN pip3 install --upgrade cmake
+RUN pip install --upgrade setuptools testresources
+RUN pip install --upgrade -r requirements.txt
+RUN pip install --upgrade cmake
 
 # build and test
 RUN mkdir -p build
@@ -40,8 +40,8 @@ FROM python:3.6-slim-buster as python-slim
 RUN mkdir repo
 WORKDIR /repo
 COPY --from=base /repo .
-RUN pip3 install --upgrade -r requirements.txt
-RUN pip3 install matplotlib
+RUN pip install --upgrade -r requirements.txt
+RUN pip install matplotlib
 ENV PYTHONPATH=${PYTHONPATH}:/repo
 ENV PYTHONPATH=${PYTHONPATH}:/repo/build/python
 WORKDIR /repo/open_spiel

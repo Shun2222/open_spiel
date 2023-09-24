@@ -15,5 +15,4 @@ absl-py >= 0.10.0
 numpy >= 1.21.5
 scipy >= 1.7.3
 seaborn
-torch
 tensorboard

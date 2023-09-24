@@ -57,7 +57,7 @@ class Discriminator(nn.Module):
 
         return loss + self.l2_loss_ratio * l2_loss
 
-    def train_discriminator(self, optimizer, obs, acs, obs_next, path_probs, labels):
+    def train(self, optimizer, obs, acs, obs_next, path_probs, labels):
         optimizer.zero_grad()
         loss = self.calculate_loss(obs, acs, obs_next, path_probs, labels)
         loss.backward()
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # 学習ループ
     for step in range(total_steps):
         for batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels in data_loader:
-            loss = discriminator.train_discriminator(optimizer, batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels)
+            loss = discriminator.train(optimizer, batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels)
 
     if step % 10 == 0:
         print(f"Step {step}: Loss {loss:.4f}")
