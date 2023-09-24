@@ -33,6 +33,19 @@ RUN make -j12
 ENV PYTHONPATH=${PYTHONPATH}:/repo
 ENV PYTHONPATH=${PYTHONPATH}:/repo/build/python
 RUN ctest -j12
+
+# git
+WORKDIR /root
+COPY ~/.ssh .
+RUN chown root /root/.ssh/config
+RUN eval $(ssh-agent)
+RUN ssh-add /root/.ssh/id_ed25519
+
+WORKDIR /repo
+RUN git clone git@github.com:Shun2222/my_init_set.git
+WORKDIR /repo/my_init_set/my_vimrc
+RUN sh run.sh
+
 WORKDIR /repo/open_spiel
 
 # minimal image for development in Python
@@ -44,4 +57,4 @@ RUN pip install --upgrade -r requirements.txt
 RUN pip install matplotlib
 ENV PYTHONPATH=${PYTHONPATH}:/repo
 ENV PYTHONPATH=${PYTHONPATH}:/repo/build/python
-WORKDIR /repo/open_spiel
+
