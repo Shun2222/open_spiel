@@ -39,8 +39,11 @@ def expert_generator(env, path, filename, num_trajs, game_setting, seed):
     agent = Agent(info_state_size, num_actions).to(device)
     actor_model = agent.actor
 
-    print("load model from", path)
+    num_players = env.num_players
+    print(f"num players: {num_players}")
+
     filepath = os.path.join(path, filename)
+    print("load model from", filename)
     actor_model.load_state_dict(torch.load(filepath))
 
     actor_model.eval()
@@ -57,7 +60,7 @@ def expert_generator(env, path, filename, num_trajs, game_setting, seed):
     avg_ret = []
 
     for i in range(num_trajs):
-        all_ob, all_ac, all_rew = [], [], []
+        all_ob, all_ac, all_dist, all_rew = [], [], [], []
         ep_ret = 0.0
 
         time_step = env.reset()
@@ -67,24 +70,31 @@ def expert_generator(env, path, filename, num_trajs, game_setting, seed):
             action = get_action(obs_pth)
             time_step = env.step([action.item()])
             rewards = time_step.rewards[0]
+            dist = env.mfg_distribution
 
             all_ob.append(obs)
-            all_ac.append(action)
+            all_ac.append(action.item())
+            # all_dist.append(dist)
             all_rew.append(rewards)
             ep_ret += rewards
 
         avg_ret.append(ep_ret)
         traj_data = {
-            "ob": all_ob, "ac": all_ac, "rew": all_rew, "ep_ret": ep_ret
+            "ob": all_ob, "ac": all_ac, "rew": all_rew, 
+            "ep_ret": ep_ret
         }
 
         sample_trajs.append(traj_data)
         print(f'traj_num:{i}/{num_trajs}, expected_return:{ep_ret}')
 
-    print(path)
     print(f'agent ret:{np.mean(avg_ret)}, std:{np.std(avg_ret)}')
 
-    pkl.dump(sample_trajs, open(path + 'expert-%dtra.pkl' % num_trajs, 'wb'))
+    pkl.dump(sample_trajs, open(path + '/expert-%dtra.pkl' % num_trajs, 'wb'))
 
 if __name__ == '__main__':
     expert_generator()
+     
+    # from dataset import Dset
+    # sample_trajs = pkl.load(open(path + 'expert-%dtra.pkl' % num_trajs, 'rb'))
+    # buffer = Dset(obs, actions, obs_next, all_obs, values,
+    #                           randomize=True, num_agents=1, nobs_flag=True)

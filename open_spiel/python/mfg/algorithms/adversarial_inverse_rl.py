@@ -26,11 +26,9 @@ class AIRL(object):
 
         t_step = 0
         while(total_step < t_step):
-            # Generatorのデモ生成
             obs, actions, logprobs, true_rewards, dones, values, entropies, t_actions, t_logprobs 
                 = self._generator.rollout(env, batch_step)
 
-            # 報酬値の計算
             disc_rewards = np.squeeze(self.discriminator.get_reward(re_obs[k],
                                                                multionehot(re_actions[k], self.n_actions[k]),
                                                                re_obs_next[k],
