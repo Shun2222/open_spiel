@@ -58,7 +58,7 @@ class Agent(nn.Module):
     def get_value(self, x):
         return self.critic(x)
 
-    def get_action(self, x)
+    def get_action(self, x):
         logits = self.actor(x)
         probs = Categorical(logits=logits)
         return action, probs.log_prob(action)
