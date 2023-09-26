@@ -2,7 +2,6 @@ import os
 import click
 import time
 import numpy as np
-import imageio
 import pickle as pkl
 
 from torch.distributions.categorical import Categorical
