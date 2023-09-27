@@ -17,3 +17,4 @@ scipy >= 1.7.3
 seaborn
 tensorboard
 click
+tqdm

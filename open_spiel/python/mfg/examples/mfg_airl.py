@@ -45,6 +45,7 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
+    parser.add_argument("--expert_path", type=str, default="result/expert.pkl", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=500, help="set a step batch size")
     parser.add_argument("--total_step", type=int, default=5e7, help="set a total step")
@@ -67,10 +68,7 @@ if __name__ == "__main__":
     batch_step = args.batch_step
     total_step = args.total_step
     update_generator_until = batch_step * 10
-
-    ob_space = 
-    ac_space = 
-    num_actions = 
+    expert_path = args.expert_path
 
     # Create the game instance 
     game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
@@ -83,6 +81,7 @@ if __name__ == "__main__":
     # Set the environment seed for reproduciblility 
     env.seed(args.seed)
 
-    airl = AIRL(game, env)
+    expert = MFGDataSet(expert_path, ret_threshold=ret_threshold, traj_limitation=traj_limitation, nobs_flag=True)
+    air lt AIRL(game, env, expert)
     airl.run()
 

@@ -176,11 +176,96 @@ class MADataSet(object):
         plt.close()
 
 
+class MFGDataSet(object):
+    def __init__(self, expert_path, train_fraction=0.7, ret_threshold=None, traj_limitation=np.inf, randomize=True,
+                 nobs_flag=False):
+        self.nobs_flag = nobs_flag
+        with open(expert_path, "rb") as f:
+            traj_data = pkl.load(f)
+        obs = []
+        acs = []
+        rews = []
+        lens = []
+        rews = []
+        rets = []
+        obs_next = []
+
+        all_obs = []
+
+        np.random.shuffle(traj_data)
+
+        for traj in tqdm(traj_data):
+            if len(lens) >= traj_limitation:
+                break
+                obs.append(traj["ob"])
+                acs.append(traj["ac"])
+                rews.append(traj["rew"])
+                rets.append(traj["ep_ret"])
+            lens.append(len(traj["ob"]))
+        self.num_traj = len(rets)
+        self.avg_ret = np.sum(rets) / len(rets)
+        self.avg_len = sum(lens) / len(lens)
+        self.rets = np.array(rets)
+        self.lens = np.array(lens)
+        self.obs = obs
+        self.acs = acs
+        self.rews = rews
+
+        self.obs = np.concatenate(self.obs)
+        self.acs = np.concatenate(self.acs)
+        self.rews = np.concatenate(self.rews)
+
+        # get next observation
+        nobs = self.obs.copy()
+        nobs[:-1] = self.obs[1:]
+        nobs[-1] = self.obs[0]
+        obs_next = nobs
+        self.obs_next = obs_next
+
+        if len(self.acs) > 2:
+            self.acs = np.squeeze(self.acs)
+
+        assert len(self.obs) == len(self.acs)
+        self.num_transition = len(self.obs)
+        self.randomize = randomize
+        self.dset = Dset(self.obs, self.acs, self.obs_next, self.all_obs, self.rews, self.randomize, num_agents,
+                         nobs_flag=self.nobs_flag)
+        # for behavior cloning
+        self.train_set = Dset(self.obs, self.acs, self.obs_next, self.all_obs, self.rews, self.randomize, num_agents,
+                              nobs_flag=self.nobs_flag)
+        self.val_set = Dset(self.obs, self.acs, self.obs_next, self.all_obs, self.rews, self.randomize, num_agents,
+                            nobs_flag=self.nobs_flag)
+        self.log_info()
+
+    def log_info(self):
+        print(f"Total trajectories: {self.num_traj}")
+        print(f"Total transitions: {self.num_transition}")
+        print(f"Average episode length: {self.avg_len}")
+        print(f"Average returns: {self.avg_ret}")
+
+    def get_next_batch(self, batch_size, split=None):
+        if split is None:
+            return self.dset.get_next_batch(batch_size)
+        elif split == 'train':
+            return self.train_set.get_next_batch(batch_size)
+        elif split == 'val':
+            return self.val_set.get_next_batch(batch_size)
+        else:
+            raise NotImplementedError
+
+    def plot(self):
+        import matplotlib.pyplot as plt
+        plt.hist(self.rets)
+        plt.savefig("histogram_rets.png")
+        plt.close()
+
+
 def test(expert_path, ret_threshold, traj_limitation):
-    dset = MADataSet(expert_path, ret_threshold=ret_threshold, traj_limitation=traj_limitation)
+    dset = MFGDataSet(expert_path, ret_threshold=ret_threshold, traj_limitation=traj_limitation)
     a, b, c, d = dset.get_next_batch(64)
     print(a[0].shape, b[0].shape, c.shape, d[0].shape)
     # dset.plot()
+
 
 
 if __name__ == '__main__':

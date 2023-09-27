@@ -16,11 +16,12 @@ from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
 
 class AIRL(object):
-    def __init__(self, game, env):
+    def __init__(self, game, env, expert):
         self._game = game
         self._env = env
         self._generator = MFGPPO()
         self._discriminator = Discriminator()
+        self._expert = expert
 
     def run(self, total_step):
 
