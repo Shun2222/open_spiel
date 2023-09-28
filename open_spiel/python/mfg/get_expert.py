@@ -11,6 +11,7 @@ from torch.distributions.categorical import Categorical
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent
 from open_spiel.python import policy as policy_std
+from utils import onehot, multionehot
 
 
 @click.command()
@@ -18,7 +19,7 @@ from open_spiel.python import policy as policy_std
 @click.option('--path', type=click.STRING, default="result")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--filename', type=click.STRING, default="actor.pth")
-@click.option('--num_trajs', type=click.INT, default=100)
+@click.option('--num_trajs', type=click.INT, default=1000)
 @click.option('--seed', type=click.INT, default=0)
 
 def expert_generator(env, path, filename, num_trajs, game_setting, seed):
@@ -73,7 +74,7 @@ def expert_generator(env, path, filename, num_trajs, game_setting, seed):
             dist = env.mfg_distribution
 
             all_ob.append(obs)
-            all_ac.append(action.item())
+            all_ac.append(onehot(action.item(), num_actions))
             # all_dist.append(dist)
             all_rew.append(rewards)
             ep_ret += rewards

@@ -1,6 +1,5 @@
 import pickle as pkl
 import numpy as np
-from tqdm import tqdm
 
 
 class Dset(object):
@@ -57,7 +56,11 @@ class Dset(object):
         np.random.shuffle(idx)
         l = int(self.num_pairs * decay_rate)
         # decay
+        print(f"l: {l}")
+        print(f"input: {inputs.shape}")
         for k in range(self.num_agents):
+            print(f"idx: {idx}")
+            print(f"idxs: {idx.shape}")
             self.inputs[k] = self.inputs[k][idx[:l], :]
             self.labels[k] = self.labels[k][idx[:l], :]
             if self.nobs_flag:
@@ -100,7 +103,7 @@ class MADataSet(object):
 
         np.random.shuffle(traj_data)
 
-        for traj in tqdm(traj_data):
+        for traj in traj_data:
             if len(lens) >= traj_limitation:
                 break
             for k in range(num_agents):
@@ -192,35 +195,37 @@ class MFGDataSet(object):
 
         all_obs = []
 
+        num_agents = 1
         np.random.shuffle(traj_data)
 
-        for traj in tqdm(traj_data):
+        for traj in traj_data:
             if len(lens) >= traj_limitation:
                 break
-                obs.append(traj["ob"])
-                acs.append(traj["ac"])
-                rews.append(traj["rew"])
-                rets.append(traj["ep_ret"])
+            obs.append(traj["ob"])
+            acs.append(traj["ac"])
+            rews.append(traj["rew"])
+            rets.append(traj["ep_ret"])
             lens.append(len(traj["ob"]))
         self.num_traj = len(rets)
         self.avg_ret = np.sum(rets) / len(rets)
         self.avg_len = sum(lens) / len(lens)
         self.rets = np.array(rets)
         self.lens = np.array(lens)
-        self.obs = obs
-        self.acs = acs
-        self.rews = rews
+        self.obs = np.array(obs)
+        self.acs = np.array(acs)
+        self.rews = np.array(rews)
 
-        self.obs = np.concatenate(self.obs)
-        self.acs = np.concatenate(self.acs)
-        self.rews = np.concatenate(self.rews)
+        self.obs = [np.concatenate(self.obs)]
+        self.acs = [np.concatenate(self.acs)]
+        self.rews = [np.concatenate(self.rews)]
+        self.all_obs = self.obs[0]
 
         # get next observation
-        nobs = self.obs.copy()
-        nobs[:-1] = self.obs[1:]
-        nobs[-1] = self.obs[0]
+        nobs = self.obs[0].copy()
+        nobs[:-1] = self.obs[0][1:]
+        nobs[-1] = self.obs[0][0]
         obs_next = nobs
-        self.obs_next = obs_next
+        self.obs_next = np.array([obs_next])
 
         if len(self.acs) > 2:
             self.acs = np.squeeze(self.acs)

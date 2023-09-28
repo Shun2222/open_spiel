@@ -21,6 +21,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
+from dataset import MFGDataSet
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -45,10 +46,15 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--expert_path", type=str, default="result/expert.pkl", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
+    parser.add_argument("--expert_path", type=str, default="result/expert.pkl", help="expert path")
+    parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=500, help="set a step batch size")
+    parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
     parser.add_argument("--total_step", type=int, default=5e7, help="set a total step")
+    parser.add_argument("--total_step_gen", type=int, default=2e3, help="set a total generator step")
+    parser.add_argument("--num_episode", type=int, default=5, help="set a total generator step")
+    parser.add_argument("--log_interval_rate", type=float, default=0.1, help="set a total generator step")
     args = parser.parse_args()
     return args
 
@@ -65,10 +71,11 @@ if __name__ == "__main__":
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Random seed set as {seed}")
 
+    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
     batch_step = args.batch_step
-    total_step = args.total_step
     update_generator_until = batch_step * 10
     expert_path = args.expert_path
+    traj_limitation = args.traj_limitation
 
     # Create the game instance 
     game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
@@ -81,7 +88,8 @@ if __name__ == "__main__":
     # Set the environment seed for reproduciblility 
     env.seed(args.seed)
 
-    expert = MFGDataSet(expert_path, ret_threshold=ret_threshold, traj_limitation=traj_limitation, nobs_flag=True)
-    air lt AIRL(game, env, expert)
-    airl.run()
+    expert = MFGDataSet(expert_path, traj_limitation=traj_limitation, nobs_flag=True)
+    airl = AIRL(game, env, device, expert)
+    airl.run(args.total_step, args.total_step_gen, \
+        args.num_episode, args.log_interval_rate)
 

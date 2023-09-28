@@ -64,8 +64,11 @@ class Agent(nn.Module):
         return action, probs.log_prob(action)
 
     def get_log_action_prob(self, states, actions):
+        # print(f"obs: {states}")
+        # print(f"acs: {actions}")
         logits = self.actor(states)
         logpac = -F.cross_entropy(logits, actions)
+        # print(f"logpac: {logpac}")
         return logpac
 
     def get_action_and_value(self, x, action=None):
@@ -112,16 +115,15 @@ class MFGPPO(object):
         info_state_size = env.observation_spec()["info_state"][0]
         num_actions = env.action_spec()["num_actions"]
 
-        self._eps_agent = Agent(info_state_size,num_actions).to(self._device) # episode毎に更新
-        self._ppo_policy = PPOpolicy(game, agent, None, self._device) 
-        self._iter_agent = Agent(info_state_size,num_actions).to(self._device) # iteration毎に更新(eps_agentが更新しすぎないようにする)
-
-        self._optimizer_actor = optim.Adam(self._eps_agent.actor.parameters(), lr=args.lr,eps=1e-5)
-        self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=args.lr,eps=1e-5)
+        self._eps_agent = Agent(info_state_size,num_actions).to(self._device) 
+        self._ppo_policy = PPOpolicy(game, self._eps_agent, None, self._device) 
+        self._iter_agent = Agent(info_state_size,num_actions).to(self._device)
+        self._optimizer_actor = optim.Adam(self._eps_agent.actor.parameters(), lr=1e-3,eps=1e-5)
+        self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
     
 
     def rollout(self, env, nsteps):
-        info_state = torch.zeros((nsteps,iter_agent.info_state_size), device=self._device)
+        info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
         actions = torch.zeros((nsteps,), device=self._device)
         logprobs = torch.zeros((nsteps,), device=self._device)
         rewards = torch.zeros((nsteps,), device=self._device)
@@ -158,11 +160,11 @@ class MFGPPO(object):
                 step += 1
                 if step==nsteps-1:
                     break
-            assert step==nsteps-1
+        assert step==nsteps-1
         return info_state, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs 
 
 
-    def cal_Adv(self, rewards, values, dones, gamma=0.9, norm=True):
+    def cal_Adv(self, rewards, values, dones, gamma=0.99, norm=True):
         # function used to calculate the Generalized Advantage estimate
         # using the exact method in stable-baseline3
         with torch.no_grad():
@@ -312,15 +314,18 @@ class MFGPPO(object):
 
     def get_value(self, obs):
         with torch.no_grad():
-            self._eps_agent.get_value(obs)
+            value = self._eps_agent.get_value(obs)
+        return value
 
     def get_action(self, obs):
         with torch.no_grad():
-            self._eps_agent.get_value(obs)
+            action, prob = self._eps_agent.get_action(obs)
+        return action, prob
 
     def get_log_action_prob(self, states, actions):
         with torch.no_grad():
-            self._eps_agent.get_log_action_prob(states, actions)
+            logpac = self._eps_agent.get_log_action_prob(states, actions)
+        return logpac
 
     def save(self):
         return None

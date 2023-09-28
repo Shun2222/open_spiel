@@ -4,7 +4,7 @@ import torch.optim as optim
 import numpy as np
 
 class Discriminator(nn.Module):
-    def __init__(self, ob_shape, ac_shape, state_only, discount, hidden_size=128, l2_loss_ratio=0.01):
+    def __init__(self, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
         super(Discriminator, self).__init__()
         self.state_only = state_only
         self.gamma = discount
