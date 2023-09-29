@@ -343,6 +343,10 @@ class MFGPPO(object):
         fname = osp.join(logger.get_dir(), filename+"critic.pth")
         torch.save(self._eps_agent.critic.state_dict(), fname)
 
+        distrib = distribution.DistributionPolicy(game, self._ppo_policy)
+        fname = osp.join(logger.get_dir(), filename+"distrib.pkl")
+        utils.save_parametric_distribution(distrib, fname)   
+
     def load(self):
         return None
         

@@ -9,25 +9,34 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python import rl_environment
 from torch.distributions.categorical import Categorical
 from open_spiel.python.mfg.algorithms import distribution
-from open_spiel.python.mfg.algorithms.mfg_ppo import Agent
+from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 from open_spiel.python import policy as policy_std
 from utils import onehot, multionehot
 
 
 @click.command()
-@click.option('--env', type=click.STRING)
 @click.option('--path', type=click.STRING, default="result")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
-@click.option('--filename', type=click.STRING, default="actor.pth")
+@click.option('--distrib_filename', type=click.STRING, default="distrib.pth")
+@click.option('--actor_filename', type=click.STRING, default="actor.pth")
 @click.option('--num_trajs', type=click.INT, default=1000)
 @click.option('--seed', type=click.INT, default=0)
+@click.option('--num_acs', type=click.INT, default=5)
+@click.option('--num_obs', type=click.INT, default=67)
 
-def expert_generator(env, path, filename, num_trajs, game_setting, seed):
+
+def expert_generator(path, distrib_filename, actor_filename, num_trajs, game_setting, seed, num_acs, num_obs):
+    device = torch.device("cpu")
+    agent = Agent(num_obs, num_acs).to(device)
+    actor_model = agent.actor
+
     game = factory.create_game_with_setting("mfg_crowd_modelling_2d", game_setting)
 
     # Set the initial policy to uniform and generate the distribution 
-    uniform_policy = policy_std.UniformRandomPolicy(game)
-    mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+    #distrib_path = os.path.join(path, distrib_filename)
+    #distrib = pkl.load(open(distrib_path, "rb"))
+    ppo_policy = PPOpolicy(game, agent, None, device)
+    mfg_dist = distribution.DistributionPolicy(game, ppo_policy)
     env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
 
     # Set the environment seed for reproduciblility 
@@ -36,15 +45,12 @@ def expert_generator(env, path, filename, num_trajs, game_setting, seed):
     n_agents = 1
     info_state_size = env.observation_spec()["info_state"][0]
     num_actions = env.action_spec()["num_actions"]
-    device = torch.device("cpu")
-    agent = Agent(info_state_size, num_actions).to(device)
-    actor_model = agent.actor
 
     num_players = env.num_players
     print(f"num players: {num_players}")
 
-    filepath = os.path.join(path, filename)
-    print("load model from", filename)
+    filepath = os.path.join(path, actor_filename)
+    print("load model from", filepath)
     actor_model.load_state_dict(torch.load(filepath))
 
     actor_model.eval()
