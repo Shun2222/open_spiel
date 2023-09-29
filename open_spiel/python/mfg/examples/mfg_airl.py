@@ -21,6 +21,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
+import logger
 from dataset import MFGDataSet
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
@@ -47,6 +48,7 @@ def parse_args():
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
     parser.add_argument("--expert_path", type=str, default="result/expert.pkl", help="expert path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/mfg_result", help="log path")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=500, help="set a step batch size")
@@ -76,6 +78,8 @@ if __name__ == "__main__":
     update_generator_until = batch_step * 10
     expert_path = args.expert_path
     traj_limitation = args.traj_limitation
+
+    logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     # Create the game instance 
     game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)

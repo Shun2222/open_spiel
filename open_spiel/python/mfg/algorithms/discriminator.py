@@ -1,7 +1,10 @@
+import os
+import os.path as osp
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import logger
 
 class Discriminator(nn.Module):
     def __init__(self, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
@@ -26,11 +29,12 @@ class Discriminator(nn.Module):
         )
 
         # Define layers for value next function network
-        self.value_next_net = nn.Sequential(
-            nn.Linear(ob_shape, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, 1)
-        )
+#         self.value_next_net = nn.Sequential(
+#             nn.Linear(ob_shape, hidden_size),
+#             nn.ReLU(),
+#             nn.Linear(hidden_size, 1)
+#         )
+        self.value_next_net = self.value_net
 
 
         self.l2_loss = nn.MSELoss()
@@ -71,7 +75,14 @@ class Discriminator(nn.Module):
                 score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
             else:
                 score = self.reward_net(obs)
-        return score.cpu().numpy()
+        return score
+
+    def save(self, filename=""):
+        fname = osp.join(logger.get_dir(), filename+"disc_reward.pth")
+        torch.save(self.reward_net.state_dict(), fname)
+        fname = osp.join(logger.get_dir(), filename+"disc_value.pth")
+        torch.save(self.value_net.state_dict(), fname)
+        
 
 if __name__ == "__main__":
     rning_rate = 0.01

@@ -56,11 +56,7 @@ class Dset(object):
         np.random.shuffle(idx)
         l = int(self.num_pairs * decay_rate)
         # decay
-        print(f"l: {l}")
-        print(f"input: {inputs.shape}")
         for k in range(self.num_agents):
-            print(f"idx: {idx}")
-            print(f"idxs: {idx.shape}")
             self.inputs[k] = self.inputs[k][idx[:l], :]
             self.labels[k] = self.labels[k][idx[:l], :]
             if self.nobs_flag:

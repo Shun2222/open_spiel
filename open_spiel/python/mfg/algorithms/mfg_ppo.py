@@ -1,4 +1,5 @@
 import os
+import os.path as osp
 # 
 os.environ["OMP_NUM_THREADS"] = "4" # export OMP_NUM_THREADS=4
 os.environ["OPENBLAS_NUM_THREADS"] = "4" # export OPENBLAS_NUM_THREADS=4 
@@ -7,6 +8,7 @@ os.environ["VECLIB_MAXIMUM_THREADS"] = "4" # export VECLIB_MAXIMUM_THREADS=4
 os.environ["NUMEXPR_NUM_THREADS"] = "4" # export NUMEXPR_NUM_THREADS=6
 
 import argparse
+from tqdm import tqdm
 from distutils.util import strtobool
 import time
 import logging
@@ -22,6 +24,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
+import logger
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -100,7 +103,7 @@ class PPOpolicy(policy_std.Policy):
         # main method that is called to update the population states distribution
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
         legal_actions = state.legal_actions()
-        logits = agent.actor(obs).detach().cpu()
+        logits = self.agent.actor(obs).detach().to(self.device)
         legat_logits = np.array([logits[action] for action in legal_actions])
         probs = np.exp(legat_logits -legat_logits.max())
         probs /= probs.sum(axis=0)
@@ -132,10 +135,12 @@ class MFGPPO(object):
         entropies = torch.zeros((nsteps,), device=self._device)
         t_actions = torch.zeros((nsteps,), device=self._device)
         t_logprobs = torch.zeros((nsteps,), device=self._device)
+        ret = []
 
         step = 0
         while step!=nsteps-1:
             time_step = env.reset()
+            rew = 0
             while not time_step.last():
                 obs = time_step.observations["info_state"][0]
                 obs = torch.Tensor(obs).to(self._device)
@@ -157,11 +162,15 @@ class MFGPPO(object):
                 values[step] = value
                 actions[step] = action
                 rewards[step] = torch.Tensor(time_step.rewards).to(self._device)
+                rew += time_step.rewards[0]
                 step += 1
                 if step==nsteps-1:
                     break
+            ret.append(rew)
+        ret = np.array(ret)
         assert step==nsteps-1
-        return info_state, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs 
+        return info_state, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs,ret
+
 
 
     def cal_Adv(self, rewards, values, dones, gamma=0.99, norm=True):
@@ -190,7 +199,8 @@ class MFGPPO(object):
 
 
     def update_eps(self, obs, logprobs, actions, advantages, returns, t_actions, t_logprobs, 
-                    update_epochs=5, num_minibatch=5, alpha = 0.5, t_eps = 0.2, eps = 0.2):
+                    update_epochs=5, num_minibatch=5, alpha = 0.5, t_eps = 0.2, eps = 0.2,
+                    ent_coef=0.01, max_grad_norm=5):
         # update the agent network (actor and critic)
         batch_size = actions.shape[0]
         b_inds = np.arange(batch_size)
@@ -228,19 +238,19 @@ class MFGPPO(object):
                 v_loss = F.smooth_l1_loss(new_value.reshape(-1), returns[mb_inds]).mean()
                 entropy_loss = entropy.mean()
 
-                loss = pg_loss - args.ent_coef * entropy_loss 
+                loss = pg_loss - ent_coef * entropy_loss 
                 
                 # Actor update 
                 self._optimizer_actor.zero_grad()
                 loss.backward()
-                nn.utils.clip_grad_norm_(self._eps_agent.actor.parameters(), args.max_grad_norm)
+                nn.utils.clip_grad_norm_(self._eps_agent.actor.parameters(), max_grad_norm)
                 self._optimizer_actor.step()
                 
                 # Critic update 
-                self._optimize_critic.zero_grad()
+                self._optimizer_critic.zero_grad()
                 v_loss.backward()
-                nn.utils.clip_grad_norm_(self._eps_agent.critic.parameters(), args.max_grad_norm)
-                self._optimize_critic.step()
+                nn.utils.clip_grad_norm_(self._eps_agent.critic.parameters(), max_grad_norm)
+                self._optimizer_critic.step()
 
         return v_loss
 
@@ -327,10 +337,64 @@ class MFGPPO(object):
             logpac = self._eps_agent.get_log_action_prob(states, actions)
         return logpac
 
-    def save(self):
-        return None
+    def save(self, filename=""):
+        fname = osp.join(logger.get_dir(), filename+"actor.pth")
+        torch.save(self._eps_agent.actor.state_dict(), fname)
+        fname = osp.join(logger.get_dir(), filename+"critic.pth")
+        torch.save(self._eps_agent.critic.state_dict(), fname)
 
     def load(self):
         return None
         
 
+def parse_args():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, default=42, help="set a random seed")
+    parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
+    
+    parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
+    parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
+    parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
+    
+    args = parser.parse_args()
+    return args
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    # Set the seed 
+    seed = args.seed
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    print(f"Random seed set as {seed}")
+
+    # Create the game instance 
+    game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
+
+    # Set the initial policy to uniform and generate the distribution 
+    uniform_policy = policy_std.UniformRandomPolicy(game)
+    mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+    env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
+
+    # Set the environment seed for reproduciblility 
+    env.seed(args.seed)
+
+    device = "cpu"
+    mfgppo = MFGPPO(game, env, device)
+
+    batch_step = args.batch_step
+    for _ in tqdm(range(args.num_iterations)):
+        for _ in range(args.num_episodes):
+            obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, ret \
+                = mfgppo.rollout(env, args.batch_step)
+            adv_pth, returns = mfgppo.cal_Adv(true_rewards_pth, values_pth, dones_pth)
+            v_loss = mfgppo.update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
+
+        ret = np.array(ret)
+        print("Value_loss", v_loss.item())
+        print('reward', ret)    
+        print('Mean reward', np.mean(ret))    
+        mfgppo.update_iter(game, env)
