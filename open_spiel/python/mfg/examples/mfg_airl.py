@@ -54,7 +54,7 @@ def parse_args():
     parser.add_argument("--batch_step", type=int, default=500, help="set a step batch size")
     parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
     parser.add_argument("--total_step", type=int, default=5e7, help="set a total step")
-    parser.add_argument("--total_step_gen", type=int, default=2e3, help="set a total generator step")
+    parser.add_argument("--total_step_gen", type=int, default=2e5, help="set a total generator step")
     parser.add_argument("--num_episode", type=int, default=5, help="set a total generator step")
     parser.add_argument("--log_interval_rate", type=float, default=0.1, help="set a total generator step")
     args = parser.parse_args()

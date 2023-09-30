@@ -22,6 +22,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
+from render import render
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -312,7 +313,7 @@ def plot_dist(env, game_name, distrib, info_state, save=False, filename="agent_d
 
         plt.close()
 
-def log_metrics(it,distrib, policy, writer, reward, entropy):
+def log_metrics(it, distrib, policy, writer, reward, entropy):
     # this function is used to log the results to tensor board
     initial_states = game.new_initial_states()
     pi_value = policy_value.PolicyValue(game, distrib, policy, value.TabularValueFunction(game))
@@ -374,7 +375,8 @@ if __name__ == "__main__":
     )
     
     # Create the game instance 
-    game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
+    game_name = "mfg_crowd_modelling_2d"
+    game = factory.create_game_with_setting(game_name, args.game_setting)
 
     # Set the initial policy to uniform and generate the distribution 
     uniform_policy = policy_std.UniformRandomPolicy(game)
@@ -438,6 +440,11 @@ if __name__ == "__main__":
 
         # update the environment distribution 
         env.update_mfg_distribution(distrib)
+   
+    steps = args.num_episodes * env.max_game_length
+    obs, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(env, pop_agent, agent, 1, env.max_game_length, device)
+    filename = os.path.join(fname, f"res.mp4")
+    render(env, game_name, distrib, obs.detach().numpy(), save=True, filename=filename)
         
 
 if best_model >= Nash_con_vect[-1]:    

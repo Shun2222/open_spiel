@@ -34,7 +34,7 @@ from open_spiel.python.mfg import value
 
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
-def plot_dist(env, game_name, distrib, info_state, save=False, filename="agent_dist.mp4"):
+def render(env, game_name, distrib, info_state, save=False, filename="agent_dist.mp4"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     horizon = env.game.get_parameters()['horizon']
     size = env.game.get_parameters()['size']
@@ -150,5 +150,5 @@ if __name__ == "__main__":
 
     print(f"ep_ret: {ep_ret}")
     save_path = os.path.join(args.path, "agent_dist.mp4")
-    plot_dist(env, game_name, mfg_dist, info_state, save=True, filename=save_path)
+    render(env, game_name, mfg_dist, info_state, save=True, filename=save_path)
     print(f"Save {save_path}")

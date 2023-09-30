@@ -36,6 +36,24 @@ from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
 
+class NashC(NashConv):
+    # Mainly used to calculate the exploitability 
+    def __init__(self, game,distrib,pi_value, root_state=None):
+        self._game = game
+        if root_state is None:
+            self._root_states = game.new_initial_states()
+        else:
+            self._root_states = [root_state]
+            
+        self._distrib = distrib
+
+        self._pi_value = pi_value
+
+        self._br_value = best_response_value.BestResponse(
+            self._game,
+            self._distrib,
+            value.TabularValueFunction(self._game),
+            root_state=root_state)
 
 class Agent(nn.Module):
     def __init__(self, info_state_size, num_actions):
@@ -123,7 +141,20 @@ class MFGPPO(object):
         self._iter_agent = Agent(info_state_size,num_actions).to(self._device)
         self._optimizer_actor = optim.Adam(self._eps_agent.actor.parameters(), lr=1e-3,eps=1e-5)
         self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
-    
+
+        distrib = distribution.DistributionPolicy(game, self._ppo_policy)
+
+        self._size = env.game.get_parameters()['size']
+        horizon = env.game.get_parameters()['horizon']
+        mu_dist = np.zeros((horizon, self._size, self._size))
+        for k,v in distrib.distribution.items():
+            if "mu" in k:
+                tt = k.split("_")[0].split(",")
+                x = int(tt[0].split("(")[-1])
+                y = int(tt[1].split()[-1])
+                t = int(tt[2].split()[-1].split(")")[0])
+                mu_dist[t,y,x] = v
+        self._mu_dist = mu_dist
 
     def rollout(self, env, nsteps):
         info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
@@ -135,21 +166,30 @@ class MFGPPO(object):
         entropies = torch.zeros((nsteps,), device=self._device)
         t_actions = torch.zeros((nsteps,), device=self._device)
         t_logprobs = torch.zeros((nsteps,), device=self._device)
+        obs_mu = torch.zeros((nsteps,self._iter_agent.info_state_size+1), device=self._device)
         ret = []
 
+        size = self._size
         step = 0
         while step!=nsteps-1:
             time_step = env.reset()
             rew = 0
             while not time_step.last():
                 obs = time_step.observations["info_state"][0]
-                obs = torch.Tensor(obs).to(self._device)
-                info_state[step] = obs
+                obs_pth = torch.Tensor(obs).to(self._device)
+                info_state[step] = obs_pth
                 with torch.no_grad():
-                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs)
-                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs)
+                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth)
+                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_pth)
 
                 time_step = env.step([action.item()])
+
+                obs_x = obs[:size].index(1)
+                obs_y = obs[size:2*size].index(1)
+                obs_t = obs[2*size:].index(1)
+                mu = obs.copy()
+                mu.append(self._mu_dist[obs_t, obs_y, obs_x])
+                obs_mu[step] = torch.Tensor(mu).to(self._device)
 
                 # iteration policy data
                 t_logprobs[step] = t_logprob
@@ -169,8 +209,7 @@ class MFGPPO(object):
             ret.append(rew)
         ret = np.array(ret)
         assert step==nsteps-1
-        return info_state, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs,ret
-
+        return info_state, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs, obs_mu, ret
 
 
     def cal_Adv(self, rewards, values, dones, gamma=0.99, norm=True):
@@ -254,14 +293,40 @@ class MFGPPO(object):
 
         return v_loss
 
-    def update_iter(self, game, env):
+    def update_iter(self, game, env, nashc=False):
         # iter agent の更新
         self._iter_agent.load_state_dict(self._eps_agent.state_dict())
 
         # mf policyの更新
         distrib = distribution.DistributionPolicy(game, self._ppo_policy)
         env.update_mfg_distribution(distrib)
-        # Nash_con_vect.append(log_metrics(k+1, distrib, ppo_policy, tb_writer, total_reward[-1], total_entropy[-1]))
+
+        horizon = env.game.get_parameters()['horizon']
+        mu_dist = np.zeros((horizon, self._size, self._size))
+        for k,v in distrib.distribution.items():
+            if "mu" in k:
+                tt = k.split("_")[0].split(",")
+                x = int(tt[0].split("(")[-1])
+                y = int(tt[1].split()[-1])
+                t = int(tt[2].split()[-1].split(")")[0])
+                mu_dist[t,y,x] = v
+        self._mu_dist = mu_dist
+
+        nashc_ppo = None
+        if nashc:
+            pi_value = policy_value.PolicyValue(game, distrib, self._ppo_policy, value.TabularValueFunction(game))
+            nashc_ppo = NashC(game, distrib, pi_value).nash_conv()
+        return nashc_ppo
+
+    def calc_nashc(self, game, env):
+        # mf policyの更新
+        distrib = distribution.DistributionPolicy(game, self._ppo_policy)
+        env.update_mfg_distribution(distrib)
+
+        pi_value = policy_value.PolicyValue(game, distrib, self._ppo_policy, value.TabularValueFunction(game))
+        nashc_ppo = NashC(game, distrib, pi_value).nash_conv()
+
+        return nashc_ppo
 
 
     def plot_dist(self, env, game_name, distrib, info_state, save=False, filename="agent_dist.mp4"):
@@ -392,13 +457,14 @@ if __name__ == "__main__":
     batch_step = args.batch_step
     for _ in tqdm(range(args.num_iterations)):
         for _ in range(args.num_episodes):
-            obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, ret \
+            obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret \
                 = mfgppo.rollout(env, args.batch_step)
             adv_pth, returns = mfgppo.cal_Adv(true_rewards_pth, values_pth, dones_pth)
             v_loss = mfgppo.update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
 
+        nashc_ppo = mfgppo.update_iter(game, env, nashc=True)
         ret = np.array(ret)
         print("Value_loss", v_loss.item())
         print('reward', ret)    
         print('Mean reward', np.mean(ret))    
-        mfgppo.update_iter(game, env)
+        print('NashC ppo', nashc_ppo)    

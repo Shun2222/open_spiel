@@ -41,6 +41,7 @@ class Discriminator(nn.Module):
 
     def forward(self, obs, acs, obs_next, path_probs):
         rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
+        rew_input = rew_input.to(obs.dtype)
         reward = self.reward_net(rew_input)
         value_fn = self.value_net(obs)
         value_fn_next = self.value_next_net(obs_next)
@@ -74,7 +75,9 @@ class Discriminator(nn.Module):
                 log_q_tau, log_p_tau, log_pq, discrim_output = self(obs, acs, obs_next, path_probs)
                 score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
             else:
-                score = self.reward_net(obs)
+                rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
+                rew_input = rew_input.to(obs.dtype)
+                score = self.reward_net(rew_input)
         return score
 
     def save(self, filename=""):

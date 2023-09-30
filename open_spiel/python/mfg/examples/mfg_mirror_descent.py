@@ -23,7 +23,6 @@ from open_spiel.python.mfg.algorithms import mirror_descent
 from open_spiel.python.mfg.algorithms import nash_conv
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.utils import app
-from open_spiel.python.utils import metrics
 
 FLAGS = flags.FLAGS
 
@@ -51,12 +50,9 @@ def main(argv: Sequence[str]) -> None:
 
   # Metrics writer will also log the metrics to stderr.
   just_logging = _LOGDIR.value is None
-  writer = metrics.create_default_writer(
-      logdir=_LOGDIR.value, just_logging=just_logging)
 
   # Save the parameters.
   learning_rate = _LEARNING_RATE.value
-  writer.write_hparams({'learning_rate': learning_rate})
 
   md = mirror_descent.MirrorDescent(game, lr=learning_rate)
 
@@ -64,12 +60,10 @@ def main(argv: Sequence[str]) -> None:
     md.iteration()
     md_policy = md.get_policy()
     exploitability = nash_conv.NashConv(game, md_policy).nash_conv()
-    writer.write_scalars(it, {'exploitability': exploitability})
+    print(f"exploitability: {exploitability}")
     if _LOG_DISTRIBUTION.value and not just_logging:
       filename = os.path.join(_LOGDIR.value, f'distribution_{it}.pkl')
       utils.save_parametric_distribution(md.distribution, filename)
-
-  writer.flush()
 
 
 if __name__ == '__main__':
