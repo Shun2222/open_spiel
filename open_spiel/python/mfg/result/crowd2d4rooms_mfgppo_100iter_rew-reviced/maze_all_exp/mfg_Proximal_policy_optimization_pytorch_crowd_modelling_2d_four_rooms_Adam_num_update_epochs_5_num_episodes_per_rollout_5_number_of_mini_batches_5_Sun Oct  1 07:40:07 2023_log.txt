@@ -1,0 +1,243 @@
+DEBUG:root:Initialization
+INFO:absl:Creating mfg_crowd_modelling_2d game with parameters: {'forbidden_states': '[0|0;1|0;2|0;3|0;4|0;5|0;6|0;7|0;8|0;9|0;10|0;11|0;12|0;0|1;6|1;12|1;0|2;6|2;12|2;0|3;12|3;0|4;6|4;12|4;0|5;6|5;12|5;0|6;1|6;2|6;4|6;5|6;6|6;7|6;8|6;10|6;11|6;12|6;0|7;6|7;12|7;0|8;6|8;12|8;0|9;12|9;0|10;6|10;12|10;0|11;6|11;12|11;0|12;1|12;2|12;3|12;4|12;5|12;6|12;7|12;8|12;9|12;10|12;11|12;12|12]', 'horizon': 40, 'initial_distribution': '[1|1]', 'initial_distribution_value': '[1.0]', 'size': 13, 'crowd_aversion_coef': 0.05, 'only_distribution_reward': True}
+INFO:absl:Using game instance: mfg_crowd_modelling_2d
+DEBUG:root:ppo_br: 7.350803355693345, and nash_conv: 6.702773956199194, reward: 6.972465572357178, entropy: 1.541422289609909
+DEBUG:root:ppo_br: 7.735980205353308, and nash_conv: 4.791430404546587, reward: 7.109038133621216, entropy: 1.523560282588005
+DEBUG:root:ppo_br: 8.044287760771782, and nash_conv: 3.471579451106761, reward: 7.204183406829833, entropy: 1.494508723417918
+DEBUG:root:ppo_br: 8.128813175474624, and nash_conv: 3.227545829234062, reward: 7.361202273368835, entropy: 1.4616013661026954
+DEBUG:root:ppo_br: 8.134600765904247, and nash_conv: 3.4702989977262355, reward: 7.466057285308838, entropy: 1.4337017381191253
+DEBUG:root:ppo_br: 8.242904859092894, and nash_conv: 2.428366976551759, reward: 7.53980575243632, entropy: 1.4232422471046449
+DEBUG:root:ppo_br: 8.285920746249753, and nash_conv: 2.3465944021494067, reward: 7.594189799172539, entropy: 1.4088639855384826
+DEBUG:root:ppo_br: 8.283432010335673, and nash_conv: 2.3114817127887513, reward: 7.649157540798187, entropy: 1.3965561844408512
+DEBUG:root:ppo_br: 8.329460582776942, and nash_conv: 2.043758287318436, reward: 7.693332729339601, entropy: 1.3861165205637613
+DEBUG:root:ppo_br: 8.257284884703243, and nash_conv: 2.530859064816177, reward: 7.742079374313355, entropy: 1.374295529127121
+DEBUG:root:ppo_br: 8.352899017747681, and nash_conv: 2.030834433092636, reward: 7.785604121468284, entropy: 1.3615676435557278
+DEBUG:root:ppo_br: 8.420787603635155, and nash_conv: 1.413263016133051, reward: 7.8087065362930295, entropy: 1.3539412831266722
+DEBUG:root:ppo_br: 8.421356771409107, and nash_conv: 1.360155897119606, reward: 7.852509858058049, entropy: 1.3415642362374527
+DEBUG:root:ppo_br: 8.437195196148089, and nash_conv: 1.4672996748864797, reward: 7.870338424955097, entropy: 1.3305181069033487
+DEBUG:root:ppo_br: 8.448606224338327, and nash_conv: 1.4527947278397644, reward: 7.893653820037841, entropy: 1.322139397462209
+DEBUG:root:ppo_br: 8.467515300904974, and nash_conv: 1.2702274716844677, reward: 7.913946455717086, entropy: 1.3146427609026432
+DEBUG:root:ppo_br: 8.454262600681746, and nash_conv: 1.338058331793846, reward: 7.934277335896211, entropy: 1.3083054048173568
+DEBUG:root:ppo_br: 8.443361901859628, and nash_conv: 1.4058450011000403, reward: 7.95257901403639, entropy: 1.3021185199419658
+DEBUG:root:ppo_br: 8.454649965961416, and nash_conv: 1.5066554959710885, reward: 7.969087210203472, entropy: 1.297752276847237
+DEBUG:root:ppo_br: 8.478918842106646, and nash_conv: 1.3896767522873894, reward: 7.985226914405823, entropy: 1.2942873907089234
+DEBUG:root:ppo_br: 8.492709159720818, and nash_conv: 1.2567486577192035, reward: 7.995294579097203, entropy: 1.28830627259754
+DEBUG:root:ppo_br: 8.468602337416883, and nash_conv: 1.7575228389966426, reward: 8.006313357786699, entropy: 1.2840068302371286
+DEBUG:root:ppo_br: 8.464985182304474, and nash_conv: 1.255089568296878, reward: 8.011671417070472, entropy: 1.2802097890688025
+DEBUG:root:ppo_br: 8.449476568419279, and nash_conv: 1.5146947731971725, reward: 8.020685096581778, entropy: 1.2775861849387486
+DEBUG:root:ppo_br: 8.44149532877754, and nash_conv: 1.2741258948769225, reward: 8.024700176239014, entropy: 1.2745820651054383
+DEBUG:root:ppo_br: 8.446083743662335, and nash_conv: 1.3220013897633915, reward: 8.033689018396231, entropy: 1.2713188579449286
+DEBUG:root:ppo_br: 8.42698236450654, and nash_conv: 1.4128700422188931, reward: 8.038132398393419, entropy: 1.2693696282528064
+DEBUG:root:ppo_br: 8.436123442174484, and nash_conv: 1.5333815451180222, reward: 8.042401452064516, entropy: 1.2673067103539195
+DEBUG:root:ppo_br: 8.485734362695865, and nash_conv: 1.0720733493150671, reward: 8.049538606446363, entropy: 1.2651681700657154
+DEBUG:root:ppo_br: 8.477919074960733, and nash_conv: 1.2131223124849164, reward: 8.054842260360717, entropy: 1.2626924604177474
+DEBUG:root:ppo_br: 8.493811333919245, and nash_conv: 1.0200651417163389, reward: 8.060964744937035, entropy: 1.2612600934120917
+DEBUG:root:ppo_br: 8.51843075778911, and nash_conv: 1.039077975143206, reward: 8.067341684699059, entropy: 1.2596521621569992
+DEBUG:root:ppo_br: 8.520001775521932, and nash_conv: 1.1024048864792402, reward: 8.073194492802475, entropy: 1.2577655552011549
+DEBUG:root:ppo_br: 8.520103777811467, and nash_conv: 1.1999740699317556, reward: 8.077782512552599, entropy: 1.2553785615107593
+DEBUG:root:ppo_br: 8.521028561926034, and nash_conv: 1.02342023483477, reward: 8.086467922210694, entropy: 1.2522776782512666
+DEBUG:root:ppo_br: 8.516380549356077, and nash_conv: 1.086025432637415, reward: 8.092481355137295, entropy: 1.2496931865811347
+DEBUG:root:ppo_br: 8.522039226996318, and nash_conv: 0.9631038322557863, reward: 8.09643814035364, entropy: 1.2485083919924658
+DEBUG:root:ppo_br: 8.524587657117564, and nash_conv: 1.1187124445093275, reward: 8.101314669659264, entropy: 1.2465087812197835
+DEBUG:root:ppo_br: 8.47441741061169, and nash_conv: 1.1890514855710883, reward: 8.10705144490951, entropy: 1.244497918929809
+DEBUG:root:ppo_br: 8.500389110893844, and nash_conv: 1.1081693980822784, reward: 8.110321052074433, entropy: 1.2424000197649
+DEBUG:root:ppo_br: 8.546993049517816, and nash_conv: 1.0518262334500648, reward: 8.115253676902956, entropy: 1.2398172893175265
+DEBUG:root:ppo_br: 8.557732213775186, and nash_conv: 0.8481132697777554, reward: 8.119755957921347, entropy: 1.2366167217493058
+DEBUG:root:ppo_br: 8.559753785572095, and nash_conv: 0.8074013458567233, reward: 8.124087393561075, entropy: 1.2332855845606605
+DEBUG:root:ppo_br: 8.548063103207685, and nash_conv: 0.9295322733575944, reward: 8.128000501719388, entropy: 1.2305721685290336
+DEBUG:root:ppo_br: 8.540595732943633, and nash_conv: 1.2809400636968213, reward: 8.132136381785076, entropy: 1.2282764053344726
+DEBUG:root:ppo_br: 8.530841405315554, and nash_conv: 1.2688646236076533, reward: 8.13800007654273, entropy: 1.226756263686263
+DEBUG:root:ppo_br: 8.54949282024591, and nash_conv: 1.0567127297623955, reward: 8.14199349870073, entropy: 1.2243774860463243
+DEBUG:root:ppo_br: 8.540441449923849, and nash_conv: 1.100582286300881, reward: 8.144884223540624, entropy: 1.2226842373609543
+DEBUG:root:ppo_br: 8.531748832248237, and nash_conv: 1.5685242280564466, reward: 8.147701503597961, entropy: 1.2205737459416293
+DEBUG:root:ppo_br: 8.55502838565005, and nash_conv: 1.3100819371448846, reward: 8.151460272598266, entropy: 1.2176833173632622
+DEBUG:root:ppo_br: 8.534692344502114, and nash_conv: 1.1777522137382892, reward: 8.155271460963231, entropy: 1.2152617151246352
+DEBUG:root:ppo_br: 8.54952136261334, and nash_conv: 1.181454631891949, reward: 8.158672990432153, entropy: 1.2137758820675886
+DEBUG:root:ppo_br: 8.555647513074778, and nash_conv: 0.9133243323620306, reward: 8.162793475816835, entropy: 1.2124983553054198
+DEBUG:root:ppo_br: 8.547160139364262, and nash_conv: 1.2017621703125734, reward: 8.165876359939574, entropy: 1.2110644367557986
+DEBUG:root:ppo_br: 8.531419099520782, and nash_conv: 1.3182371133988795, reward: 8.169290272452614, entropy: 1.2093963359160858
+DEBUG:root:ppo_br: 8.508747492929004, and nash_conv: 1.573227182168349, reward: 8.173059410027095, entropy: 1.2077401897204774
+DEBUG:root:ppo_br: 8.561508273283811, and nash_conv: 0.9732704729448436, reward: 8.176030193462706, entropy: 1.2058158312450376
+DEBUG:root:ppo_br: 8.570803398739383, and nash_conv: 0.9404161757785019, reward: 8.178884029717283, entropy: 1.2043007259225023
+DEBUG:root:ppo_br: 8.567973686740737, and nash_conv: 0.7801374441927944, reward: 8.181260781045687, entropy: 1.202358642220497
+DEBUG:root:ppo_br: 8.511546387422177, and nash_conv: 1.5386639776279605, reward: 8.183779693921405, entropy: 1.2007367813090484
+DEBUG:root:ppo_br: 8.586010063645624, and nash_conv: 0.825791371820273, reward: 8.189830161860732, entropy: 1.1988879844302036
+DEBUG:root:ppo_br: 8.58324732671125, and nash_conv: 0.7848265749874859, reward: 8.192496141925934, entropy: 1.1967315780058985
+DEBUG:root:ppo_br: 8.555127901584338, and nash_conv: 1.006099234554041, reward: 8.193583444565062, entropy: 1.195037469078624
+DEBUG:root:ppo_br: 8.57958045908004, and nash_conv: 0.749310108210377, reward: 8.196324737370015, entropy: 1.1933419923763722
+DEBUG:root:ppo_br: 8.562219946994857, and nash_conv: 1.045133588559045, reward: 8.198603500072773, entropy: 1.1912468974406902
+DEBUG:root:ppo_br: 8.556061698261678, and nash_conv: 0.9129059382435418, reward: 8.200240451061363, entropy: 1.1897889468706015
+DEBUG:root:ppo_br: 8.568842086291543, and nash_conv: 0.9558701806034247, reward: 8.203348382693619, entropy: 1.188096385527013
+DEBUG:root:ppo_br: 8.561598307604761, and nash_conv: 1.0367421697950654, reward: 8.205063229448655, entropy: 1.1862879669403328
+DEBUG:root:ppo_br: 8.554290986058335, and nash_conv: 1.2918777204801408, reward: 8.207069829028587, entropy: 1.184338524678479
+DEBUG:root:ppo_br: 8.5951133795948, and nash_conv: 0.7051966198996311, reward: 8.210034821374077, entropy: 1.1823433563113213
+DEBUG:root:ppo_br: 8.583509519403384, and nash_conv: 0.8094890822946184, reward: 8.211836729721284, entropy: 1.1802530866273693
+DEBUG:root:ppo_br: 8.580781322829953, and nash_conv: 0.8025406305046516, reward: 8.213452555603451, entropy: 1.1779888536367151
+DEBUG:root:ppo_br: 8.562022646933789, and nash_conv: 1.122341366996844, reward: 8.214994247906828, entropy: 1.1756726035924807
+DEBUG:root:ppo_br: 8.557992548487604, and nash_conv: 0.8965497375210898, reward: 8.216423468460908, entropy: 1.173250330259671
+DEBUG:root:ppo_br: 8.549746621161782, and nash_conv: 0.9358675227126341, reward: 8.217974746958415, entropy: 1.1709131460984548
+DEBUG:root:ppo_br: 8.579489891349677, and nash_conv: 0.9377627927054313, reward: 8.219043496031512, entropy: 1.168494639545679
+DEBUG:root:ppo_br: 8.546019295661717, and nash_conv: 1.2194365795336939, reward: 8.220762454193908, entropy: 1.1665924804164218
+DEBUG:root:ppo_br: 8.592872179985426, and nash_conv: 0.6857277248160987, reward: 8.221743021011351, entropy: 1.1647626894788865
+DEBUG:root:ppo_br: 8.570857785005424, and nash_conv: 0.8004878536138165, reward: 8.223405911650838, entropy: 1.163550567626953
+DEBUG:root:ppo_br: 8.56244118782227, and nash_conv: 1.026699116949107, reward: 8.225304926633834, entropy: 1.1620665457099677
+DEBUG:root:ppo_br: 8.590205962119276, and nash_conv: 0.6870239114398462, reward: 8.227012659473184, entropy: 1.1608665077774614
+DEBUG:root:ppo_br: 8.57584210521856, and nash_conv: 0.8532647361634158, reward: 8.228188076717098, entropy: 1.1593756543426978
+DEBUG:root:ppo_br: 8.580594141246442, and nash_conv: 0.7860006475666026, reward: 8.229999762155924, entropy: 1.1583158747259392
+DEBUG:root:ppo_br: 8.555341945292541, and nash_conv: 1.2464148183182022, reward: 8.231577047847566, entropy: 1.157260046544529
+DEBUG:root:ppo_br: 8.572287317027989, and nash_conv: 0.8555785936556237, reward: 8.231779729282154, entropy: 1.156514195063535
+DEBUG:root:ppo_br: 8.568359901745653, and nash_conv: 0.9399469711878172, reward: 8.232960547291954, entropy: 1.1554493691685588
+DEBUG:root:ppo_br: 8.585834832886722, and nash_conv: 0.7956645654549916, reward: 8.234437392004605, entropy: 1.1545492145864442
+DEBUG:root:ppo_br: 8.567615528120328, and nash_conv: 0.8156012437172553, reward: 8.23578885013407, entropy: 1.1535415059802208
+DEBUG:root:ppo_br: 8.563455419280059, and nash_conv: 0.8369816352821662, reward: 8.236718103858863, entropy: 1.1526779219340741
+DEBUG:root:ppo_br: 8.572785850743912, and nash_conv: 0.9078208445195735, reward: 8.237936367246839, entropy: 1.152226254178418
+DEBUG:root:ppo_br: 8.49108017786897, and nash_conv: 1.7258953078690276, reward: 8.239110838292719, entropy: 1.1512045768918573
+DEBUG:root:ppo_br: 8.557169483727705, and nash_conv: 0.9218217597035139, reward: 8.239379485793735, entropy: 1.1499745514081872
+DEBUG:root:ppo_br: 8.559259738822153, and nash_conv: 0.8265647790369428, reward: 8.240459841451337, entropy: 1.1490826812482648
+DEBUG:root:ppo_br: 8.583060408942192, and nash_conv: 0.851419521420107, reward: 8.241326730403495, entropy: 1.1477521974672662
+DEBUG:root:ppo_br: 8.597551857228687, and nash_conv: 0.6696531911150974, reward: 8.242581896129408, entropy: 1.1468144954819428
+DEBUG:root:ppo_br: 8.574135295046757, and nash_conv: 1.0525713625133193, reward: 8.243968766729036, entropy: 1.1462105965552232
+DEBUG:root:ppo_br: 8.570196572866344, and nash_conv: 1.042846885315635, reward: 8.244913217013645, entropy: 1.1451263895968802
+DEBUG:root:ppo_br: 8.565609636061913, and nash_conv: 1.1311224216679943, reward: 8.246672044676178, entropy: 1.1442304642224799
+DEBUG:root:ppo_br: 8.55659703315608, and nash_conv: 1.106419384425914, reward: 8.248501021452624, entropy: 1.1434484619684893
+DEBUG:root:ppo_br: 8.580503468332175, and nash_conv: 0.7632712293933377, reward: 8.249935800743105, entropy: 1.1424695489108563
+DEBUG:matplotlib.pyplot:Loaded backend agg version v2.2.
+DEBUG:matplotlib.font_manager:findfont: Matching sans\-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=10.0.
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUniBol.ttf', name='STIXNonUnicode', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizOneSymReg.ttf', name='STIXSizeOneSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizTwoSymReg.ttf', name='STIXSizeTwoSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif-Italic.ttf', name='DejaVu Serif', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 0.33499999999999996
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerifDisplay.ttf', name='DejaVu Serif Display', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUniIta.ttf', name='STIXNonUnicode', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmtt10.ttf', name='cmtt10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneralItalic.ttf', name='STIXGeneral', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneralBol.ttf', name='STIXGeneral', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmmi10.ttf', name='cmmi10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmss10.ttf', name='cmss10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUni.ttf', name='STIXNonUnicode', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif-Bold.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono-Bold.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizFourSymReg.ttf', name='STIXSizeFourSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmex10.ttf', name='cmex10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneral.ttf', name='STIXGeneral', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-BoldOblique.ttf', name='DejaVu Sans', style='oblique', variant='normal', weight=700, stretch='normal', size='scalable')) = 1.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansDisplay.ttf', name='DejaVu Sans Display', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmsy10.ttf', name='cmsy10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 0.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif-BoldItalic.ttf', name='DejaVu Serif', style='italic', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizThreeSymBol.ttf', name='STIXSizeThreeSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmb10.ttf', name='cmb10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizFiveSymReg.ttf', name='STIXSizeFiveSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Oblique.ttf', name='DejaVu Sans', style='oblique', variant='normal', weight=400, stretch='normal', size='scalable')) = 1.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUniBolIta.ttf', name='STIXNonUnicode', style='italic', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/cmr10.ttf', name='cmr10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneralBolIta.ttf', name='STIXGeneral', style='italic', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono-BoldOblique.ttf', name='DejaVu Sans Mono', style='oblique', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono-Oblique.ttf', name='DejaVu Sans Mono', style='oblique', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizFourSymBol.ttf', name='STIXSizeFourSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizOneSymBol.ttf', name='STIXSizeOneSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizTwoSymBol.ttf', name='STIXSizeTwoSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/STIXSizThreeSymReg.ttf', name='STIXSizeThreeSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 0.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 0.33499999999999996
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.335
+DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
+DEBUG:matplotlib.font_manager:findfont: Matching sans\-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=10.0 to DejaVu Sans ('/usr/local/lib/python3.8/dist-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf') with score of 0.050000.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+DEBUG:matplotlib.animation:frame size in pixels is 800 x 800
+INFO:matplotlib.animation:MovieWriter._run: running command: /usr/bin/ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -r 5 -i pipe: -vcodec h264 -pix_fmt yuv420p -y result/maze_all_exp/res.mp4
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter.grab_frame: Grabbing frame.
+DEBUG:matplotlib.animation:MovieWriter stderr:
+ffmpeg version 4.2.7-0ubuntu0.1 Copyright (c) 2000-2022 the FFmpeg developers
+  built with gcc 9 (Ubuntu 9.4.0-1ubuntu1~20.04.1)
+  configuration: --prefix=/usr --extra-version=0ubuntu0.1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --enable-avresample --disable-filter=resample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libaom --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libjack --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librsvg --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-lv2 --enable-omx --enable-openal --enable-opencl --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-nvenc --enable-chromaprint --enable-frei0r --enable-libx264 --enable-shared
+  WARNING: library configuration mismatch
+  avcodec     configuration: --prefix=/usr --extra-version=0ubuntu0.1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --enable-avresample --disable-filter=resample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libaom --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libjack --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librsvg --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-lv2 --enable-omx --enable-openal --enable-opencl --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-nvenc --enable-chromaprint --enable-frei0r --enable-libx264 --enable-shared --enable-version3 --disable-doc --disable-programs --enable-libaribb24 --enable-liblensfun --enable-libopencore_amrnb --enable-libopencore_amrwb --enable-libtesseract --enable-libvo_amrwbenc
+  libavutil      56. 31.100 / 56. 31.100
+  libavcodec     58. 54.100 / 58. 54.100
+  libavformat    58. 29.100 / 58. 29.100
+  libavdevice    58.  8.100 / 58.  8.100
+  libavfilter     7. 57.100 /  7. 57.100
+  libavresample   4.  0.  0 /  4.  0.  0
+  libswscale      5.  5.100 /  5.  5.100
+  libswresample   3.  5.100 /  3.  5.100
+  libpostproc    55.  5.100 / 55.  5.100
+Input #0, rawvideo, from 'pipe:':
+  Duration: N/A, start: 0.000000, bitrate: 102400 kb/s
+    Stream #0:0: Video: rawvideo (RGBA / 0x41424752), rgba, 800x800, 102400 kb/s, 5 tbr, 5 tbn, 5 tbc
+Stream mapping:
+  Stream #0:0 -> #0:0 (rawvideo (native) -> h264 (libx264))
+[libx264 @ 0x5637148676c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 0x5637148676c0] profile High, level 3.1
+[libx264 @ 0x5637148676c0] 264 - core 155 r2917 0a84d98 - H.264/MPEG-4 AVC codec - Copyleft 2003-2018 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=24 lookahead_threads=4 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=5 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'result/maze_all_exp/res.mp4':
+  Metadata:
+    encoder         : Lavf58.29.100
+    Stream #0:0: Video: h264 (libx264) (avc1 / 0x31637661), yuv420p, 800x800, q=-1--1, 5 fps, 10240 tbn, 5 tbc
+    Metadata:
+      encoder         : Lavc58.54.100 libx264
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: -1
+frame=   15 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x    
+frame=   27 fps= 26 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x    
+frame=   40 fps= 26 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x    
+frame=   40 fps= 22 q=-1.0 Lsize=     140kB time=00:00:07.40 bitrate= 154.7kbits/s speed=4.07x    
+video:139kB audio:0kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.706386%
+[libx264 @ 0x5637148676c0] frame I:1     Avg QP: 6.63  size:   730
+[libx264 @ 0x5637148676c0] frame P:39    Avg QP:16.91  size:  3608
+[libx264 @ 0x5637148676c0] mb I  I16..4: 99.5%  0.0%  0.5%
+[libx264 @ 0x5637148676c0] mb P  I16..4: 18.3% 10.3%  3.1%  P16..4:  3.5%  0.6%  0.1%  0.0%  0.0%    skip:64.2%
+[libx264 @ 0x5637148676c0] 8x8 transform intra:30.1% inter:63.0%
+[libx264 @ 0x5637148676c0] coded y,uvDC,uvAC intra: 5.4% 30.9% 20.7% inter: 2.3% 3.6% 1.6%
+[libx264 @ 0x5637148676c0] i16 v,h,dc,p: 57% 42%  1%  0%
+[libx264 @ 0x5637148676c0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 25% 14% 60%  0%  0%  0%  0%  0%  0%
+[libx264 @ 0x5637148676c0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 56% 24% 20%  0%  0%  0%  0%  0%  0%
+[libx264 @ 0x5637148676c0] i8c dc,h,v,p: 32% 38% 30%  0%
+[libx264 @ 0x5637148676c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x5637148676c0] ref P L0: 29.6%  9.7% 37.0% 23.7%
+[libx264 @ 0x5637148676c0] kb/s:141.44
+

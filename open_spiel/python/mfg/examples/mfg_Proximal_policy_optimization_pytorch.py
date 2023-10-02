@@ -35,7 +35,6 @@ from open_spiel.python.mfg.algorithms import best_response_value
 
 
 
-
 def parse_args():
 
     parser = argparse.ArgumentParser()
