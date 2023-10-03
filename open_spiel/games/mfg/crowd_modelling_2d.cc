@@ -424,17 +424,26 @@ std::vector<double> CrowdModelling2dState::Rewards() const {
   // Distribution-based reward
   double r_mu = -crowd_aversion_coef_ *
                 std::log(distribution_[MergeXY(x_, y_, size_)] + kEpsilon);
-  if (only_distribution_reward_) {
-    return {r_mu};
-  }
+  //if (only_distribution_reward_) {
+  //  return {r_mu};
+  //}
   // Positional reward
-  double r_x = 1;
-  double r_y = 1;
+  // double r_x = 1;
+  // double r_y = 1;
+  // for (int i = 0; i < positional_reward_xy_.size(); ++i) {
+  //   double val_r = 2.0 * positional_reward_value_[i] / size_;
+  //   r_x -= val_r * std::abs(x_ - positional_reward_xy_[i].first);
+  //   r_y -= val_r * std::abs(y_ - positional_reward_xy_[i].second);
+  // }
+
+  double r_x = 0;
+  double r_y = 0;
   for (int i = 0; i < positional_reward_xy_.size(); ++i) {
-    double val_r = 2.0 * positional_reward_value_[i] / size_;
-    r_x -= val_r * std::abs(x_ - positional_reward_xy_[i].first);
-    r_y -= val_r * std::abs(y_ - positional_reward_xy_[i].second);
+    double val_r = positional_reward_value_[i];
+    r_x += val_r * (1 - std::abs(x_ - positional_reward_xy_[i].first) / size_);
+    r_y += val_r * (1 - std::abs(y_ - positional_reward_xy_[i].second) / size_);
   }
+
   double r_a = -1.0 *
                (std::abs(kActionToMoveX.at(last_action_)) +
                 std::abs(kActionToMoveY.at(last_action_))) /

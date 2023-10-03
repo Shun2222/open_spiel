@@ -40,6 +40,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"), help="Set the name of this experiment")
+    parser.add_argument("--game-name", type=str, default="mfg_crowd_modelling_2d", help="Set the game name")
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
     
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
@@ -374,8 +375,7 @@ if __name__ == "__main__":
     )
     
     # Create the game instance 
-    game_name = "mfg_crowd_modelling_2d"
-    game = factory.create_game_with_setting(game_name, args.game_setting)
+    game = factory.create_game_with_setting(args.game_name, args.game_setting)
 
     # Set the initial policy to uniform and generate the distribution 
     uniform_policy = policy_std.UniformRandomPolicy(game)
