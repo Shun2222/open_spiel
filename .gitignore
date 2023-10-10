@@ -58,3 +58,5 @@ open_spiel/cmake-build-debug/
 Package.resolved
 # Visual Studio generated files
 open_spiel/.vs
+
+open_spiel/python/mfg/result/*
