@@ -443,7 +443,7 @@ if __name__ == "__main__":
     steps = args.num_episodes * env.max_game_length
     obs, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(env, pop_agent, agent, 1, env.max_game_length, device)
     filename = os.path.join(fname, f"res.mp4")
-    render(env, game_name, distrib, obs.detach().numpy(), save=True, filename=filename)
+    render(env, args.game_name, distrib, obs.detach().numpy(), save=True, filename=filename)
         
 
 if best_model >= Nash_con_vect[-1]:    

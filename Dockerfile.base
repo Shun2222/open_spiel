@@ -10,6 +10,7 @@ RUN apt-get -y install \
     python3-pip \
     python3-setuptools \
     python3-wheel \
+    ffmpeg \
     sudo
 RUN mkdir repo
 WORKDIR /repo
@@ -41,6 +42,7 @@ WORKDIR /repo
 COPY --from=base /repo .
 RUN pip install --upgrade -r requirements.txt
 RUN pip install matplotlib
+RUN pip install -r requirements.txt
 ENV PYTHONPATH=${PYTHONPATH}:/repo
 ENV PYTHONPATH=${PYTHONPATH}:/repo/build/python
 

@@ -442,8 +442,8 @@ std::vector<double> CrowdModelling2dState::Rewards() const {
   double r_y = 0;
   for (int i = 0; i < positional_reward_xy_.size(); ++i) {
     double val_r = positional_reward_value_[i];
-    r_x += val_r * (1 - std::abs(x_ - positional_reward_xy_[i].first) / size_);
-    r_y += val_r * (1 - std::abs(y_ - positional_reward_xy_[i].second) / size_);
+    r_x += val_r * (1 - (double)std::abs(x_ - positional_reward_xy_[i].first) / (double)size_);
+    r_y += val_r * (1 - (double)std::abs(y_ - positional_reward_xy_[i].second) / (double)size_);
   }
 
   double r_a = -1.0 *
