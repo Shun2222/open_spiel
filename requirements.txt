@@ -14,3 +14,7 @@ attrs >= 19.3.0
 absl-py >= 0.10.0
 numpy >= 1.21.5
 scipy >= 1.7.3
+seaborn
+tensorboard
+click
+tqdm

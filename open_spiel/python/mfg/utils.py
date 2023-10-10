@@ -14,6 +14,7 @@
 """MFG utilities."""
 
 import pickle
+import numpy as np
 
 from open_spiel.python.utils import gfile
 from open_spiel.python.mfg import distribution
@@ -24,3 +25,15 @@ def save_parametric_distribution(dist: distribution.ParametricDistribution,
   """Saves the parametric distribution to a Pickle file."""
   with gfile.Open(filename, "wb") as f:
     pickle.dump(dist.get_params(), f, protocol=pickle.DEFAULT_PROTOCOL)
+
+def onehot(value, depth):
+    a = np.zeros([depth])
+    a[value] = 1
+    return a
+
+
+def multionehot(values, depth):
+    a = np.zeros([values.shape[0], depth])
+    for i in range(values.shape[0]):
+        a[i, int(values[i])] = 1
+    return a

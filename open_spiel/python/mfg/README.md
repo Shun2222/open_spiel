@@ -5,5 +5,5 @@ This is a Python API for Mean Field Games in OpenSpiel.
 This code is experimental and we recommend you not to use it yet unless you are
 part of the project.
 
-The directory `python/mfg/algorithms/*` contain all algorithm implementations
+The directory `python/mfg/algorithms/*` contain all algorithm implementations including (ANFP, OMD, DMOMD, MFPPO)
 and `python/mfg/games/*` contains the games implementation.
