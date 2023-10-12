@@ -29,7 +29,6 @@ from open_spiel.python.mfg.algorithms import nash_conv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.utils import app
-from open_spiel.python.utils import metrics
 
 FLAGS = flags.FLAGS
 
@@ -150,23 +149,17 @@ def main(argv: Sequence[str]) -> None:
 
   # Metrics writer will also log the metrics to stderr.
   just_logging = FLAGS.logdir is None or jax.host_id() > 0
-  writer = metrics.create_default_writer(
-      logdir=FLAGS.logdir, just_logging=just_logging)
 
-  # # Save the parameters.
-  writer.write_hparams(kwargs)
+    def logging_fn(it, episode, vals):
 
-  def logging_fn(it, episode, vals):
-    writer.write_scalars(it * num_episodes_per_iteration + episode, vals)
-
-  num_episodes_per_iteration = FLAGS.num_episodes_per_iteration
-  md = munchausen_deep_mirror_descent.DeepOnlineMirrorDescent(
-      game,
-      envs,
-      agents,
-      eval_every=FLAGS.eval_every,
-      num_episodes_per_iteration=num_episodes_per_iteration,
-      logging_fn=logging_fn)
+        num_episodes_per_iteration = FLAGS.num_episodes_per_iteration
+        md = munchausen_deep_mirror_descent.DeepOnlineMirrorDescent(
+          game,
+          envs,
+          agents,
+          eval_every=FLAGS.eval_every,
+          num_episodes_per_iteration=num_episodes_per_iteration,
+          logging_fn=logging_fn)
 
   def log_metrics(it):
     """Logs the training metrics for each iteration."""
@@ -178,6 +171,7 @@ def main(argv: Sequence[str]) -> None:
     }
     nash_conv_md = nash_conv.NashConv(game, md.policy).nash_conv()
     m["nash_conv_md"] = nash_conv_md
+    print(f'exploitability: {nash_conv_md}')
     if FLAGS.log_distribution and FLAGS.logdir:
       # We log distribution directly to a Pickle file as it may be large for
       # logging as a metric.
@@ -191,7 +185,6 @@ def main(argv: Sequence[str]) -> None:
     log_metrics(it)
 
   # Make sure all values were written.
-  writer.flush()
 
 
 if __name__ == "__main__":

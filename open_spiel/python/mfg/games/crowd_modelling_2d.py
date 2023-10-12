@@ -64,7 +64,11 @@ FOUR_ROOMS = {
     'initial_distribution': '[1|1]',
     'initial_distribution_value': '[1.0]',
     'size': 13,
+    'positional_reward' : '[11|11]',
+    'positional_reward_value' : '[10]',
+    'crowd_aversion_coef' : 0.5,
 }
+# 'only_distribution_reward' : 0, 
 
 MAZE_FORBIDDEN_STATES = grid_to_forbidden_states([
     '######################',

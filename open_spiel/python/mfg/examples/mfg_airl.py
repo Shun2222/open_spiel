@@ -1,237 +1,99 @@
-class Model(object):
-    def __init__(self, policy, env
-                 nprocs=2, nsteps=200,
-                 nstack=1, ent_coef=0.00, vf_coef=0.5, 
-                 vf_fisher_coef=1.0, lr=0.25, max_grad_norm=0.5,
-                 kfac_clip=0.001, lrschedule='linear', device="cpu",
-                 identical=None):
+import os
+os.environ["OMP_NUM_THREADS"] = "4" # export OMP_NUM_THREADS=4
+os.environ["OPENBLAS_NUM_THREADS"] = "4" # export OPENBLAS_NUM_THREADS=4 
+os.environ["MKL_NUM_THREADS"] = "4" # export MKL_NUM_THREADS=6 Mainly controlles the number of spawned threateds 
+os.environ["VECLIB_MAXIMUM_THREADS"] = "4" # export VECLIB_MAXIMUM_THREADS=4
+os.environ["NUMEXPR_NUM_THREADS"] = "4" # export NUMEXPR_NUM_THREADS=6
 
-        nbatch = nenvs * nsteps
-        self.num_agents = 
-        self.num_actions = 
-        self.device = device
+import argparse
+from distutils.util import strtobool
+import time
+import logging
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib import animation
 
-        A, ADV, R, PG_LR = [], [], [], []
-        A = torch.zeros((nbatch,), device=self.device)
-        ADV = torch.zeros((nbatch,), device=self.device)
-        R = torch.zeros((nbatch,), device=self.device)
-        PG_LR = torch.zeros((nbatch,), device=self.device)
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.distributions.categorical import Categorical
+from torch.utils.tensorboard import SummaryWriter
+import numpy as np
 
-        #pg_loss, entropy, vf_loss, train_loss = [], [], [], []
-        self.model = step_model = policy
-        self.model2 = train_model = policy
-        self.log_pac = []
+import logger
+from dataset import MFGDataSet
+from open_spiel.python.mfg import utils
+from open_spiel.python import rl_environment
+from open_spiel.python import policy as policy_std
+from open_spiel.python.mfg.algorithms import distribution
+from open_spiel.python.mfg.algorithms.nash_conv import NashConv
+from open_spiel.python.mfg.algorithms import policy_value
+from open_spiel.python.mfg.games import factory
+from open_spiel.python.mfg import value
+from open_spiel.python.mfg.algorithms import best_response_value
 
-        logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            logits=train_model.pi, labels=A)
-
-        def train(obs, states, rewards, masks, actions, values):
-            mfgppo.update()
-            return policy_loss, value_loss, policy_entropy
-
-        def clone(obs, actions):
-            return lld_loss
-
-        def get_log_action_prob(obs, actions):
-            return action_prob
-
-        self.get_log_action_prob = get_log_action_prob
-
-        def get_log_action_prob_step(obs, actions):
-            return action_prob
-
-        self.get_log_action_prob_step = get_log_action_prob_step
-
-        def save(save_path):
-
-        def load(load_path):
-
-        self.train = train
-        self.clone = clone
-        self.save = save
-        self.load = load
-        self.train_model = train_model
-        self.step_model = step_model
-
-        def step(ob, av, *_args, **_kwargs):
-            return a, v, s
-
-        self.step = step
-
-        def value(obs, av):
-            return v
-
-        self.value = value
-        self.initial_state = [step_model[k].initial_state for k in range(num_agents)]
-
-        def rollout():
-            return mfgppo.rollout()
+from open_spiel.python.mfg.algorithms.adversarial_inverse_rl import AIRL
 
 
-class Runner(object):
-    def __init__(self, env, model, discriminator, nsteps, nstack, gamma, lam, disc_type, nobs_flag=False):
-        self.env = env
-        self.model = model
-        self.discriminator = discriminator
-        self.disc_type = disc_type
-        self.nobs_flag = nobs_flag
-        self.num_agents = len(env.observation_space)
-        self.nenv = nenv = env.num_envs
-        self.batch_ob_shape = 
-        self.obs = 
-        self.actions =
+def parse_args():
 
-        obs = 
-        self.update_obs(obs)
-        self.gamma = gamma
-        self.lam = lam
-        self.nsteps = nsteps
-        self.states = 
-        self.num_actions = 
-        self.dones =
-
-    def update_obs(self, obs):
-        self.obs = obs
-
-    def run(self):
-        mb_obs = []
-        mb_obs_next = []
-        mb_true_rewards = []
-        mb_rewards = []
-        mb_report_rewards = []
-        mb_actions = []
-        mb_values = []
-        mb_dones = []
-        mb_masks = []
-        mb_states = self.states
-        for n in range(self.nsteps):
-            actions, values, states = self.model.step(self.obs, self.actions)
-
-            self.actions = actions
-            mb_obs.append(np.copy(self.obs))
-            mb_actions.append(actions)
-            mb_values.append(values)
-            mb_dones.append(self.dones)
-            actions_list = []
-            obs, true_rewards, dones, _ = self.env.step(actions_list)
-
-            for k in range(self.num_agents):
-                for ni, done in enumerate(dones[k]):
-                    if done:
-                        obs[k][ni] = obs[k][ni] * 0.0
-            for k in range(self.num_agents):
-                mb_obs_next[k].append(np.copy(obs[k]))
-
-            re_obs = self.obs
-            re_actions = self.actions
-            re_obs_next = obs
-            re_path_prob = self.model.get_log_action_prob_step(re_obs, re_actions)  # [num_agent, nenv, 1]
-            re_actions_onehot = [multionehot(re_actions[k], self.n_actions[k]) for k in range(self.num_agents)]
-
-            # get reward from discriminator
-            if self.disc_type == 'decentralized':
-                rewards = []
-                report_rewards = []
-                for k in range(self.num_agents):
-                    rewards.append(np.squeeze(self.discriminator[k].get_reward(re_obs[k],
-                                                                               multionehot(re_actions[k], self.n_actions[k]),
-                                                                               re_obs_next[k],
-                                                                               re_path_prob[k],
-                                                                               discrim_score=False))) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                    report_rewards.append(np.squeeze(self.discriminator[k].get_reward(re_obs[k],
-                                                                               multionehot(re_actions[k], self.n_actions[k]),
-                                                                               re_obs_next[k],
-                                                                               re_path_prob[k],
-                                                                               discrim_score=False)))
-
-            mb_rewards.append(rewards)
-            mb_report_rewards.append(report_rewards)
-
-            self.states = states
-            self.dones = dones
-            self.update_obs(obs)
-
-            mb_true_rewards.append(true_rewards)
-        mb_dones.append(self.dones)
-
-        # batch of steps to batch of rollouts
-        for k in range(self.num_agents):
-            mb_obs[k] = np.asarray(mb_obs[k], dtype=np.float32).swapaxes(1, 0).reshape(self.batch_ob_shape[k])
-            mb_obs_next[k] = np.asarray(mb_obs_next[k], dtype=np.float32).swapaxes(1, 0).reshape(self.batch_ob_shape[k])
-            mb_true_rewards[k] = np.asarray(mb_true_rewards[k], dtype=np.float32).swapaxes(1, 0)
-            mb_rewards[k] = np.asarray(mb_rewards[k], dtype=np.float32).swapaxes(1, 0)
-            mb_report_rewards[k] = np.asarray(mb_report_rewards[k], dtype=np.float32).swapaxes(1, 0)
-            mb_actions[k] = np.asarray(mb_actions[k], dtype=np.int32).swapaxes(1, 0)
-            mb_values[k] = np.asarray(mb_values[k], dtype=np.float32).swapaxes(1, 0)
-            mb_dones[k] = np.asarray(mb_dones[k], dtype=np.bool).swapaxes(1, 0)
-            mb_masks[k] = mb_dones[k][:, :-1]
-            mb_dones[k] = mb_dones[k][:, 1:]
-
-        mb_returns = [np.zeros_like(mb_rewards[k]) for k in range(self.num_agents)]
-        mb_report_returns = [np.zeros_like(mb_rewards[k]) for k in range(self.num_agents)]
-        mb_true_returns = [np.zeros_like(mb_rewards[k]) for k in range(self.num_agents)]
-        last_values = self.model.value(self.obs, self.actions)
-        # discount/bootstrap off value fn
-        for k in range(self.num_agents):
-            for n, (rewards, report_rewards, true_rewards, dones, value) in enumerate(zip(mb_rewards[k], mb_report_rewards[k], mb_true_rewards[k], mb_dones[k], last_values[k].tolist())):
-                rewards = rewards.tolist()
-                report_rewards = report_rewards.tolist()
-                dones = dones.tolist()
-                true_rewards = true_rewards.tolist()
-                if dones[-1] == 0:
-                    rewards = discount_with_dones(rewards + [value], dones + [0], self.gamma)[:-1]
-                    report_rewards = discount_with_dones(report_rewards + [value], dones + [0], self.gamma)[:-1]
-                    true_rewards = discount_with_dones(true_rewards + [value], dones + [0], self.gamma)[:-1]
-                else:
-                    rewards = discount_with_dones(rewards, dones, self.gamma)
-                    report_rewards = discount_with_dones(report_rewards, dones, self.gamma)
-                    true_rewards = discount_with_dones(true_rewards, dones, self.gamma)
-                mb_returns[k][n] = rewards
-                mb_report_returns[k][n] = report_rewards
-                mb_true_returns[k][n] = true_rewards
-
-        for k in range(self.num_agents):
-            mb_returns[k] = mb_returns[k].flatten()
-            mb_report_returns[k] = mb_report_returns[k].flatten()
-            mb_masks[k] = mb_masks[k].flatten()
-            mb_values[k] = mb_values[k].flatten()
-            mb_actions[k] = mb_actions[k].flatten()
-
-        mh_actions = [multionehot(mb_actions[k], self.n_actions[k]) for k in range(self.num_agents)]
-        mb_all_obs = np.concatenate(mb_obs, axis=1)
-        mb_all_nobs = np.concatenate(mb_obs_next, axis=1)
-        mh_all_actions = np.concatenate(mh_actions, axis=1)
-        if self.nobs_flag:
-            return mb_obs, mb_obs_next, mb_states, mb_returns, mb_report_returns, mb_masks, mb_actions, \
-                   mb_values, mb_all_obs, mb_all_nobs, mh_actions, mh_all_actions, mb_rewards, mb_true_rewards, mb_true_returns
-        else:
-            return mb_obs, mb_states, mb_returns, mb_report_returns, mb_masks, mb_actions,\
-                   mb_values, mb_all_obs, mh_actions, mh_all_actions, mb_rewards, mb_true_rewards, mb_true_returns
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
+    parser.add_argument('--torch-deterministic', 
+        type=lambda x:bool(strtobool(x)), default=True, nargs="?", 
+        const=True, help="Use to repreduce experiment results")
 
 
-def learn(policy, expert, env, env_id, seed, total_timesteps=int(40e6), gamma=0.99, lam=0.95, log_interval=1, nprocs=32,
-          nsteps=20, nstack=1, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0, lr=0.25, max_grad_norm=0.5,
-          kfac_clip=0.001, save_interval=100, lrschedule='linear', dis_lr=0.001, disc_type='decentralized',
-          bc_iters=500, identical=None, l2=0.1, d_iters=1, rew_scale=0.1):
-    tf.reset_default_graph()
-    set_global_seeds(seed)
-    buffer = None
+    parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
+    parser.add_argument("--expert_path", type=str, default="result/expert.pkl", help="expert path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/mfg_result", help="log path")
+    parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
+    parser.add_argument("--seed", type=int, default=42, help="set a random seed")
+    parser.add_argument("--batch_step", type=int, default=500, help="set a step batch size")
+    parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
+    parser.add_argument("--total_step", type=int, default=5e7, help="set a total step")
+    parser.add_argument("--total_step_gen", type=int, default=2e5, help="set a total generator step")
+    parser.add_argument("--num_episode", type=int, default=5, help="set a total generator step")
+    parser.add_argument("--log_interval_rate", type=float, default=0.1, help="set a total generator step")
+    args = parser.parse_args()
+    return args
 
-    nenvs = env.num_envs
-    ob_space = env.observation_space
-    ac_space = env.action_space
-    num_agents = (len(ob_space))
-    make_model = lambda: Model(policy, ob_space, ac_space, nenvs, total_timesteps, nprocs=nprocs, nsteps=nsteps,
-                               nstack=nstack, ent_coef=ent_coef, vf_coef=vf_coef, vf_fisher_coef=vf_fisher_coef,
-                               lr=lr, max_grad_norm=max_grad_norm, kfac_clip=kfac_clip,
-                               lrschedule=lrschedule, identical=identical)
-    if save_interval and logger.get_dir():
-        import cloudpickle
-        with open(osp.join(logger.get_dir(), 'make_model.pkl'), 'wb') as fh:
-            fh.write(cloudpickle.dumps(make_model))
-    model = make_model()
-    if disc_type == 'decentralized' or disc_type == 'decentralized-all':
-        discriminator = [
-            Discriminator(model.sess, ob_space, ac_space,
-                          state_only=True, discount=gamma, nstack=nstack, index=k, disc_type=disc_type,
-                          scope="Discriminator_%d" % k, # gp_coef=gp_coef,
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    # Set the seed 
+    seed = args.seed
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    print(f"Random seed set as {seed}")
+
+    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+    batch_step = args.batch_step
+    update_generator_until = batch_step * 10
+    expert_path = args.expert_path
+    traj_limitation = args.traj_limitation
+
+    logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
+
+    # Create the game instance 
+    game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
+
+    # Set the initial policy to uniform and generate the distribution 
+    uniform_policy = policy_std.UniformRandomPolicy(game)
+    mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+    env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
+
+    # Set the environment seed for reproduciblility 
+    env.seed(args.seed)
+
+    expert = MFGDataSet(expert_path, traj_limitation=traj_limitation, nobs_flag=True)
+    airl = AIRL(game, env, device, expert)
+    airl.run(args.total_step, args.total_step_gen, \
+        args.num_episode, args.log_interval_rate)
+

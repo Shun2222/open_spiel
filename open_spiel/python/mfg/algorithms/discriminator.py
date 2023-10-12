@@ -1,131 +1,139 @@
-import numpy as np
-
+import os
+import os.path as osp
 import torch
-from torch import nn
-from torch import optim
-from torch.distributions.categorical import Categorical
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import logger
 
-import joblib
-from rl.acktr.utils import Scheduler, find_trainable_variables
-from rl.acktr.utils import fc, mse
-from rl.acktr import kfac
-from irl.mack.tf_util import relu_layer, linear, tanh_layer
-
-def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
-  torch.nn.init.orthogonal_(layer.weight, std)
-  torch.nn.init.constant_(layer.bias, bias_const)
-  return layer
-
-disc_types = ['decentralized', 'centralized', 'single', 'decentralized-all']
-
-
-class Discriminator(object):
-    def __init__(self, ob_space, ac_space, state_only, discount,
-                 nstack, index, disc_type='decentralized', hidden_size=128,
-                 lr_rate=0.01, total_steps=50000, scope="discriminator", kfac_clip=0.001, max_grad_norm=0.5,
-                 l2_loss_ratio=0.01):
-        self.lr = lr_rate
-        self.disc_type = disc_type
-        self.l2_loss_ratio = l2_loss_ratio
-        if disc_type not in disc_types:
-            assert False
+class Discriminator(nn.Module):
+    def __init__(self, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
+        super(Discriminator, self).__init__()
         self.state_only = state_only
         self.gamma = discount
-        self.scope = scope
-        self.ob_shape = ob_space.shape[0] * nstack
-        self.all_ob_shape = sum([obs.shape[0] for obs in ob_spaces]) * nstack
-        nact = ac_space.n
-        self.ac_shape = nact * nstack
-        self.all_ob_shape = sum([obs.shape[0] for obs in ob_spaces]) * nstack
+        self.hidden_size = hidden_size
+        self.l2_loss_ratio = l2_loss_ratio
 
-        if disc_type == 'decentralized':
-            self.obs = tf.placeholder(tf.float32, (None, self.ob_shape))
-            self.nobs = tf.placeholder(tf.float32, (None, self.ob_shape))
-            self.act = tf.placeholder(tf.float32, (None, self.ac_shape))
-            self.labels = tf.placeholder(tf.float32, (None, 1))
-            self.lprobs = tf.placeholder(tf.float32, (None, 1))
-
-        self.lr_rate = 
-
-        rew_input = obs_space
-        self.reward = nn.Sequential(
-            layer_init(nn.Linear(np.array(rew_input).prod(), 1)),
-            nn.RelU()
+        # Define layers for reward network
+        self.reward_net = nn.Sequential(
+            nn.Linear(ob_shape if state_only else ob_shape + ac_shape, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
         )
 
-        self.value_n = nn.Sequential(
-            layer_init(nn.Linear(np.array(self.nobs).prod(), 1)),
-            nn.RelU()
+        # Define layers for value function network
+        self.value_net = nn.Sequential(
+            nn.Linear(ob_shape, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
         )
 
-        self.value = nn.Sequential(
-            layer_init(nn.Linear(np.array(self.obs).prod(), 1)),
-            nn.RelU()
-        )
+        # Define layers for value next function network
+#         self.value_next_net = nn.Sequential(
+#             nn.Linear(ob_shape, hidden_size),
+#             nn.ReLU(),
+#             nn.Linear(hidden_size, 1)
+#         )
+        self.value_next_net = self.value_net
 
-        optimizer = optim.Adam(self.???.parameters(), lr=args.lr,eps=1e-5)
 
-    def update(self, max_grad_norm=5):
+        self.l2_loss = nn.MSELoss()
+
+    def forward(self, obs, acs, obs_next, path_probs):
+        rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
+        rew_input = rew_input.to(obs.dtype)
+        reward = self.reward_net(rew_input)
+        value_fn = self.value_net(obs)
+        value_fn_next = self.value_next_net(obs_next)
+
+        log_q_tau = path_probs
+        log_p_tau = reward + self.gamma * value_fn_next - value_fn
+        log_pq = torch.logsumexp(torch.stack([log_p_tau, log_q_tau]), dim=0)
+        discrim_output = torch.exp(log_p_tau - log_pq)
+
+        return log_q_tau, log_p_tau, log_pq, discrim_output
+
+    def calculate_loss(self, obs, acs, obs_next, path_probs, labels):
+        log_q_tau, log_p_tau, log_pq, discrim_output = self.forward(obs, acs, obs_next, path_probs)
+        loss = -torch.mean(labels * (log_p_tau - log_pq) + (1 - labels) *  (log_q_tau - log_pq))
+
+        # Calculate L2 loss on model parameters
+        l2_loss = 0.01 * sum(self.l2_loss(p, torch.zeros_like(p)) for p in self.parameters())
+
+        return loss + self.l2_loss_ratio * l2_loss
+
+    def train(self, optimizer, obs, acs, obs_next, path_probs, labels):
         optimizer.zero_grad()
-
-        log_q_tau = self.lprobs
-        log_p_tau = self.reward + self.gamma * self.value_n - self.value
-        log_pq = tf.reduce_logsumexp([log_p_tau, log_q_tau], axis=0)
-        self.discrim_output = tf.exp(log_p_tau - log_pq)
-
-        self.total_loss = -tf.reduce_mean(self.labels * (log_p_tau - log_pq) + (1 - self.labels) * (log_q_tau - log_pq))
-        self.var_list = self.get_trainable_variables()
-        params = find_trainable_variables(self.scope)
-        self.l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in params]) * self.l2_loss_ratio
-        self.total_loss += self.l2_loss
-
-        grads = tf.gradients(self.total_loss, params)
-        with tf.variable_scope(self.scope + '/d_optim'):
-            d_optim = tf.train.AdamOptimizer(learning_rate=self.lr_rate)
-            train_op = d_optim.apply_gradients(list(zip(grads, params)))
-        self.d_optim = train_op
-        self.saver = tf.train.Saver(self.get_variables())
-
-        self.params_flat = self.get_trainable_variables()
-
+        loss = self.calculate_loss(obs, acs, obs_next, path_probs, labels)
         loss.backward()
-        nn.utils.clip_grad_norm_(self.???.parameters(), max_grad_norm)
         optimizer.step()
+        return loss.item()
 
+    def get_reward(self, obs, acs, obs_next, path_probs, discrim_score=False):
+        with torch.no_grad():
+            if discrim_score:
+                log_q_tau, log_p_tau, log_pq, discrim_output = self(obs, acs, obs_next, path_probs)
+                score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
+            else:
+                rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
+                rew_input = rew_input.to(obs.dtype)
+                score = self.reward_net(rew_input)
+        return score
 
-    def get_reward(self, obs):
-        return self.reward(obs)
+    def save(self, filename=""):
+        fname = osp.join(logger.get_dir(), filename+"disc_reward.pth")
+        torch.save(self.reward_net.state_dict(), fname)
+        fname = osp.join(logger.get_dir(), filename+"disc_value.pth")
+        torch.save(self.value_net.state_dict(), fname)
+        
 
-    def get_value_next(self, nobs):
-        return self.value_n(nobs)
+if __name__ == "__main__":
+    rning_rate = 0.01
+    hidden_size = 128
+    l2_loss_ratio = 0.01
+    discount = 0.9
+    batch_size = 32
+    total_steps = 100
 
-    def get_value_next(self, obs):
-        return self.value(obs)
+    # モデルのインスタンス化
+    ob_shape =  2 # obsの形状を設定
+    ac_shape =  2 # acsの形状を設定
+    state_only =  True# state_onlyを設定
+    discriminator = Discriminator(ob_shape, ac_shape, state_only, discount, hidden_size, l2_loss_ratio)
 
-    with torch.no_grad():
+    # オプティマイザの設定
+    optimizer = Adam(discriminator.parameters(), lr=learning_rate)
 
-    def train(self, g_obs, g_acs, g_nobs, g_probs, e_obs, e_acs, e_nobs, e_probs):
-        labels = np.concatenate((np.zeros([g_obs.shape[0], 1]), np.ones([e_obs.shape[0], 1])), axis=0)
-        feed_dict = {self.obs: np.concatenate([g_obs, e_obs], axis=0),
-                     self.act: np.concatenate([g_acs, e_acs], axis=0),
-                     self.nobs: np.concatenate([g_nobs, e_nobs], axis=0),
-                     self.lprobs: np.concatenate([g_probs, e_probs], axis=0),
-                     self.labels: labels,
-                     self.lr_rate: self.lr.value()}
-        loss, _ = self.sess.run([self.total_loss, self.d_optim], feed_dict)
-        return loss
+    # サンプルデータを生成
+    num_samples = 1000
+    obs = np.random.rand(100, 2)
+    obs[50:, :] = 1
+    acs = np.random.rand(100, 2)
+    obs[50:, :] = 1
+    obs_next = np.random.rand(100, 2)
+    obs_next[50:, :] = 1
+    path_probs = np.ones((100, 1))
+    labels = np.zeros((100, 1))
+    labels[50:, :] = 1
 
-    def restore(self, path):
-        print('restoring from:' + path)
-        self.saver.restore(self.sess, path)
+    # NumPyデータをPyTorchテンソルに変換
+    obs_tensor = torch.FloatTensor(obs)
+    acs_tensor = torch.FloatTensor(acs)
+    obs_next_tensor = torch.FloatTensor(obs_next)
+    path_probs_tensor = torch.FloatTensor(path_probs)
+    labels_tensor = torch.FloatTensor(labels)
 
-    def save(self, save_path):
-        ps = self.sess.run(self.params_flat)
-        joblib.dump(ps, save_path)
+    # データローダーを作成
+    dataset = TensorDataset(obs_tensor, acs_tensor, obs_next_tensor, path_probs_tensor, labels_tensor)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    def load(self, load_path):
-        loaded_params = joblib.load(load_path)
-        restores = []
-        for p, loaded_p in zip(self.params_flat, loaded_params):
-            restores.append(p.assign(loaded_p))
-        self.sess.run(restores)
+    # 学習ループ
+    for step in range(total_steps):
+        for batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels in data_loader:
+            loss = discriminator.train(optimizer, batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels)
+
+    if step % 10 == 0:
+        print(f"Step {step}: Loss {loss:.4f}")
+
+    # モデルの保存
+    # torch.save(discriminator.state_dict(), 'discriminator.pth')

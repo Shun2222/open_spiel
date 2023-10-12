@@ -22,6 +22,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
+from render import render
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -34,13 +35,14 @@ from open_spiel.python.mfg.algorithms import best_response_value
 
 
 
-
 def parse_args():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"), help="Set the name of this experiment")
+    parser.add_argument("--game-name", type=str, default="mfg_crowd_modelling_2d", help="Set the game name")
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result", help="logdir")
     
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument("--num-episodes", type=int, default=5, help="set the number of episodes of to collect per rollout")
@@ -50,6 +52,7 @@ def parse_args():
     parser.add_argument('--optimizer', type=str, default="Adam", help="Set the optimizer (Adam) or (SGD)")
     parser.add_argument('--torch-deterministic', type=lambda x:bool(strtobool(x)), default=True, nargs="?", const=True, help="Use to repreduce experiment results")
     parser.add_argument('--cuda', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True, help="Use Gpu to run the experiment")
+
 
     
     # PPO parameters
@@ -312,7 +315,7 @@ def plot_dist(env, game_name, distrib, info_state, save=False, filename="agent_d
 
         plt.close()
 
-def log_metrics(it,distrib, policy, writer, reward, entropy):
+def log_metrics(it, distrib, policy, writer, reward, entropy):
     # this function is used to log the results to tensor board
     initial_states = game.new_initial_states()
     pi_value = policy_value.PolicyValue(game, distrib, policy, value.TabularValueFunction(game))
@@ -351,7 +354,8 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
     
     # Set the file name
-    fname = "New_exp/maze_all_exp"
+    # fname = "result/maze_all_exp"
+    fname = args.logdir
     
     # logging 
     run_name = f"{args.exp_name}_{args.game_setting}_{args.optimizer}_num_update_epochs_{args.update_epochs}_num_episodes_per_rollout_{args.num_episodes}_number_of_mini_batches_{args.num_minibatches}_{time.asctime(time.localtime(time.time()))}"
@@ -374,7 +378,7 @@ if __name__ == "__main__":
     )
     
     # Create the game instance 
-    game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
+    game = factory.create_game_with_setting(args.game_name, args.game_setting)
 
     # Set the initial policy to uniform and generate the distribution 
     uniform_policy = policy_std.UniformRandomPolicy(game)
@@ -438,11 +442,16 @@ if __name__ == "__main__":
 
         # update the environment distribution 
         env.update_mfg_distribution(distrib)
+   
+    steps = args.num_episodes * env.max_game_length
+    obs, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(env, pop_agent, agent, 1, env.max_game_length, device)
+    filename = os.path.join(fname, f"res.mp4")
+    render(env, args.game_name, distrib, obs.detach().numpy(), save=True, filename=filename)
         
 
-    if best_model >= Nash_con_vect[-1]:    
+if best_model >= Nash_con_vect[-1]:    
         #save the distribution and weights for further analysis 
         filename = os.path.join(fname, f"distribution_{run_name}.pkl")
         utils.save_parametric_distribution(distrib, filename)   
-        torch.save(agent.actor.state_dict(),fname + f"alpha_{args.alpha}, itr_eps_{args.itr_eps}, eps_eps_{args.eps_eps}_agent_actor_weights.pth")
-        torch.save(agent.critic.state_dict(),fname + f"alpha_{args.alpha}, itr_eps_{args.itr_eps}, eps_eps_{args.eps_eps}_agent_critic_weights.pth")
+        torch.save(agent.actor.state_dict(),fname + f"alpha{args.alpha}-itr_eps_{args.itr_eps}-eps_eps_{args.eps_eps}_agent_actor_weights.pth")
+        torch.save(agent.critic.state_dict(),fname + f"alpha_{args.alpha}-itr_eps_{args.itr_eps}-eps_eps_{args.eps_eps}_agent_critic_weights.pth")
