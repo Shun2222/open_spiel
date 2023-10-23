@@ -144,7 +144,7 @@ class PPOpolicy(policy_std.Policy):
         # main method that is called to update the population states distribution
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
         legal_actions = state.legal_actions()
-        logits = agent.actor(obs).detach().cpu()
+        logits = agent.actor(obs).detach().to(self.device)
         legat_logits = np.array([logits[action] for action in legal_actions])
         probs = np.exp(legat_logits -legat_logits.max())
         probs /= probs.sum(axis=0)

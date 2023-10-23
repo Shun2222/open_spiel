@@ -451,7 +451,7 @@ if __name__ == "__main__":
     # Set the environment seed for reproduciblility 
     env.seed(args.seed)
 
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
     mfgppo = MFGPPO(game, env, device)
 
     batch_step = args.batch_step
