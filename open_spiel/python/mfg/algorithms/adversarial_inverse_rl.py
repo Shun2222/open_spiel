@@ -31,52 +31,58 @@ class AIRL(object):
         self._optimizer = optim.Adam(self._discriminator.parameters(), lr=0.01)
 
 
-    def run(self, total_step, total_step_gen, num_episodes, log_interval_rate=0.1):
-        log_interval = total_step * log_interval_rate
+    def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
+        logger.record_tabular("total_step", total_step)
+        logger.record_tabular("total_step_gen(=total_step)", total_step_gen)
+        logger.record_tabular("num_episodes", num_episodes)
+        logger.record_tabular("batch_step", batch_step)
+        logger.dump_tabular()
 
         t_step = 0
-        batch_step = num_episodes * self._env.max_game_length
+        num_update_eps = 0
+        num_update_iter = 0
+        batch_step = (batch_step//self._env.max_game_length) * self._env.max_game_length
         buffer = None
         while(t_step < total_step):
             for neps in range(num_episodes): 
                 obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, obs_mu_pth, ret \
                     = self._generator.rollout(self._env, batch_step)
 
-                obs = obs_pth.to(self._device).detach().numpy()
+                obs = obs_pth.cpu().detach().numpy()
                 nobs = obs.copy()
                 nobs[:-1] = obs[1:]
                 nobs[-1] = obs[0]
                 obs_next = nobs
-                obs_next_pth = torch.from_numpy(obs_next)
-                actions = actions_pth.to(self._device).detach().numpy()
-                logprobs = logprobs_pth.to(self._device).detach().numpy()
-                true_rewards = true_rewards_pth.to(self._device).detach().numpy()
-                dones = dones_pth.to(self._device).detach().numpy()
-                values = values_pth.to(self._device).detach().numpy()
-                entropies = entropies_pth.to(self._device).detach().numpy()
-                t_actions = t_actions_pth.to(self._device).detach().numpy()
-                t_logprobs = t_logprobs_pth.to(self._device).detach().numpy()
-                obs_mu = obs_mu_pth.detach().numpy()
+                obs_next_pth = torch.from_numpy(obs_next).to(self._device)
+                actions = actions_pth.cpu().detach().numpy()
+                logprobs = logprobs_pth.cpu().detach().numpy()
+                true_rewards = true_rewards_pth.cpu().detach().numpy()
+                dones = dones_pth.cpu().detach().numpy()
+                values = values_pth.cpu().detach().numpy()
+                entropies = entropies_pth.cpu().detach().numpy()
+                t_actions = t_actions_pth.cpu().detach().numpy()
+                t_logprobs = t_logprobs_pth.cpu().detach().numpy()
+                obs_mu = obs_mu_pth.cpu().detach().numpy()
                 nobs = obs_mu.copy()
                 nobs[:-1] = obs_mu[1:]
                 nobs[-1] = obs_mu[0]
                 obs_next_mu = nobs
-                obs_next_mu_pth = torch.from_numpy(obs_next_mu)
+                obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
 
                 
                 disc_rewards_pth = self._discriminator.get_reward( 
-                    torch.from_numpy(obs_mu),
-                    torch.from_numpy(multionehot(actions, self._nacs)),
-                    torch.from_numpy(obs_next),
-                    torch.from_numpy(logprobs),
+                    torch.from_numpy(obs_mu).to(self._device),
+                    torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
+                    torch.from_numpy(obs_next).to(self._device),
+                    torch.from_numpy(logprobs).to(self._device),
                     discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                disc_rewards = disc_rewards_pth.detach().numpy().reshape(batch_step)
-                disc_rewards_pth = torch.from_numpy(disc_rewards)
+                disc_rewards = disc_rewards_pth.cpu().detach().numpy().reshape(batch_step)
+                disc_rewards_pth = torch.from_numpy(disc_rewards).to(self._device)
 
-                if t_step < total_step_gen:
-                    adv_pth, returns = self._generator.cal_Adv(disc_rewards_pth, values_pth, dones_pth)
-                    v_loss = self._generator.update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
+                #if t_step < total_step_gen:
+                adv_pth, returns = self._generator.cal_Adv(disc_rewards_pth, values_pth, dones_pth)
+                v_loss = self._generator.update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
 
                 mh_obs = [np.array(obs)]
                 mh_actions = [np.array(multionehot(actions, self._nacs))]
@@ -103,12 +109,12 @@ class AIRL(object):
                 # e_log_prob.append(self._generator.get_log_action_prob(torch.from_numpy(e_obs_mu[0]).to(torch.float32), torch.from_numpy(e_a[0]).to(torch.int64)))
                 for i in range(len(e_obs_mu[0])):
                     e_log_prob.append(self._generator.get_log_action_prob(
-                        torch.from_numpy(np.array([e_obs_mu[0][i][:self._nobs]])).to(torch.float32), 
-                        torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64)))
+                        torch.from_numpy(np.array([e_obs_mu[0][i][:self._nobs]])).to(torch.float32).to(self._device), 
+                        torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
                     g_log_prob.append(self._generator.get_log_action_prob(
-                        torch.from_numpy(np.array([g_obs_mu[0][i][:self._nobs]])).to(torch.float32), 
-                        torch.from_numpy(np.array([g_a[0][i]])).to(torch.int64)))
+                        torch.from_numpy(np.array([g_obs_mu[0][i][:self._nobs]])).to(torch.float32).to(self._device), 
+                        torch.from_numpy(np.array([g_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
                 e_log_prob = np.array([e_log_prob])
                 g_log_prob = np.array([g_log_prob])
@@ -122,11 +128,11 @@ class AIRL(object):
 
                 total_loss = self._discriminator.train(
                     self._optimizer,
-                    torch.from_numpy(d_obs_mu).to(torch.float32),
-                    torch.from_numpy(d_acs).to(torch.int64),
-                    torch.from_numpy(d_nobs).to(torch.float32),
-                    torch.from_numpy(d_lprobs).to(torch.float32),
-                    torch.from_numpy(d_labels).to(torch.int64),
+                    torch.from_numpy(d_obs_mu).to(torch.float32).to(self._device),
+                    torch.from_numpy(d_acs).to(torch.int64).to(self._device),
+                    torch.from_numpy(d_nobs).to(torch.float32).to(self._device),
+                    torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                    torch.from_numpy(d_labels).to(torch.int64).to(self._device),
                 )
 
 
@@ -147,10 +153,17 @@ class AIRL(object):
                 logger.dump_tabular()
 
                 t_step += batch_step 
+                num_update_eps += 1
+                if(num_update_eps%save_interval==0):
+                    fname = f"{num_update_eps}_{num_update_iter}"
+                    self._generator.save(self._game, filename=fname)
+                    self._discriminator.save(filename=fname)
 
-            if t_step < total_step_gen:
-                nashc = self._generator.update_iter(self._game, self._env, nashc=True)
-                logger.record_tabular("nashc", nashc)
-                logger.dump_tabular()
-        self._generator.save()
+
+            #if t_step < total_step_gen:
+            nashc = self._generator.update_iter(self._game, self._env, nashc=True)
+            logger.record_tabular("nashc", nashc)
+            logger.dump_tabular()
+            num_update_iter += 1
+        self._generator.save(self._game)
         self._discriminator.save()

@@ -121,7 +121,7 @@ class PPOpolicy(policy_std.Policy):
         # main method that is called to update the population states distribution
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
         legal_actions = state.legal_actions()
-        logits = self.agent.actor(obs).detach().to(self.device)
+        logits = self.agent.actor(obs).detach().cpu()
         legat_logits = np.array([logits[action] for action in legal_actions])
         probs = np.exp(legat_logits -legat_logits.max())
         probs /= probs.sum(axis=0)
@@ -402,15 +402,17 @@ class MFGPPO(object):
             logpac = self._eps_agent.get_log_action_prob(states, actions)
         return logpac
 
-    def save(self, filename=""):
-        fname = osp.join(logger.get_dir(), filename+"actor.pth")
+    def save(self, game, filename=""):
+        fname = osp.join(logger.get_dir(), 'actor'+filename+".pth")
         torch.save(self._eps_agent.actor.state_dict(), fname)
-        fname = osp.join(logger.get_dir(), filename+"critic.pth")
+
+        fname = osp.join(logger.get_dir(), 'critic'+filename+".pth")
         torch.save(self._eps_agent.critic.state_dict(), fname)
 
         distrib = distribution.DistributionPolicy(game, self._ppo_policy)
-        fname = osp.join(logger.get_dir(), filename+"distrib.pkl")
+        fname = osp.join(logger.get_dir(), 'distrib'+filename+".pkl")
         utils.save_parametric_distribution(distrib, fname)   
+        print(f'Saved generator param (actor, critic, distrib -{filename})')
 
     def load(self):
         return None

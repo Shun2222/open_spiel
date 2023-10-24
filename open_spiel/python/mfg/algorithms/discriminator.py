@@ -13,20 +13,21 @@ class Discriminator(nn.Module):
         self.gamma = discount
         self.hidden_size = hidden_size
         self.l2_loss_ratio = l2_loss_ratio
+        self._device = device
 
         # Define layers for reward network
         self.reward_net = nn.Sequential(
             nn.Linear(ob_shape if state_only else ob_shape + ac_shape, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
-        )
+        ).to(self._device)
 
         # Define layers for value function network
         self.value_net = nn.Sequential(
             nn.Linear(ob_shape, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
-        )
+        ).to(self._device)
 
         # Define layers for value next function network
 #         self.value_next_net = nn.Sequential(
@@ -41,21 +42,21 @@ class Discriminator(nn.Module):
 
     def forward(self, obs, acs, obs_next, path_probs):
         rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-        rew_input = rew_input.to(obs.dtype)
+        rew_input = rew_input.to(obs.dtype).to(self._device)
         reward = self.reward_net(rew_input)
         value_fn = self.value_net(obs)
         value_fn_next = self.value_next_net(obs_next)
 
         log_q_tau = path_probs
         log_p_tau = reward + self.gamma * value_fn_next - value_fn
-        log_pq = torch.logsumexp(torch.stack([log_p_tau, log_q_tau]), dim=0)
+        log_pq = torch.logsumexp(torch.stack([log_p_tau, log_q_tau]), dim=0).to(self._device)
         discrim_output = torch.exp(log_p_tau - log_pq)
 
         return log_q_tau, log_p_tau, log_pq, discrim_output
 
     def calculate_loss(self, obs, acs, obs_next, path_probs, labels):
         log_q_tau, log_p_tau, log_pq, discrim_output = self.forward(obs, acs, obs_next, path_probs)
-        loss = -torch.mean(labels * (log_p_tau - log_pq) + (1 - labels) *  (log_q_tau - log_pq))
+        loss = -torch.mean(labels * (log_p_tau - log_pq) + (1 - labels) *  (log_q_tau - log_pq)).to(self._device)
 
         # Calculate L2 loss on model parameters
         l2_loss = 0.01 * sum(self.l2_loss(p, torch.zeros_like(p)) for p in self.parameters())
@@ -76,15 +77,16 @@ class Discriminator(nn.Module):
                 score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
             else:
                 rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-                rew_input = rew_input.to(obs.dtype)
+                rew_input = rew_input.to(obs.dtype).to(self._device)
                 score = self.reward_net(rew_input)
         return score
 
     def save(self, filename=""):
-        fname = osp.join(logger.get_dir(), filename+"disc_reward.pth")
+        fname = osp.join(logger.get_dir(), "disc_reward"+filename+".pth")
         torch.save(self.reward_net.state_dict(), fname)
-        fname = osp.join(logger.get_dir(), filename+"disc_value.pth")
+        fname = osp.join(logger.get_dir(), "disc_value"+filename+".pth")
         torch.save(self.value_net.state_dict(), fname)
+        print(f'Saved discriminator param (reward, value -{filename})')
         
 
 if __name__ == "__main__":

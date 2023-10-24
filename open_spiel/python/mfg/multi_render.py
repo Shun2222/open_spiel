@@ -79,12 +79,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result", help="file path")
-    parser.add_argument("--num_obs", type=int, default=67, help="set a random seed")
-    parser.add_argument("--num_acs", type=int, default=5, help="set a random seed")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result/analy1", help="file path")
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--distrib_filename", type=str, default="distrib.pkl", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor.pkl", help="file path")
+    parser.add_argument("--batch_step", type=int, default=400, help="")
+    parser.add_argument("--save_interval", type=int, default=10, help="")
+    parser.add_argument("--total_step", type=int, default=150000, help="")
+    parser.add_argument("--num_episode", type=int, default=5, help="")
     
     args = parser.parse_args()
     return args
@@ -93,66 +93,88 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    # Set the seed 
-    seed = args.seed
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    print(f"Random seed set as {seed}")
-
-
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    #distrib_path = os.path.join(args.path, args.distrib_filename)
-    #distrib = pkl.load(open(distrib_path, "rb"))
-    #print("load actor model from", distrib_path)
-
-    env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
-    env.seed(args.seed)
-
-    nacs = env.action_spec()['num_actions']
-    nobs = env.observation_spec()['info_state'][0]
-
-
-    agent = Agent(nobs, nacs).to(device)
-    actor_model = agent.actor
-    actor_path = os.path.join(args.path, args.actor_filename)
-    actor_model.load_state_dict(torch.load(actor_path))
-    print("load actor model from", actor_path)
-    actor_model.eval()
-
-
     game_name = "mfg_crowd_modelling_2d"
     game = factory.create_game_with_setting(game_name, args.game_setting)
 
-    ppo_policy = PPOpolicy(game, agent, None, device)
-    mfg_dist = distribution.DistributionPolicy(game, ppo_policy)
+    uniform_policy = policy_std.UniformRandomPolicy(game)
+    mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+    env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
+    env.seed(args.seed)
+    batch_step = (args.batch_step//env.max_game_length) * env.max_game_length
 
-    # output = model(input_data)
-    def get_action(x):
-        logits = actor_model(x)
-        probs = Categorical(logits=logits)
-        action = probs.sample()
-        return action
-        
+    t_step = 0
+    nupd_eps = 0
+    nupd_iter = 0
+    fnames = []
+    while t_step<args.total_step:
+        for _ in range(args.num_episode):
+            nupd_eps += 1
+            t_step += batch_step 
+            if nupd_eps%args.save_interval==0:
+                fname = f'actor{nupd_eps}_{nupd_iter}.pth'
+                fnames.append(fname)
+        nupd_iter += 1
 
-    info_state = []
-    ep_ret = 0.0
-
-    time_step = env.reset()
-    while not time_step.last():
-        obs = time_step.observations["info_state"][0]
-        obs_pth = torch.Tensor(obs).to(device)
-        action = get_action(obs_pth)
-        time_step = env.step([action.item()])
-        rewards = time_step.rewards[0]
-        dist = env.mfg_distribution
-
-        info_state.append(np.array(obs))
-        ep_ret += rewards
+    for fname in fnames:
+        # Set the seed 
+        seed = args.seed
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        os.environ["PYTHONHASHSEED"] = str(seed)
+        print(f"Random seed set as {seed}")
 
 
-    print(f"ep_ret: {ep_ret}")
-    save_path = os.path.join(args.path, "agent_dist.mp4")
-    render(env, game_name, mfg_dist, info_state, save=True, filename=save_path)
-    print(f"Save {save_path}")
+        device = torch.device("cpu")
+        #distrib_path = os.path.join(args.path, args.distrib_filename)
+        #distrib = pkl.load(open(distrib_path, "rb"))
+        #print("load actor model from", distrib_path)
+
+        env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
+        env.seed(args.seed)
+
+        nacs = env.action_spec()['num_actions']
+        nobs = env.observation_spec()['info_state'][0]
+
+
+        agent = Agent(nobs, nacs).to(device)
+        actor_model = agent.actor
+        actor_path = os.path.join(args.path, fname)
+        actor_model.load_state_dict(torch.load(actor_path))
+        print("load actor model from", actor_path)
+        actor_model.eval()
+
+
+
+        ppo_policy = PPOpolicy(game, agent, None, device)
+        mfg_dist = distribution.DistributionPolicy(game, ppo_policy)
+
+        # output = model(input_data)
+        def get_action(x):
+            logits = actor_model(x)
+            probs = Categorical(logits=logits)
+            action = probs.sample()
+            return action
+            
+
+        info_state = []
+        ep_ret = 0.0
+
+        time_step = env.reset()
+        while not time_step.last():
+            obs = time_step.observations["info_state"][0]
+            obs_pth = torch.Tensor(obs).to(device)
+            action = get_action(obs_pth)
+            time_step = env.step([action.item()])
+            rewards = time_step.rewards[0]
+            dist = env.mfg_distribution
+
+            info_state.append(np.array(obs))
+            ep_ret += rewards
+
+
+        print(f"ep_ret: {ep_ret}")
+        save_path = os.path.join(args.path, f"agent_dist{fname[5:-4]}.mp4")
+        print(save_path)
+        render(env, game_name, mfg_dist, info_state, save=True, filename=save_path)
+        print(f"Save {save_path}")
