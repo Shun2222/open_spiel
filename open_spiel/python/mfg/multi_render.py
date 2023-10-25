@@ -79,11 +79,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result/analy1", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result/batch-test/batch1200", help="file path")
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--batch_step", type=int, default=400, help="")
+    parser.add_argument("--batch_step", type=int, default=1200, help="")
     parser.add_argument("--save_interval", type=int, default=10, help="")
-    parser.add_argument("--total_step", type=int, default=150000, help="")
+    parser.add_argument("--total_step", type=int, default=5e7, help="")
     parser.add_argument("--num_episode", type=int, default=5, help="")
     
     args = parser.parse_args()
@@ -175,6 +175,5 @@ if __name__ == "__main__":
 
         print(f"ep_ret: {ep_ret}")
         save_path = os.path.join(args.path, f"agent_dist{fname[5:-4]}.mp4")
-        print(save_path)
         render(env, game_name, mfg_dist, info_state, save=True, filename=save_path)
         print(f"Save {save_path}")

@@ -87,6 +87,14 @@ class Discriminator(nn.Module):
         fname = osp.join(logger.get_dir(), "disc_value"+filename+".pth")
         torch.save(self.value_net.state_dict(), fname)
         print(f'Saved discriminator param (reward, value -{filename})')
+
+    def load(self, reward_path, value_path, use_eval=False):
+        self.reward_net.load_state_dict(torch.load(reward_path))
+        self.value_net.load_state_dict(torch.load(value_path))
+        if use_eval:
+            # if you want to erase noise of output, you should do use_eval=True
+            self.reward_net.eval()
+            self.value_net.eval()
         
 
 if __name__ == "__main__":

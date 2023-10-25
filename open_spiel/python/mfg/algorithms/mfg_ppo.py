@@ -410,7 +410,7 @@ class MFGPPO(object):
         torch.save(self._eps_agent.critic.state_dict(), fname)
 
         distrib = distribution.DistributionPolicy(game, self._ppo_policy)
-        fname = osp.join(logger.get_dir(), 'distrib'+filename+".pkl")
+        fname = osp.join(logger.get_dir(), 'distrib'+filename+".pth")
         utils.save_parametric_distribution(distrib, fname)   
         print(f'Saved generator param (actor, critic, distrib -{filename})')
 
