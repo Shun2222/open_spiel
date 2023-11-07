@@ -47,17 +47,16 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--expert_path", type=str, default="result/expert.pkl", help="expert path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/mfg_result", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/mfgPPO-dist1.0/expert-1000tra.pkl", help="expert path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/mfg_result/episode-test/episode1", help="log path")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--batch_step", type=int, default=400, help="set a step batch size")
+    parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
     parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
-    parser.add_argument("--total_step", type=int, default=5e7, help="set a total step")
-    parser.add_argument("--total_step_gen", type=int, default=5e7, help="set a total generator step")
-    parser.add_argument("--num_episode", type=int, default=5, help="")
-    parser.add_argument("--save_interval", type=float, default=1000, help="save models  per save_interval")
+    parser.add_argument("--total_step", type=int, default=2.5e7, help="set a total step")
+    parser.add_argument("--num_episode", type=int, default=1, help="")
+    parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")
     args = parser.parse_args()
     return args
 
@@ -97,6 +96,6 @@ if __name__ == "__main__":
 
     expert = MFGDataSet(expert_path, traj_limitation=traj_limitation, nobs_flag=True)
     airl = AIRL(game, env, device, expert)
-    airl.run(args.total_step, args.total_step_gen, \
+    airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 
