@@ -40,8 +40,8 @@ class Geometry(enum.IntEnum):
   TORUS = 1
 
 
-_DEFAULT_SIZE = 5
-_DEFAULT_HORIZON = 10
+_DEFAULT_SIZE = 10
+_DEFAULT_HORIZON = 40 
 _NUM_ACTIONS = 5
 _NUM_CHANCE = 5
 _DEFAULT_REWARD_MATRIX = np.array([[0, -1, 1], [1, 0, -1], [-1, 1, 0]])
