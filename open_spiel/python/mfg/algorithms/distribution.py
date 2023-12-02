@@ -178,32 +178,29 @@ class DistributionPolicy(tabular_distribution.TabularDistribution):
         f"Unpexpected state_stypes: {state_types}, states: {current_states}")
 
 class MergeDistribution(tabular_distribution.TabularDistribution):
-  """Computes the distribution of a specified strategy."""
 
     def __init__(self, game: pyspiel.Game,
                distributions,
                root_state: pyspiel.State = None):
-    """Initializes the distribution calculation.
-
-    Args:
-      game: The game to analyze.
-      policy: The policy we compute the distribution of.
-      root_state: The state of the game at which to start analysis. If `None`,
-        the game root states are used.
-    """
-    super().__init__(game)
-    self._distributions = distributions
-    if root_state is None:
-      self._root_states = game.new_initial_states()
-    else:
-      self._root_states = [root_state]
-    self.merge_distributions()
+        super().__init__(game)
+        self._distributions = distributions
+        if root_state is None:
+          self._root_states = game.new_initial_states()
+        else:
+          self._root_states = [root_state]
+        self.merge_distributions()
 
     def merge_distributions(self):
         def get_pop(str_state):
-            return int(str_state[5])
+            print(str_state)
+            pop = str_state[5]
+            if pop!='i':
+                return int(pop)
+            else:
+                pop = str_state[-1]
+                return int(pop)
 
-        for str_state in distrib.distribution.distribution.keys():
+        for str_state in self._distributions[0].distribution.keys():
             pop = get_pop(str_state)
-            self.distribution[str_state] = self._distributions[pop].distribution.value_str(str_state, default_value=0.0)
+            self.distribution[str_state] = self._distributions[pop].distribution[str_state]
          

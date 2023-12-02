@@ -35,9 +35,11 @@ if __name__ == "__main__":
     for i in range(num_agent):
         uniform_policy = policy_std.UniformRandomPolicy(game)
         mfg_dists.append(distribution.DistributionPolicy(game, uniform_policy))
-        envs.append(rl_environment.Environment(game, mfg_distribution=mfg_dists[-1], mfg_population=i))
+    merge_dist = distribution.MergeDistribution(game, mfg_dists)
 
-    for i in range(3):
+    envs = [rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i) for i in range(num_agent)]
+
+    for i in range(num_agent):
         print(f'--------{i}--------')
         time_step = envs[i].reset()
         obs = time_step.observations["info_state"][0]
