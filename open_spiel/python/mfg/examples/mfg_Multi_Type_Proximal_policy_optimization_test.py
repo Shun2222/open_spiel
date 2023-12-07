@@ -159,7 +159,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 
-def rollout(envs, iter_agents, eps_agents, mfg_dists, num_epsiodes, steps, device):
+def rollout(envs, iter_agents, eps_agents, conv_dist, num_epsiodes, steps, device):
     # generates num_epsiodes rollouts
     num_agent = len(envs)
 
@@ -202,13 +202,13 @@ def rollout(envs, iter_agents, eps_agents, mfg_dists, num_epsiodes, steps, devic
                 obs_x = obs_np[:size].index(1)
                 obs_y = obs_np[size:2*size].index(1)
                 obs_t = obs_np[2*size:].index(1)
-                mu.append(mfg_dists[obs_t, obs_y, obs_x])
+                mu.append(conv_dist][pop][obs_t, obs_y, obs_x])
 
             for i in range(num_agent):
                 # episode policy data
                 dones[i][step] = time_steps[i].last()
                 rewards[i][step] = torch.Tensor(np.array(time_steps[i].rewards[i])).to(device)
-            obs_mu = list(obs.copy())
+            obs_mu = obs_list 
             obs_mu += mu
             obs_mu[i][step] = torch.Tensor(obs_mu).to(self._device)
             step += 1
@@ -350,14 +350,13 @@ def log_metrics(it, distrib, policy, writer, reward, entropy):
     print(f"nash_conv: {m['nash_conv_ppo']}, reward: {reward}, entropy: {entropy}")
     return m["nash_conv_ppo"]
     
-def convert_distrib(env, distrib):
+def convert_distrib(envs, distrib):
     env = envs[0]
     num_agent = len(envs)
     horizon = env.game.get_parameters()['horizon']
     size = env.game.get_parameters()['size']
     mu_dist = [np.zeros((horizon, size, size)) for _ in range(num_agent)]
 
-    print(distrib.distribution.items())
     for k,v in distrib.distribution.items():
         if "mu" in k:
             tt = k.split("_")[0].split(",")
@@ -415,12 +414,17 @@ if __name__ == "__main__":
     game.new_initial_state()
 
     num_agent = 3
-    uniform_policy = policy_std.UniformRandomPolicy(game)
-    mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
 
+    mfg_dists = []
+    for i in range(num_agent):
+        uniform_policy = policy_std.UniformRandomPolicy(game)
+        mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+        mfg_dists.append(mfg_dist)
+    merge_dist = distribution.MergeDistribution(game, mfg_dists)
+    
     envs = []
     for i in range(num_agent):
-        envs.append(rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=i))
+        envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(args.seed)
 
     info_state_size = envs[0].observation_spec()["info_state"][0]
@@ -430,6 +434,7 @@ if __name__ == "__main__":
     pop_agents = []
     optimizer_actors = []
     optimizer_critics = []
+    mfg_dists = []
     for i in range(num_agent):
         # Creat the agent and population policies 
         agents.append(Agent(info_state_size, num_actions).to(device))
@@ -442,13 +447,15 @@ if __name__ == "__main__":
         else:
             optimizer_actors.append(optim.SGD(agents[-1].actor.parameters(), lr=args.lr, momentum=0.9))
             optimizer_critics.append(optim.SGD(agents[-1].critic.parameters(), lr=args.lr, momentum=0.9))
-    policy = rl_agent_policy.JointRLAgentPolicy(
-        game, {idx: agent for idx, agent in enumerate(ppo_policies)},
-        use_observation=envs[0].use_observation)
 
-    distrib = distribution.DistributionPolicy(game, policy)
+        mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+        mfg_dists.append(mfg_dist)
+    
+    merge_dist = distribution.MergeDistribution(game, mfg_dists)
+    conv_dist = convert_distrib(envs, merge_dist)
     for env in envs:
-      env.update_mfg_distribution(distrib)
+      env.update_mfg_distribution(merge_dist)
+
 
     # Used to log data for debugging
     steps = args.num_episodes * envs[0].max_game_length
@@ -463,7 +470,8 @@ if __name__ == "__main__":
         v_loss = []
         for eps in range(args.update_episodes):
             # collect rollout data
-            obs, obs_mu, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(envs, pop_agents, agents, mfg_dists, args.num_episodes, steps, device)
+            obs, obs_mu, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs\
+                = rollout(envs, pop_agents, agents, conv_dist, args.num_episodes, steps, device)
             #store rewards and entropy for debugging
             for i in range(num_agent):
                 episode_entropy[i].append(entropies[i].mean().item())
@@ -493,12 +501,13 @@ if __name__ == "__main__":
             Nash_con_vect.append(log_metrics(k+1, distrib, ppo_policies[i], tb_writer, total_reward[i][-1], total_entropy[i][-1]))
 
             # update the environment distribution 
-
-        # Update the distribution 
-        distrib = distribution.DistributionPolicy(game, policy)
-        mu_dists.append(convert_distrib(envs, mfg_dists))
+            mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+            mfg_dists.append(mfg_dist)
+        
+        merge_dist = distribution.MergeDistribution(game, mfg_dists)
+        conv_dist = convert_distrib(envs, merge_dist)
         for env in envs:
-          env.update_mfg_distribution(distrib)
+          env.update_mfg_distribution(merge_dist)
    
     steps = args.num_episodes * env.max_game_length
     obs, obs_mu, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(envs, pop_agents, agents, mfg_dists, 1, env.max_game_length, device)
