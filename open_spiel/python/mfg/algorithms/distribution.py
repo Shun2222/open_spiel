@@ -192,7 +192,6 @@ class MergeDistribution(tabular_distribution.TabularDistribution):
 
     def merge_distributions(self):
         def get_pop(str_state):
-            print(str_state)
             pop = str_state[5]
             if pop!='i':
                 return int(pop)

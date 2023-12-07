@@ -198,11 +198,11 @@ def rollout(envs, iter_agents, eps_agents, conv_dist, num_epsiodes, steps, devic
 
                 time_steps[i] = envs[i].step([action.item()])
 
-                obs_np = list(obs.detach().numpy())
-                obs_x = obs_np[:size].index(1)
-                obs_y = obs_np[size:2*size].index(1)
-                obs_t = obs_np[2*size:].index(1)
-                mu.append(conv_dist][pop][obs_t, obs_y, obs_x])
+                obs_list = list(obs.detach().numpy())
+                obs_x = obs_list[:size].index(1)
+                obs_y = obs_list[size:2*size].index(1)
+                obs_t = obs_list[2*size:].index(1)
+                mu.append(conv_dist[i][obs_t, obs_y, obs_x])
 
             for i in range(num_agent):
                 # episode policy data
@@ -210,7 +210,7 @@ def rollout(envs, iter_agents, eps_agents, conv_dist, num_epsiodes, steps, devic
                 rewards[i][step] = torch.Tensor(np.array(time_steps[i].rewards[i])).to(device)
             obs_mu = obs_list 
             obs_mu += mu
-            obs_mu[i][step] = torch.Tensor(obs_mu).to(self._device)
+            obs_mu[i][step] = torch.Tensor(obs_mu).to(device)
             step += 1
 
     return info_state, obs_mu, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs 
@@ -359,13 +359,16 @@ def convert_distrib(envs, distrib):
 
     for k,v in distrib.distribution.items():
         if "mu" in k:
-            tt = k.split("_")[0].split(",")
-            print(tt)
-            x = int(tt[0].split("(")[-1])
-            y = int(tt[1].split()[-1])
-            t = int(tt[2].split()[-1].split(")")[0])
-            mu_dist[t,y,x] = v
+            tt = k.split(",")
+            pop = int(tt[0][-1])
+            t = int(tt[1][3])
+            xy = tt[2].split(" ")
+            x = int(xy[1].split("[")[-1])
+            y = int(xy[2].split("]")[0])
+            mu_dist[pop][t,y,x] = v
     return mu_dist
+
+    f"(pop={population}, t={t}_a_mu, pos=[{x} {y}])"
 
 if __name__ == "__main__":
     args = parse_args()
