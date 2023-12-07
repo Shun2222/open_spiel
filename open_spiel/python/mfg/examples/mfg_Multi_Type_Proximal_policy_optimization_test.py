@@ -35,6 +35,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 import pyspiel
+import logger
 
 
 
@@ -208,9 +209,9 @@ def rollout(envs, iter_agents, eps_agents, conv_dist, num_epsiodes, steps, devic
                 # episode policy data
                 dones[i][step] = time_steps[i].last()
                 rewards[i][step] = torch.Tensor(np.array(time_steps[i].rewards[i])).to(device)
-            obs_mu = obs_list 
-            obs_mu += mu
-            obs_mu[i][step] = torch.Tensor(obs_mu).to(device)
+            ob_mu = obs_list 
+            ob_mu += mu
+            obs_mu[i][step] = torch.Tensor(ob_mu).to(device)
             step += 1
 
     return info_state, obs_mu, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs 
@@ -368,10 +369,10 @@ def convert_distrib(envs, distrib):
             mu_dist[pop][t,y,x] = v
     return mu_dist
 
-    f"(pop={population}, t={t}_a_mu, pos=[{x} {y}])"
-
 if __name__ == "__main__":
     args = parse_args()
+
+    logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     # Set the seed 
     seed = args.seed
@@ -404,8 +405,6 @@ if __name__ == "__main__":
     console.setLevel(logging.ERROR)  
     logging.getLogger("").addHandler(console)
     
-    logger = logging.getLogger()
-    logger.debug("Initialization")
 
     tb_writer.add_text(
         "hyperparameters",
@@ -490,22 +489,24 @@ if __name__ == "__main__":
 
         mu_dists = []
         for i in range(num_agent):
-            print("----------------------------")
-            print("Agent Idx:", i)
-            print("Value_loss:", v_loss[i].item())
-            print("iteration num:", k)
-            print('Mean reward:', total_reward[i][-1])    
         
             # Update the iteration policy with the new policy 
             pop_agents[i].load_state_dict(agents[i].state_dict())
             
             
             # calculate the exploitability 
-            Nash_con_vect.append(log_metrics(k+1, distrib, ppo_policies[i], tb_writer, total_reward[i][-1], total_entropy[i][-1]))
+            Nash_con_vect.append(log_metrics(k+1, merge_dist, ppo_policies[i], tb_writer, total_reward[i][-1], total_entropy[i][-1]))
 
             # update the environment distribution 
             mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
             mfg_dists.append(mfg_dist)
+
+            logger.record_tabular(f"total_step {i}", v_loss[i].item())
+            logger.record_tabular(f"num_episodes {i}", eps)
+            logger.record_tabular(f"num_iteration {i}", k)
+            logger.record_tabular(f"nash_conv {i}", Nash_con_vect[-1])
+            logger.record_tabular(f"mean_reward {i}", total_reward[i][-1])
+            logger.dump_tabular()
         
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
         conv_dist = convert_distrib(envs, merge_dist)
