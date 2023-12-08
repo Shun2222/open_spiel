@@ -188,6 +188,7 @@ class MergeDistribution(tabular_distribution.TabularDistribution):
           self._root_states = game.new_initial_states()
         else:
           self._root_states = [root_state]
+        self._distributions = distributions
         self.merge_distributions()
 
     def merge_distributions(self):

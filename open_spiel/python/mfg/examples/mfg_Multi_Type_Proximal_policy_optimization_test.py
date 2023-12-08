@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"), help="Set the name of this experiment")
     parser.add_argument("--game-name", type=str, default="python_mfg_predator_prey", help="Set the game name")
     parser.add_argument("--game-setting", type=str, default="", help="")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/test", help="logdir")
     
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument("--num-episodes", type=int, default=5, help="set the number of episodes of to collect per rollout")
@@ -513,11 +513,11 @@ if __name__ == "__main__":
         for env in envs:
           env.update_mfg_distribution(merge_dist)
    
-    steps = args.num_episodes * env.max_game_length
-    obs, obs_mu, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(envs, pop_agents, agents, mfg_dists, 1, env.max_game_length, device)
-    filename = os.path.join(fname, f"res.mp4")
-    obs_np = [obs[i].detach().numpy() for i in range(num_agent)]
-    render(envs, args.game_name, mfg_dists, obs_np, save=True, filename=filename)
+    #steps = args.num_episodes * env.max_game_length
+    #obs, obs_mu, actions, logprobs, rewards, dones, values, entropies, t_actions, t_logprobs = rollout(envs, pop_agents, agents, conv_dist, 1, env.max_game_length, device)
+    #filename = os.path.join(fname, f"res.mp4")
+    #obs_np = [obs[i].detach().numpy() for i in range(num_agent)]
+    #render(envs, args.game_name, mfg_dists, obs_np, save=True, filename=filename)
         
 
 for i in range(num_agent):
