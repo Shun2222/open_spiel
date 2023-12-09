@@ -37,6 +37,7 @@ from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 import pyspiel
 import logger
+import pickle as pkl
 
 
 
@@ -516,12 +517,12 @@ if __name__ == "__main__":
 
         for i in range(num_agent):
             fname = osp.join(logger.get_dir(), 'actor_{k}-{eps}-{i}.pth')
-            torch.save(self._eps_agent.actor.state_dict(), fname)
+            torch.save(agents[i].actor.state_dict(), fname)
 
             fname = osp.join(logger.get_dir(), 'critic_{k}-{eps}-{i}.pth')
-            torch.save(self._eps_agent.critic.state_dict(), fname)
+            torch.save(agents[i].critic.state_dict(), fname)
 
-            distrib = distribution.DistributionPolicy(game, self._ppo_policy)
+            distrib = distribution.DistributionPolicy(game, ppo_policies[i])
             fname = osp.join(logger.get_dir(), 'merge_distrib_{k}-{eps}-{i}.pth')
             utils.save_parametric_distribution(merge_dist, fname)   
 
