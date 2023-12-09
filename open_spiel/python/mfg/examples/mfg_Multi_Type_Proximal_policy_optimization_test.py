@@ -516,17 +516,17 @@ if __name__ == "__main__":
           env.update_mfg_distribution(merge_dist)
 
         for i in range(num_agent):
-            fname = osp.join(logger.get_dir(), 'actor_{k}-{eps}-{i}.pth')
+            fname = osp.join(logger.get_dir(), 'factor_{k}-{eps}-{i}.pth')
             torch.save(agents[i].actor.state_dict(), fname)
 
-            fname = osp.join(logger.get_dir(), 'critic_{k}-{eps}-{i}.pth')
+            fname = osp.join(logger.get_dir(), 'fcritic_{k}-{eps}-{i}.pth')
             torch.save(agents[i].critic.state_dict(), fname)
 
             distrib = distribution.DistributionPolicy(game, ppo_policies[i])
-            fname = osp.join(logger.get_dir(), 'merge_distrib_{k}-{eps}-{i}.pth')
+            fname = osp.join(logger.get_dir(), 'fmerge_distrib_{k}-{eps}-{i}.pth')
             utils.save_parametric_distribution(merge_dist, fname)   
 
-            fname = osp.join(logger.get_dir(), 'conv_distrib_{k}-{eps}-{i}.pkl')
+            fname = osp.join(logger.get_dir(), 'fconv_distrib_{k}-{eps}-{i}.pkl')
             pkl.dump(conv_dist, open(fname, 'wb'))
    
     #steps = args.num_episodes * env.max_game_length
