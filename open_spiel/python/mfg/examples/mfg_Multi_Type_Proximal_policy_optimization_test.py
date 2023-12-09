@@ -499,16 +499,16 @@ if __name__ == "__main__":
             # calculate the exploitability 
             Nash_con_vect.append(log_metrics(k+1, merge_dist, ppo_policies[i], tb_writer, total_reward[i][-1], total_entropy[i][-1]))
 
-            # update the environment distribution 
-            mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
-            mfg_dists.append(mfg_dist)
-
             logger.record_tabular(f"total_step {i}", v_loss[i].item())
             logger.record_tabular(f"num_episodes {i}", eps)
             logger.record_tabular(f"num_iteration {i}", k)
             logger.record_tabular(f"nash_conv {i}", Nash_con_vect[-1])
             logger.record_tabular(f"mean_reward {i}", total_reward[i][-1])
             logger.dump_tabular()
+
+            # update the environment distribution 
+            mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+            mfg_dists.append(mfg_dist)
         
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
         conv_dist = convert_distrib(envs, merge_dist)
