@@ -81,8 +81,7 @@ def render(envs, merge_dist, info_state, save=False, filename="agent_dist.mp4"):
         parser.add_argument("--seed", type=int, default=42, help="set a random seed")
         parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result/batch-test/batch400", help="file path")
         parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-        parser.add_argument("--distrib_filename", type=str, default="distrib.pth", help="file path")
-        parser.add_argument("--actor_filename", type=str, default="actor.pth", help="file path")
+        parser.add_argument("--actor_filename", type=str, default="actor_k-29-19.pth", help="file path")
         
         args = parser.parse_args()
         return args
@@ -130,7 +129,7 @@ def render(envs, merge_dist, info_state, save=False, filename="agent_dist.mp4"):
         actor_models = []
         ppo_policies = []
         mfg_dists = []
-        actor_filenames = [args.actor_filename for _ in range(num_agent)] #TODO
+        actor_filenames = [] #TODO
         for i in range(num_agent):J
             agent = Agent(nobs, nacs).to(device)
             actor_model = agent.actor
@@ -141,6 +140,9 @@ def render(envs, merge_dist, info_state, save=False, filename="agent_dist.mp4"):
 
             agents.append(agent)
             actor_models.append(actor_model)
+            fname = copy.deepcopy(args.actor_filename)
+            fname[6] = str(i)
+            actor_filenames.append(fname)
 
             ppo_policies.append(PPOpolicy(game, agent, None, device))
             mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
