@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"), help="Set the name of this experiment")
     parser.add_argument("--game-name", type=str, default="python_mfg_predator_prey", help="Set the game name")
     parser.add_argument("--game-setting", type=str, default="", help="")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/test2", help="logdir")
     
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument("--num-episodes", type=int, default=5, help="set the number of episodes of to collect per rollout")
@@ -364,7 +364,7 @@ def convert_distrib(envs, distrib):
         if "mu" in k:
             tt = k.split(",")
             pop = int(tt[0][-1])
-            t = int(tt[1][3])
+            t = int(tt[1].split('=')[1].split('_')[0])
             xy = tt[2].split(" ")
             x = int(xy[1].split("[")[-1])
             y = int(xy[2].split("]")[0])
@@ -490,6 +490,8 @@ if __name__ == "__main__":
                 total_entropy[i].append(np.mean(episode_entropy[i]))
 
         mu_dists = []
+        logger.record_tabular(f"num_episodes", eps)
+        logger.record_tabular(f"num_iteration", k)
         for i in range(num_agent):
         
             # Update the iteration policy with the new policy 
@@ -499,16 +501,14 @@ if __name__ == "__main__":
             # calculate the exploitability 
             Nash_con_vect.append(log_metrics(k+1, merge_dist, ppo_policies[i], tb_writer, total_reward[i][-1], total_entropy[i][-1]))
 
-            logger.record_tabular(f"total_step {i}", v_loss[i].item())
-            logger.record_tabular(f"num_episodes {i}", eps)
-            logger.record_tabular(f"num_iteration {i}", k)
+            logger.record_tabular(f"total_loss {i}", v_loss[i].item())
             logger.record_tabular(f"nash_conv {i}", Nash_con_vect[-1])
             logger.record_tabular(f"mean_reward {i}", total_reward[i][-1])
-            logger.dump_tabular()
 
             # update the environment distribution 
             mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
             mfg_dists.append(mfg_dist)
+        logger.dump_tabular()
         
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
         conv_dist = convert_distrib(envs, merge_dist)
