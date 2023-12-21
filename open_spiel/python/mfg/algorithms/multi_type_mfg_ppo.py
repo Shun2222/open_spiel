@@ -431,6 +431,7 @@ if __name__ == "__main__":
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
+        exp_ret = [[] for _ in range(num_agent)]
         for neps in range(args.num_episodes):
             logger.record_tabular(f"num_iteration", niter)
             logger.record_tabular(f"num_episodes", neps)
@@ -440,7 +441,8 @@ if __name__ == "__main__":
                 adv_pth, returns = mfgppo[i].cal_Adv(true_rewards_pth, values_pth, dones_pth)
                 v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
                 logger.record_tabular(f"total_loss {i}", v_loss.item())
-                print(f'Exp. ret{i} {ret[i]}')
+                exp_ret[i].append(np.mean(ret))
+                #print(f'Exp. ret{i} {np.mean(ret)}')
 
         mfg_dists = []
         for i in range(num_agent):
@@ -453,6 +455,7 @@ if __name__ == "__main__":
         for i in range(num_agent):
             nashc_ppo = mfgppo[i].update_iter(game, envs[i], merge_dist, conv_dist, nashc=True)
             logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
+            logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i]))
 
             fname = f'{niter}_{neps}-{i}'
             mfgppo[i].save(game, fname)
