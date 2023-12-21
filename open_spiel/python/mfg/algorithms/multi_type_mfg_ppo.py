@@ -201,7 +201,6 @@ class MultiTypeMFGPPO(object):
                 obs_y = obs_list[size:2*size].index(1)
                 obs_t = obs_list[2*size:].index(1)
                 mu.append(self._mu_dist[self._player_id][obs_t, obs_y, obs_x])
-                print(f'mu{self._player_id}: {[self._mu_dist[idx][obs_t, obs_y, obs_x] for idx in range(3)]}')
 
                 # iteration policy data
                 t_logprobs[step] = t_logprob
@@ -215,7 +214,10 @@ class MultiTypeMFGPPO(object):
                 actions[step] = action
                 rewards[step] = torch.Tensor([time_step.rewards[self._player_id]]).to(self._device)
                 rew += time_step.rewards[self._player_id]
-                print(f'rew: {time_step.rewards}')
+
+                #print(f'xyt: {obs_x},{obs_y},{obs_t}')
+                #print(f'mu{self._player_id}: {[self._mu_dist[idx][obs_t, obs_y, obs_x] for idx in range(3)]}')
+                #print(f'rew: {time_step.rewards}')
                 step += 1
                 if step==nsteps-1:
                     break
@@ -421,7 +423,7 @@ if __name__ == "__main__":
     for i in range(num_agent):
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(args.seed)
-
+    
     conv_dist = convert_distrib(envs, merge_dist)
     device = torch.device("cpu")
 
