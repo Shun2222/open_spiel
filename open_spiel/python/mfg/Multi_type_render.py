@@ -86,9 +86,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/test2", help="file path")
-    parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--actor_filename", type=str, default="actor_50-19-k.pth", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/test3", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor30_19-k.pth", help="file path")
     
     args = parser.parse_args()
     return args

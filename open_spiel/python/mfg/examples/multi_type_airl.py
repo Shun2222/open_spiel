@@ -22,7 +22,8 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
 import logger
-from dataset import MFGDataSet
+import pyspiel
+from dataset import MultiTypeMFGDataSet
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -33,6 +34,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib 
 from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl import MultiTypeAIRL
 
 
@@ -64,6 +66,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     # Set the seed 
     seed = args.seed
@@ -73,29 +76,32 @@ if __name__ == "__main__":
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Random seed set as {seed}")
 
-    #device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    print(f'device: {device}')
-    #batch_step = args.batch_step
-    #update_generator_until = batch_step * 10
+    # Create the game instance 
+    game = pyspiel.load_game('python_mfg_predator_prey')
+    states = game.new_initial_state()
+    num_agent = game.num_players()
+
+    mfg_dists = []
+    for i in range(num_agent):
+        uniform_policy = policy_std.UniformRandomPolicy(game)
+        mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+        mfg_dists.append(mfg_dist)
+    merge_dist = distribution.MergeDistribution(game, mfg_dists)
+
+    envs = []
+    for i in range(num_agent):
+        envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
+        envs[-1].seed(args.seed)
+    
+    conv_dist = convert_distrib(envs, merge_dist)
+    device = torch.device("cpu")
+
     expert_path = args.expert_path
     traj_limitation = args.traj_limitation
 
-    logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
-
-    # Create the game instance 
-    game = factory.create_game_with_setting("mfg_crowd_modelling_2d", args.game_setting)
-
-    # Set the initial policy to uniform and generate the distribution 
-    uniform_policy = policy_std.UniformRandomPolicy(game)
-    mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
-    env = rl_environment.Environment(game, mfg_distribution=mfg_dist, mfg_population=0)
-
-    # Set the environment seed for reproduciblility 
-    env.seed(args.seed)
-
-    expert = MFGDataSet(expert_path, traj_limitation=traj_limitation, nobs_flag=True)
-    airl = MultiTypeAIRL(game, env, device, expert)
+    expert_pathes = [expert_path+f'-{i}.pkl' for i in range(num_agent)]
+    experts = [MFGDataSet(expert_pathes[i], traj_limitation=traj_limitation, nobs_flag=True) for i in range(num_agent)]
+    airl = MultiTypeAIRL(game, envs, device, experts, merge_dist, conv_dist)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 

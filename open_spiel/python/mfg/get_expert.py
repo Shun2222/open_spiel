@@ -5,6 +5,7 @@ import numpy as np
 import pickle as pkl
 
 import torch
+import pyspiel
 import distribution
 from open_spiel.python.mfg.games import factory
 from open_spiel.python import rl_environment
@@ -135,6 +136,111 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
     render(env, game_name, mfg_dist, np.array(best_traj["ob"]), save=True, filename=path+"/expert_best.mp4")
     print(f"Saved expert trajs and best expert mp4 in {path}")
+
+def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs):
+    device = torch.device("cpu")
+    game = pyspiel.load_game('python_mfg_predator_prey')
+    states = game.new_initial_state()
+    n_agents = num_agent = game.num_players()
+    print(f"num players: {num_agent}")
+
+    agents = []
+    ppo_policies = []
+    distribs = []
+    mfg_dists = []
+    for i in range(num_agent):
+        agents.append(Agent(num_obs, num_acs).to(device))
+        actor_model = agents[-1].actor
+        filepath = os.path.join(path, actor_filename)
+        print("load actor model from", filepath)
+        actor_model.load_state_dict(torch.load(filepath))
+        filepath = os.path.join(path, critic_filename)
+        print("load critic model from", filepath)
+        agents[-1].critic.load_state_dict(torch.load(filepath))
+
+        # Set the initial policy to uniform and generate the distribution 
+        distrib_path = os.path.join(path, distrib_filename)
+        distribs.append(pkl.load(open(distrib_path, "rb")))
+        ppo_policies.append(PPOpolicy(game, agent, None, device))
+        mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+        mfg_dist.set_params(distrib)
+        mfg_dists.append(mfg_dist)
+
+    
+    merge_dist = distribution.MergeDistribution(game, mfg_dists)
+
+    envs = []
+    for i in range(num_agent):
+        envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
+        envs[-1].seed(args.seed)
+
+
+    env = envs[0]
+    info_state_size = env.observation_spec()["info_state"][0]
+    num_actions = env.action_spec()["num_actions"]
+
+
+    conv_dist = convert_distrib(envs, merge_dist)
+    actor_model.eval()
+
+    # output = model(input_data)
+    def get_action(x):
+        logits = actor_model(x)
+        probs = Categorical(logits=logits)
+        action = probs.sample()
+        return action
+        
+
+    sample_trajs = [[] for _ in range(num_agent)]
+    avg_ret = [[] for _ in range(num_agent)]
+    best_traj = [None for _ in range(num_agent)]
+
+    for idx in range(num_agent)
+        for i in range(num_trajs):
+            all_ob, all_ac, all_dist, all_rew = [], [], [], []
+            ep_ret = 0.0
+
+            time_step = envs[idx].reset()
+            while not time_step.last():
+                obs = time_step.observations["info_state"][idx]
+                obs_pth = torch.Tensor(obs).to(device)
+                action = get_action(obs_pth)
+                time_step = envs[idx].step([action.item()])
+                rewards = time_step.rewards[idx]
+                dist = envs[idx].mfg_distribution
+
+                obs_x = obs[:size].index(1)
+                obs_y = obs[size:2*size].index(1)
+                obs_t = obs[2*size:].index(1)
+                obs_mu = obs.copy()
+                for k in range(num_agent):
+                    obs_mu.append(conv_dist[k][obs_t, obs_y, obs_x])
+
+                all_ob.append(obs_mu)
+                all_ac.append(onehot(action.item(), num_actions))
+                all_rew.append(rewards)
+                ep_ret += rewards
+
+            avg_ret.append(ep_ret)
+            traj_data = {
+                "ob": all_ob, "ac": all_ac, "rew": all_rew, 
+                "ep_ret": ep_ret
+            }
+            if best_traj[idx]==None:
+                best_traj[idx] = traj_data
+            elif best_traj[idx]["ep_ret"] < ep_ret:
+                best_traj[idx] = traj_data
+
+            sample_trajs[idx].append(traj_data)
+            print(f'traj_num:{i}/{num_trajs}, expected_return:{ep_ret}')
+
+        print(f'expert avg ret{idx}:{np.mean(avg_ret)}, std:{np.std(avg_ret)}')
+        print(f'best traj ret{idx}: {best_traj["ep_ret"]}')
+
+        pkl.dump(sample_trajs, open(path + '/expert-%dtra.pkl' % num_trajs, 'wb'))
+
+        render(env, game_name, mfg_dist, np.array(best_traj[idx]["ob"]), save=True, filename=path+"/expert_best{idx}.mp4")
+        print(f"Saved expert trajs and best expert mp4 in {path}")
 
 if __name__ == '__main__':
     expert_generator()

@@ -44,7 +44,7 @@ _DEFAULT_SIZE = 10
 _DEFAULT_HORIZON = 40 
 _NUM_ACTIONS = 5
 _NUM_CHANCE = 5
-_DEFAULT_REWARD_MATRIX = np.array([[0, -1, 1], [1, 0, -1], [-1, 1, 0]])
+_DEFAULT_REWARD_MATRIX = np.array([[0, -10, 100], [50, 0, -50], [-100, 10, 0]])
 _DEFAULT_NUM_PLAYERS = 3
 
 _DEFAULT_GEOMETRY = Geometry.SQUARE
@@ -390,7 +390,8 @@ class MFGPredatorPreyState(pyspiel.State):
         for population in range(self.num_players())
     ],
                          dtype=np.float64)
-    rew = -0.5 * np.log(densities + eps) + 10*np.dot(self.reward_matrix, densities)
+    #rew = -0.5 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
+    rew = -0.5 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
     return list(rew)
 
   def returns(self) -> List[float]:
