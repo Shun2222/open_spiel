@@ -211,9 +211,9 @@ def rollout(envs, iter_agents, eps_agents, conv_dist, num_epsiodes, steps, devic
                 # episode policy data
                 dones[i][step] = time_steps[i].last()
                 rewards[i][step] = torch.Tensor(np.array(time_steps[i].rewards[i])).to(device)
-            ob_mu = obs_list 
-            ob_mu += mu
-            obs_mu[i][step] = torch.Tensor(ob_mu).to(device)
+                ob_mu = list(info_state[i][step])
+                ob_mu += mu
+                obs_mu[i][step] = torch.Tensor(ob_mu).to(device)
             step += 1
 
     return info_state, obs_mu, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs 
@@ -539,7 +539,7 @@ if __name__ == "__main__":
 for i in range(num_agent):
     if best_model >= Nash_con_vect[-1]:    
             #save the distribution and weights for further analysis 
-            filename = os.path.join(fname, f"distribution_{i}_{run_name}.pkl")
-            utils.save_parametric_distribution(mfg_dists[i], filename)   
+            #filename = os.path.join(fname, f"distribution_{i}_{run_name}.pkl")
+            #utils.save_parametric_distribution(mfg_dists[i], filename)   
             torch.save(agents[i].actor.state_dict(),fname + f"actor{i}.pth")
             torch.save(agents[i].critic.state_dict(),fname + f"critic{i}.pth")

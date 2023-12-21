@@ -390,7 +390,8 @@ class MFGPredatorPreyState(pyspiel.State):
         for population in range(self.num_players())
     ],
                          dtype=np.float64)
-    rew = -np.log(densities + eps) + np.dot(self.reward_matrix, densities)
+    rew = -np.log(densities + eps) + 10*np.dot(self.reward_matrix, densities)
+    #rew = np.zeros(3) 
     return list(rew)
 
   def returns(self) -> List[float]:

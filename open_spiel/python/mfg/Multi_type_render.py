@@ -22,6 +22,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import pyspiel
+import pickle as pkl
 
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
@@ -85,9 +86,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/test", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/test2", help="file path")
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--actor_filename", type=str, default="actor_99-19-k.pth", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor_50-19-k.pth", help="file path")
     
     args = parser.parse_args()
     return args
@@ -210,7 +211,12 @@ if __name__ == "__main__":
             rewards[i][step] = torch.Tensor(np.array(time_steps[i].rewards[i])).to(device)
         step += 1
 
-    for i in range(num_agent):
-        print(f'Exp. Ret{i}: {rewards[i]}')
+    #for i in range(num_agent):
+    #    print(f'reward{i}: {np.sum(rewards[i])}')
+    save_path = os.path.join(args.path, f"reward.pkl")
+    print(f'Saved as {save_path}')
+    pkl.dump(rewards, open(save_path, 'wb'))
     save_path = os.path.join(args.path, "mu_agent_distk.mp4")
     render(envs, merge_dist, info_state, save=True, filename=save_path)
+
+

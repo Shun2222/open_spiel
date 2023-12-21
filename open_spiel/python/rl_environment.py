@@ -308,14 +308,18 @@ class Environment(object):
         "Invalid number of actions! Expected {}".format(
             self.num_actions_per_step))
     if self._should_reset:
+      print('reset')
       return self.reset()
 
     if self._enable_legality_check:
+      print('legality')
       self._check_legality(actions)
 
     if self.is_turn_based:
+      print('apply action')
       self._state.apply_action(actions[0])
     else:
+      print('apply action2')
       self._state.apply_actions(actions)
     self._sample_external_events()
 
