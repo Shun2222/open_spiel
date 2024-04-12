@@ -201,7 +201,6 @@ class MultiTypeMFGPPO(object):
                 obs_y = obs_list[size:2*size].index(1)
                 obs_t = obs_list[2*size:].index(1)
                 mu.append(self._mu_dist[self._player_id][obs_t, obs_y, obs_x])
-                print(f'mu{self._player_id}: {[self._mu_dist[idx][obs_t, obs_y, obs_x] for idx in range(3)]}')
 
                 # iteration policy data
                 t_logprobs[step] = t_logprob
@@ -215,7 +214,10 @@ class MultiTypeMFGPPO(object):
                 actions[step] = action
                 rewards[step] = torch.Tensor([time_step.rewards[self._player_id]]).to(self._device)
                 rew += time_step.rewards[self._player_id]
-                print(f'rew: {time_step.rewards}')
+
+                #print(f'xyt: {obs_x},{obs_y},{obs_t}')
+                #print(f'mu{self._player_id}: {[self._mu_dist[idx][obs_t, obs_y, obs_x] for idx in range(3)]}')
+                #print(f'rew: {time_step.rewards}')
                 step += 1
                 if step==nsteps-1:
                     break
@@ -387,7 +389,7 @@ def parse_args():
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/test3", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/test", help="logdir")
     
     args = parser.parse_args()
     return args
@@ -421,7 +423,7 @@ if __name__ == "__main__":
     for i in range(num_agent):
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(args.seed)
-
+    
     conv_dist = convert_distrib(envs, merge_dist)
     device = torch.device("cpu")
 
@@ -429,6 +431,7 @@ if __name__ == "__main__":
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
+        exp_ret = [[] for _ in range(num_agent)]
         for neps in range(args.num_episodes):
             logger.record_tabular(f"num_iteration", niter)
             logger.record_tabular(f"num_episodes", neps)
@@ -438,7 +441,8 @@ if __name__ == "__main__":
                 adv_pth, returns = mfgppo[i].cal_Adv(true_rewards_pth, values_pth, dones_pth)
                 v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
                 logger.record_tabular(f"total_loss {i}", v_loss.item())
-                print(f'Exp. ret{i} {ret[i]}')
+                exp_ret[i].append(np.mean(ret))
+                #print(f'Exp. ret{i} {np.mean(ret)}')
 
         mfg_dists = []
         for i in range(num_agent):
@@ -451,6 +455,7 @@ if __name__ == "__main__":
         for i in range(num_agent):
             nashc_ppo = mfgppo[i].update_iter(game, envs[i], merge_dist, conv_dist, nashc=True)
             logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
+            logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i]))
 
             fname = f'{niter}_{neps}-{i}'
             mfgppo[i].save(game, fname)
