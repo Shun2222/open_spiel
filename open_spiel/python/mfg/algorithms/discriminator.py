@@ -77,8 +77,8 @@ class Discriminator(nn.Module):
                 score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
             else:
                 rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-                rew_input = rew_input.to(obs.dtype).to(self._device)
-                score = self.reward_net(rew_input)
+                rew_input = rew_input.to(self._device)
+                score = self.reward_net(rew_input.to(torch.float32))
         return score
 
     def save(self, filename=""):
@@ -95,7 +95,7 @@ class Discriminator(nn.Module):
             # if you want to erase noise of output, you should do use_eval=True
             self.reward_net.eval()
             self.value_net.eval()
-        
+
 
 if __name__ == "__main__":
     rning_rate = 0.01

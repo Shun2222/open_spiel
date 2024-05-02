@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import logger
 from dataset import Dset
+from open_spiel.python.mfg.algorithms import distribution
 from utils import onehot, multionehot
 from scipy.stats import pearsonr, spearmanr
 
@@ -90,9 +91,8 @@ class MultiTypeAIRL(object):
                     nobs[-1] = obs_mu[0]
                     obs_next_mu = nobs
                     obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
-                    print(len(obs[0]))
-                    print(len(obs_mu[0]))
                     assert len(obs[0])+3==len(obs_mu[0])
+                    assert len(obs_next_mu[0])==len(obs_mu[0])
 
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(obs_mu).to(self._device),
@@ -115,14 +115,14 @@ class MultiTypeAIRL(object):
                     mh_obs_mu = [np.array(obs_mu)]
                     mh_obs_next_mu = [np.array(obs_next_mu)]
 
-                    if buffer[i]:
-                        buffer[i].update(mh_obs_mu, mh_actions, mh_obs_next_mu, all_obs, mh_values)
+                    if buffer[idx]:
+                        buffer[idx].update(mh_obs_mu, mh_actions, mh_obs_next_mu, all_obs, mh_values)
                     else:
-                        buffer[i] = Dset(mh_obs_mu, mh_actions, mh_obs_next_mu, all_obs, mh_values, 
+                        buffer[idx] = Dset(mh_obs_mu, mh_actions, mh_obs_next_mu, all_obs, mh_values, 
                                       randomize=True, num_agents=1, nobs_flag=True)
 
-                    e_obs_mu, e_actions, e_nobs, e_all_obs, _ = self._experts[i].get_next_batch(batch_step)
-                    g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[i].get_next_batch(batch_step)
+                    e_obs_mu, e_actions, e_nobs, e_all_obs, _ = self._experts[idx].get_next_batch(batch_step)
+                    g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[idx].get_next_batch(batch_step)
 
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]
@@ -130,13 +130,13 @@ class MultiTypeAIRL(object):
                     e_log_prob = [] 
                     g_log_prob = [] 
                     for i in range(len(e_obs_mu[0])):
-                        e_log_prob.append(self._generator.get_log_action_prob(
+                        e_log_prob.append(self._generator[idx].get_log_action_prob(
                             torch.from_numpy(np.array([e_obs_mu[0][i][:self._nobs]])).to(torch.float32).to(self._device), 
-                            torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64).to(self._device))[i].cpu().detach().numpy())
+                            torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
-                        g_log_prob.append(self._generator.get_log_action_prob(
+                        g_log_prob.append(self._generator[idx].get_log_action_prob(
                             torch.from_numpy(np.array([g_obs_mu[0][i][:self._nobs]])).to(torch.float32).to(self._device), 
-                            torch.from_numpy(np.array([g_a[0][i]])).to(torch.int64).to(self._device))[i].cpu().detach().numpy())
+                            torch.from_numpy(np.array([g_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
                     e_log_prob = np.array([e_log_prob])
                     g_log_prob = np.array([g_log_prob])
@@ -144,12 +144,12 @@ class MultiTypeAIRL(object):
                     d_obs_mu = np.concatenate([g_obs_mu[0], e_obs_mu[0]], axis=0)
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
-                    d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs+1], np.array(e_nobs[0])[:, :self._nobs+1]], axis=0)
+                    d_nobs = np.concatenate([np.array(g_nobs[0]), np.array(e_nobs[0])], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
 
                     total_loss = self._discriminator[idx].train(
-                        self._optimizers[i],
+                        self._optimizers[idx],
                         torch.from_numpy(d_obs_mu).to(torch.float32).to(self._device),
                         torch.from_numpy(d_acs).to(torch.int64).to(self._device),
                         torch.from_numpy(d_nobs).to(torch.float32).to(self._device),
@@ -184,7 +184,7 @@ class MultiTypeAIRL(object):
             #if t_step < total_step_gen:
             mfg_dists = []
             for i in range(self._num_agent):
-                policy = self.generator[i]._ppo_policy
+                policy = self._generator[i]._ppo_policy
                 mfg_dist = distribution.DistributionPolicy(self._game, policy)
                 mfg_dists.append(mfg_dist)
             
@@ -192,7 +192,7 @@ class MultiTypeAIRL(object):
             conv_dist = convert_distrib(self._envs, merge_dist)
             for i in range(self._num_agent):
                 nashc = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True)
-                logger.record_tabular("nashc{i}", nashc)
+                logger.record_tabular(f"nashc{i}", nashc)
             logger.dump_tabular()
             num_update_iter += 1
 

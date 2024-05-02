@@ -15,8 +15,8 @@ from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python import policy as policy_std
 from utils import onehot, multionehot
-from render import render
-from Multi_type_render import multi_type_render
+#from render import render
+from Multi_type_render import render
 
 
 @click.command()
