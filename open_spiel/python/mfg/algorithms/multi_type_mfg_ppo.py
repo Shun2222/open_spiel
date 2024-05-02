@@ -183,7 +183,7 @@ class MultiTypeMFGPPO(object):
 
         size = self._size
         step = 0
-        while step!=nsteps-1:
+        while step!=nsteps:
             time_step = env.reset()
             rew = 0
             while not time_step.last():
@@ -219,11 +219,11 @@ class MultiTypeMFGPPO(object):
                 #print(f'mu{self._player_id}: {[self._mu_dist[idx][obs_t, obs_y, obs_x] for idx in range(3)]}')
                 #print(f'rew: {time_step.rewards}')
                 step += 1
-                if step==nsteps-1:
+                if step==nsteps:
                     break
             ret.append(rew)
         ret = np.array(ret)
-        assert step==nsteps-1
+        assert step==nsteps
         return info_state, actions, logprobs, rewards, dones, values, entropies,t_actions,t_logprobs, mu, ret
 
 

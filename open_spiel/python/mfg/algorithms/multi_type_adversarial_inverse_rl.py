@@ -11,7 +11,7 @@ from utils import onehot, multionehot
 from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
-from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, conver_distrib
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
 
@@ -53,12 +53,12 @@ class MultiTypeAIRL(object):
                 rollouts = []
                 mus = []
                 for i in range(self._num_agent):
-                    obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret \
+                    obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret \
                         = self._generator[i].rollout(self._envs[i], batch_step)
-                    rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret         ])
-                    mus.append(mu)
+                    rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
+                    mus.append(mu_pth)
                 merge_mu = []
-                for step in range(batch_step)
+                for step in range(len(mus[0])):
                     merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
                 logger.record_tabular(f"timestep", t_step)
@@ -83,16 +83,18 @@ class MultiTypeAIRL(object):
                     obs_list = list(obs)
                     obs_mu = []
                     for step in range(batch_step):
-                        obs_mu.append(obs_list[step] + merge_mu[step])
+                        obs_mu.append(list(obs_list[step]) + list(merge_mu[step]))
                     obs_mu = np.array(obs_mu)
                     nobs = obs_mu.copy()
                     nobs[:-1] = obs_mu[1:]
                     nobs[-1] = obs_mu[0]
                     obs_next_mu = nobs
                     obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
-                    assert len(obs[0])==len(obs_mu[0])+3
+                    print(len(obs[0]))
+                    print(len(obs_mu[0]))
+                    assert len(obs[0])+3==len(obs_mu[0])
 
-                    disc_rewards_pth = self._discriminator[idx].get_reward( 
+                    disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(obs_mu).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
                         torch.from_numpy(obs_next).to(self._device),
@@ -103,7 +105,7 @@ class MultiTypeAIRL(object):
                     disc_rewards_pth = torch.from_numpy(disc_rewards).to(self._device)
 
                     adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
-                    v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
+                    v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
 
                     mh_obs = [np.array(obs)]
                     mh_actions = [np.array(multionehot(actions, self._nacs))]

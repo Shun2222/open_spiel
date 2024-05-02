@@ -23,7 +23,7 @@ import numpy as np
 
 import logger
 import pyspiel
-from dataset import MultiTypeMFGDataSet
+from dataset import MFGDataSet
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -49,7 +49,7 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/mfgPPO-dist1.0/expert-1000tra.pkl", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/mtmfgppo/expert-100tra", help="expert path")
     parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/mfg_result/episode-test/episode1", help="log path")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
@@ -99,9 +99,10 @@ if __name__ == "__main__":
     expert_path = args.expert_path
     traj_limitation = args.traj_limitation
 
-    expert_pathes = [expert_path+f'-{i}.pkl' for i in range(num_agent)]
+    expert_pathes = [expert_path + f'-{i}.pkl' for i in range(num_agent)]
     experts = [MFGDataSet(expert_pathes[i], traj_limitation=traj_limitation, nobs_flag=True) for i in range(num_agent)]
-    airl = MultiTypeAIRL(game, envs, device, experts, merge_dist, conv_dist)
+    #experts = MFGDataSet(expert_path, traj_limitation=traj_limitation, nobs_flag=True)
+    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 

@@ -37,7 +37,7 @@ from open_spiel.python.mfg import value
 import copy
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"
 
-def render(envs, merge_dist, info_states, save=False, filename="agent_distk.mp4"):
+def multi_type_render(envs, merge_dist, info_states, save=False, filename="agent_distk.mp4"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_agent = len(envs)
     horizon = envs[0].game.get_parameters()['horizon']
@@ -216,6 +216,6 @@ if __name__ == "__main__":
     print(f'Saved as {save_path}')
     pkl.dump(rewards, open(save_path, 'wb'))
     save_path = os.path.join(args.path, "mu_agent_distk.mp4")
-    render(envs, merge_dist, info_state, save=True, filename=save_path)
+    multi_type_render(envs, merge_dist, info_state, save=True, filename=save_path)
 
 

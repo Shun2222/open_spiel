@@ -12,13 +12,15 @@ from open_spiel.python import rl_environment
 from torch.distributions.categorical import Categorical
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python import policy as policy_std
 from utils import onehot, multionehot
 from render import render
+from Multi_type_render import multi_type_render
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="result")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/mtmfgppo")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--distrib_filename', type=click.STRING, default="distrib.pkl")
 @click.option('--actor_filename', type=click.STRING, default="actor.pth")
@@ -134,9 +136,20 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
     save_path = os.path.join(path, "agent_dist.mp4")
     pkl.dump(sample_trajs, open(path + '/expert-%dtra.pkl' % num_trajs, 'wb'))
 
-    render(env, game_name, mfg_dist, np.array(best_traj["ob"]), save=True, filename=path+"/expert_best.mp4")
+    render(env, mfg_dist, np.array(best_traj["ob"]), save=True, filename=path+"/expert_best.mp4")
     print(f"Saved expert trajs and best expert mp4 in {path}")
 
+
+@click.command()
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/mtmfgppo")
+@click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
+@click.option('--distrib_filename', type=click.STRING, default="distrib12_19-1.pth")
+@click.option('--actor_filename', type=click.STRING, default="actor12_19-1.pth")
+@click.option('--critic_filename', type=click.STRING, default="critic12_19-1.pth")
+@click.option('--num_trajs', type=click.INT, default=100)
+@click.option('--seed', type=click.INT, default=0)
+@click.option('--num_acs', type=click.INT, default=5)
+@click.option('--num_obs', type=click.INT, default=61)
 def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs):
     device = torch.device("cpu")
     game = pyspiel.load_game('python_mfg_predator_prey')
@@ -161,9 +174,9 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         # Set the initial policy to uniform and generate the distribution 
         distrib_path = os.path.join(path, distrib_filename)
         distribs.append(pkl.load(open(distrib_path, "rb")))
-        ppo_policies.append(PPOpolicy(game, agent, None, device))
+        ppo_policies.append(PPOpolicy(game, agents[-1], None, device))
         mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
-        mfg_dist.set_params(distrib)
+        mfg_dist.set_params(distribs[-1])
         mfg_dists.append(mfg_dist)
 
     
@@ -172,12 +185,13 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
     envs = []
     for i in range(num_agent):
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
-        envs[-1].seed(args.seed)
+        envs[-1].seed(seed)
 
 
     env = envs[0]
     info_state_size = env.observation_spec()["info_state"][0]
     num_actions = env.action_spec()["num_actions"]
+    size = env.game.get_parameters()['size']
 
 
     conv_dist = convert_distrib(envs, merge_dist)
@@ -194,8 +208,9 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
     sample_trajs = [[] for _ in range(num_agent)]
     avg_ret = [[] for _ in range(num_agent)]
     best_traj = [None for _ in range(num_agent)]
+    info_states = []
 
-    for idx in range(num_agent)
+    for idx in range(num_agent):
         for i in range(num_trajs):
             all_ob, all_ac, all_dist, all_rew = [], [], [], []
             ep_ret = 0.0
@@ -220,8 +235,8 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 all_ac.append(onehot(action.item(), num_actions))
                 all_rew.append(rewards)
                 ep_ret += rewards
+                info_states.append(obs)
 
-            avg_ret.append(ep_ret)
             traj_data = {
                 "ob": all_ob, "ac": all_ac, "rew": all_rew, 
                 "ep_ret": ep_ret
@@ -233,19 +248,21 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
 
             sample_trajs[idx].append(traj_data)
             print(f'traj_num:{i}/{num_trajs}, expected_return:{ep_ret}')
+            avg_ret[idx].append(ep_ret)
 
-        print(f'expert avg ret{idx}:{np.mean(avg_ret)}, std:{np.std(avg_ret)}')
-        print(f'best traj ret{idx}: {best_traj["ep_ret"]}')
+        print(f'expert avg ret{idx}:{np.mean(avg_ret[idx])}, std:{np.std(avg_ret[idx])}')
+        print(f'best traj ret{idx}: {best_traj[idx]["ep_ret"]}')
 
-        pkl.dump(sample_trajs, open(path + '/expert-%dtra.pkl' % num_trajs, 'wb'))
+        for i in range(len(sample_trajs)):
+            fname = path + f'/expert-{num_trajs}tra-{i}.pkl'
+            pkl.dump(sample_trajs[i], open(fname,  'wb'))
+            print(f'Saved {fname}')
 
-        render(env, game_name, mfg_dist, np.array(best_traj[idx]["ob"]), save=True, filename=path+"/expert_best{idx}.mp4")
-        print(f"Saved expert trajs and best expert mp4 in {path}")
+        # multi_type_render(envs, merge_dist, info_states, save=True, filename=path+"/expert_best{idx}.mp4")
+        #print(f"Saved expert trajs and best expert mp4 in {path}")
+
 
 if __name__ == '__main__':
-    expert_generator()
-     
-    # from dataset import Dset
-    # sample_trajs = pkl.load(open(path + 'expert-%dtra.pkl' % num_trajs, 'rb'))
-    # buffer = Dset(obs, actions, obs_next, all_obs, values,
-    #                           randomize=True, num_agents=1, nobs_flag=True)
+    #expert_generator()
+    #multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs)
+    multi_type_expert_generator()
