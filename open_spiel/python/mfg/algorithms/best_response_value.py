@@ -68,6 +68,9 @@ class BestResponse(value.ValueFunction):
       self._state_value.set_value(
           state_str,
           state.rewards()[state.mean_field_population()])
+      print('state mean field population')
+      print(state.mean_field_population())
+      #input()
       return self._state_value(state_str)
     if state.current_player() == pyspiel.PlayerId.CHANCE:
       self._state_value.set_value(state_str, 0.0)

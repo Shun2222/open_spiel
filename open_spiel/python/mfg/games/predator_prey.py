@@ -44,7 +44,7 @@ _DEFAULT_SIZE = 10
 _DEFAULT_HORIZON = 40 
 _NUM_ACTIONS = 5
 _NUM_CHANCE = 5
-_DEFAULT_REWARD_MATRIX = np.array([[0, -10, 100], [50, 0, -50], [-100, 10, 0]])
+_DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
 _DEFAULT_NUM_PLAYERS = 3
 
 _DEFAULT_GEOMETRY = Geometry.SQUARE
@@ -391,7 +391,17 @@ class MFGPredatorPreyState(pyspiel.State):
     ],
                          dtype=np.float64)
     #rew = -0.5 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
-    rew = -0.5 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
+    r_mu = -0.5 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
+    goal_pos = np.array([[self.size, self.size], [0, 0], [self.size//2, self.size//2]])
+    r_xy = np.array([-np.sum(np.abs(goal_pos[i] - self._pos)) for i in range(len(goal_pos))])
+    rew = r_mu + r_xy
+    #print(f'---------------------')
+    #print(f'goal pos {goal_pos}')
+    #print(f'pos {self._pos}')
+    #print(f'r_xy {r_xy}')
+    #print(f'densities {densities}')
+    #print(f'rew_densities {r_mu}')
+    #print(f'rew {rew}')
     return list(rew)
 
   # reward of crowd modeling

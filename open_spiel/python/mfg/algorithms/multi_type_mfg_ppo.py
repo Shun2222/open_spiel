@@ -310,7 +310,7 @@ class MultiTypeMFGPPO(object):
 
         return v_loss
 
-    def update_iter(self, game, env, merge_dist, conv_dist, nashc=False):
+    def update_iter(self, game, env, merge_dist, conv_dist, nashc=False, population=0):
         # iter agent の更新
         self._iter_agent.load_state_dict(self._eps_agent.state_dict())
 
@@ -318,18 +318,21 @@ class MultiTypeMFGPPO(object):
         env.update_mfg_distribution(merge_dist)
 
         nashc_ppo = None
+        root_state = game.new_initial_state_for_population(population)
         if nashc:
             pi_value = policy_value.PolicyValue(game, merge_dist, self._ppo_policy, value.TabularValueFunction(game))
-            nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
+            nashc_ppo = NashC(game, merge_dist, pi_value, root_state=root_state).nash_conv()
+            #nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
         return nashc_ppo
 
-    def calc_nashc(self, game, merge_dist, use_expert_policy=False):
+    def calc_nashc(self, game, merge_dist, use_expert_policy=False, population=0):
 
+        root_state = game.new_initial_state_for_population(population)
         if use_expert_policy:
             pi_value = policy_value.PolicyValue(game, merge_dist, self._expert_policy, value.TabularValueFunction(game))
         else:
             pi_value = policy_value.PolicyValue(game, merge_dist, self._ppo_policy, value.TabularValueFunction(game))
-        nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
+        nashc_ppo = NashC(game, merge_dist, pi_value, root_state=root_state).nash_conv()
 
         return nashc_ppo
 
@@ -392,7 +395,7 @@ def parse_args():
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/multi_type_maze_test", help="logdir")
     
     args = parser.parse_args()
     return args
@@ -456,7 +459,8 @@ if __name__ == "__main__":
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
         conv_dist = convert_distrib(envs, merge_dist)
         for i in range(num_agent):
-            nashc_ppo = mfgppo[i].update_iter(game, envs[i], merge_dist, conv_dist, nashc=True)
+            print(f'update iter {i}')
+            nashc_ppo = mfgppo[i].update_iter(game, envs[i], merge_dist, conv_dist, nashc=True, population=i)
             logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
             logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i]))
 
