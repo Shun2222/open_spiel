@@ -17,7 +17,7 @@ from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies):
         self._game = game
         self._envs = envs
         self._device = device
@@ -29,7 +29,7 @@ class MultiTypeAIRL(object):
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
 
-        self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i) for i in range(self._num_agent)]
+        self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         self._discriminator = [Discriminator(self._nobs+self._nmu, self._nacs, False, device) for _ in range(self._num_agent)]
 
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
@@ -165,11 +165,11 @@ class MultiTypeAIRL(object):
                     except:
                         pass
 
-                    logger.record_tabular(f"generator_loss{i}", v_loss.item())
-                    logger.record_tabular(f"discriminator_loss{i}", total_loss)
-                    logger.record_tabular(f"mean_ret{i}", np.mean(ret))
-                    logger.record_tabular(f"pearsonr{i}", pear)
-                    logger.record_tabular(f"spearson{i}", spear)
+                    logger.record_tabular(f"generator_loss{idx}", v_loss.item())
+                    logger.record_tabular(f"discriminator_loss{idx}", total_loss)
+                    logger.record_tabular(f"mean_ret{idx}", np.mean(ret))
+                    logger.record_tabular(f"pearsonr{idx}", pear)
+                    logger.record_tabular(f"spearson{idx}", spear)
                 logger.dump_tabular()
 
                 t_step += batch_step 
@@ -191,8 +191,10 @@ class MultiTypeAIRL(object):
             merge_dist = distribution.MergeDistribution(self._game, mfg_dists)
             conv_dist = convert_distrib(self._envs, merge_dist)
             for i in range(self._num_agent):
-                nashc = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True)
-                logger.record_tabular(f"nashc{i}", nashc)
+                nashc_ppo = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True)
+                logger.record_tabular(f"nashc_ppo{i}", nashc_ppo)
+                nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=True)
+                logger.record_tabular(f"nashc_expert{i}", nashc_expert)
             logger.dump_tabular()
             num_update_iter += 1
 

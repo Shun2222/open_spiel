@@ -35,7 +35,7 @@ from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
 from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl import MultiTypeAIRL
-from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
 
 
 def parse_args():
@@ -49,13 +49,14 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/mtmfgppo/expert-100tra", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/mtmfgppo/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/mfg_result/episode-test/episode1, help="expert actor path")
     parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/mfg_result/episode-test/episode1", help="log path")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
-    parser.add_argument("--traj_limitation", type=int, default=100, help="set a traj limitation")
+    parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
     parser.add_argument("--total_step", type=int, default=2.5e7, help="set a total step")
     parser.add_argument("--num_episode", type=int, default=1, help="")
     parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")
@@ -81,6 +82,7 @@ if __name__ == "__main__":
     #batch_step = args.batch_step
     #update_generator_until = batch_step * 10
     expert_path = args.expert_path
+    expert_actor_path = args.expert_actor_path
     traj_limitation = args.traj_limitation
 
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
@@ -90,6 +92,7 @@ if __name__ == "__main__":
     states = game.new_initial_state()
 
     num_agent = game.num_players() 
+
 
     mfg_dists = []
     for i in range(num_agent):
@@ -103,14 +106,31 @@ if __name__ == "__main__":
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(args.seed)
 
+    num_obs = envs[0].observation_spec()['info_state'][0]
+    num_acs = envs[0].action_spec()['num_actions']
+
+    expert_actor_pathes = [expert_actor_path + f'-{i}.pth' for i in range(num_agent)]
+    ppo_policies = []
+    for i in range(num_agent):
+        agent =  Agent(num_obs, num_acs).to(device)
+        actor_model = agent.actor
+        filepath = os.path.join(expert_actor_pathes[i])
+        print("load actor model from", filepath)
+        actor_model.load_state_dict(torch.load(filepath))
+
+        # Set the initial policy to uniform and generate the distribution 
+        ppo_policies.append(PPOpolicy(game, agent, None, device))
+
     conv_dist = convert_distrib(envs, merge_dist)
     device = torch.device("cpu")
 
     experts = []
     for i in range(num_agent):
-        expert = MFGDataSet(expert_path + f'-{i}.pkl', traj_limitation=traj_limitation, nobs_flag=True)
+        fname = expert_path + f'-{i}.pkl'
+        expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
         experts.append(expert)
-    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts)
+        print(f'expert load from {fname}')
+    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 

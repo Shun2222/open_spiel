@@ -148,7 +148,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, device, player_id=0):
+    def __init__(self, game, env, merge_dist, conv_dist, device, player_id=0, expert_policy=None):
         self._device = device
 
         info_state_size = env.observation_spec()["info_state"][0]
@@ -166,6 +166,8 @@ class MultiTypeMFGPPO(object):
 
         env.update_mfg_distribution(merge_dist)
         self._mu_dist = conv_dist 
+
+        self._expert_policy = expert_policy
 
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
@@ -321,11 +323,12 @@ class MultiTypeMFGPPO(object):
             nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
         return nashc_ppo
 
-    def calc_nashc(self, game, env, merge_dist):
-        # mf policyの更新
-        env.update_mfg_distribution(merge_dist)
+    def calc_nashc(self, game, merge_dist, use_expert_policy=False):
 
-        pi_value = policy_value.PolicyValue(game, merge_dist, self._ppo_policy, value.TabularValueFunction(game))
+        if use_expert_policy:
+            pi_value = policy_value.PolicyValue(game, merge_dist, self._expert_policy, value.TabularValueFunction(game))
+        else:
+            pi_value = policy_value.PolicyValue(game, merge_dist, self._ppo_policy, value.TabularValueFunction(game))
         nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
 
         return nashc_ppo

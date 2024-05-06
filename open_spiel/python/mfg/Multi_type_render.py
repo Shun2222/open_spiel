@@ -86,8 +86,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/test3", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor30_19-k.pth", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result/episode-test/episode1", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor1500_1499", help="file path")
     
     args = parser.parse_args()
     return args
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         actor_model = agent.actor
 
         fname = copy.deepcopy(args.actor_filename)
-        fname = fname[:-5] + str(i) + fname[-4:]
+        fname = fname + f'-{i}.pth' 
         actor_path = os.path.join(args.path, fname)
         actor_model.load_state_dict(torch.load(actor_path))
         actor_model.eval()

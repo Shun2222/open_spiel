@@ -394,6 +394,16 @@ class MFGPredatorPreyState(pyspiel.State):
     rew = -0.5 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
     return list(rew)
 
+  # reward of crowd modeling
+  # def _rewards(self):
+  #   """Reward for the player for this state."""
+  #   if self._player_id == pyspiel.PlayerId.DEFAULT_PLAYER_ID:
+  #     r_x = 1 - (1.0 * np.abs(self.x - self.size // 2)) / (self.size // 2)
+  #     r_a = -(1.0 * np.abs(self._ACTION_TO_MOVE[self._last_action])) / self.size
+  #     r_mu = - np.log(self._distribution[self.x] + _EPSILON)
+  #     return r_x + r_a + r_mu
+  #   return 0.0
+
   def returns(self) -> List[float]:
     """Returns is the sum of all payoffs collected so far."""
     return list(self._returns + np.array(self.rewards()))
