@@ -191,9 +191,9 @@ class MultiTypeAIRL(object):
             merge_dist = distribution.MergeDistribution(self._game, mfg_dists)
             conv_dist = convert_distrib(self._envs, merge_dist)
             for i in range(self._num_agent):
-                nashc_ppo = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True)
+                nashc_ppo = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True, population=i)
                 logger.record_tabular(f"nashc_ppo{i}", nashc_ppo)
-                nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=True)
+                nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=True, population=i)
                 logger.record_tabular(f"nashc_expert{i}", nashc_expert)
             logger.dump_tabular()
             num_update_iter += 1
