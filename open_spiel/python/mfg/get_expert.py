@@ -141,11 +141,11 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/mtmfgppo")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/multi_type_maze_test")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
-@click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
-@click.option('--actor_filename', type=click.STRING, default="actor99_19")
-@click.option('--critic_filename', type=click.STRING, default="critic99_19")
+@click.option('--distrib_filename', type=click.STRING, default="distrib50_19")
+@click.option('--actor_filename', type=click.STRING, default="actor50_19")
+@click.option('--critic_filename', type=click.STRING, default="critic50_19")
 @click.option('--num_trajs', type=click.INT, default=1000)
 @click.option('--seed', type=click.INT, default=0)
 @click.option('--num_acs', type=click.INT, default=5)
@@ -158,6 +158,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
     print(f"num players: {num_agent}")
 
     agents = []
+    actor_models = []
     ppo_policies = []
     distribs = []
     mfg_dists = []
@@ -167,6 +168,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         filepath = os.path.join(path, actor_filename + f"-{i}.pth")
         print("load actor model from", filepath)
         actor_model.load_state_dict(torch.load(filepath))
+        actor_models.append(actor_model)
         filepath = os.path.join(path, critic_filename + f"-{i}.pth")
         print("load critic model from", filepath)
         agents[-1].critic.load_state_dict(torch.load(filepath))
@@ -190,16 +192,18 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
 
     env = envs[0]
     info_state_size = env.observation_spec()["info_state"][0]
+    horizon = env.game.get_parameters()['horizon']
     num_actions = env.action_spec()["num_actions"]
     size = env.game.get_parameters()['size']
+    print(horizon)
 
 
     conv_dist = convert_distrib(envs, merge_dist)
     actor_model.eval()
 
     # output = model(input_data)
-    def get_action(x):
-        logits = actor_model(x)
+    def get_action(x, i):
+        logits = actor_models[i](x)
         probs = Categorical(logits=logits)
         action = probs.sample()
         return action
@@ -208,7 +212,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
     sample_trajs = [[] for _ in range(num_agent)]
     avg_ret = [[] for _ in range(num_agent)]
     best_traj = [None for _ in range(num_agent)]
-    info_states = []
+    info_states = [[] for _ in range(num_agent)]
 
     for idx in range(num_agent):
         for i in range(num_trajs):
@@ -219,7 +223,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
             while not time_step.last():
                 obs = time_step.observations["info_state"][idx]
                 obs_pth = torch.Tensor(obs).to(device)
-                action = get_action(obs_pth)
+                action = get_action(obs_pth, idx)
                 time_step = envs[idx].step([action.item()])
                 rewards = time_step.rewards[idx]
                 dist = envs[idx].mfg_distribution
@@ -235,7 +239,8 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 all_ac.append(onehot(action.item(), num_actions))
                 all_rew.append(rewards)
                 ep_ret += rewards
-                info_states.append(obs)
+                if len(info_states[idx])<horizon:
+                    info_states[idx].append(obs)
 
             traj_data = {
                 "ob": all_ob, "ac": all_ac, "rew": all_rew, 
@@ -253,13 +258,15 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         print(f'expert avg ret{idx}:{np.mean(avg_ret[idx])}, std:{np.std(avg_ret[idx])}')
         print(f'best traj ret{idx}: {best_traj[idx]["ep_ret"]}')
 
-        for i in range(len(sample_trajs)):
-            fname = path + f'/expert-{num_trajs}tra-{i}.pkl'
-            pkl.dump(sample_trajs[i], open(fname,  'wb'))
-            print(f'Saved {fname}')
+    for i in range(len(sample_trajs)):
+        fname = path + f'/expert-{num_trajs}tra-{i}.pkl'
+        pkl.dump(sample_trajs[i], open(fname,  'wb'))
+        print(f'Saved {fname}')
 
-        # multi_type_render(envs, merge_dist, info_states, save=True, filename=path+"/expert_best{idx}.mp4")
-        #print(f"Saved expert trajs and best expert mp4 in {path}")
+    for i in range(num_agent):
+        info_states[i] = np.array(info_states[i])
+    multi_type_render(envs, merge_dist, info_states, save=True, filename=path+f"/expert_best{idx}.mp4")
+    #print(f"Saved expert trajs and best expert mp4 in {path}")
 
 
 if __name__ == '__main__':

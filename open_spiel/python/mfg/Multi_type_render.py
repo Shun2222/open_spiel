@@ -86,8 +86,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/mfg_result/episode-test/episode1", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor1500_1499", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
+    parser.add_argument("--filename", type=str, default="mu_agent_dist", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor250_249", help="file path")
     
     args = parser.parse_args()
     return args
@@ -215,7 +216,7 @@ if __name__ == "__main__":
     save_path = os.path.join(args.path, f"reward.pkl")
     print(f'Saved as {save_path}')
     pkl.dump(rewards, open(save_path, 'wb'))
-    save_path = os.path.join(args.path, "mu_agent_distk.mp4")
+    save_path = os.path.join(args.path, f"{args.filename}k.mp4")
     multi_type_render(envs, merge_dist, info_state, save=True, filename=save_path)
 
 

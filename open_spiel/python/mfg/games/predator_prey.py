@@ -40,6 +40,7 @@ class Geometry(enum.IntEnum):
   TORUS = 1
 
 
+_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
 _DEFAULT_SIZE = 10
 _DEFAULT_HORIZON = 40 
 _NUM_ACTIONS = 5
@@ -109,6 +110,7 @@ class MFGPredatorPreyGame(pyspiel.Game):
           f"square matrix: {flat_reward_matrix}")
     self.reward_matrix = flat_reward_matrix.reshape([num_players, num_players])
     self.geometry = get_param("geometry", params)
+    self.forbidden_position = _DEFAULT_FORBIDDEN_POSITION
     num_states = self.size**2
     game_info = pyspiel.GameInfo(
         num_distinct_actions=_NUM_ACTIONS,
@@ -205,6 +207,7 @@ class MFGPredatorPreyState(pyspiel.State):
     self.num_states = self.size**2
     self.horizon = game.horizon
     self.reward_matrix = game.reward_matrix
+    self.forbidden_position = _DEFAULT_FORBIDDEN_POSITION
     self.geometry = game.geometry
     self._returns = np.zeros([self.num_players()], dtype=np.float64)
     self._distribution = shared_value.SharedValue(game.initial_distribution)
@@ -275,7 +278,17 @@ class MFGPredatorPreyState(pyspiel.State):
       # Keep the position within the bounds of the square.
       candidate_pos = np.minimum(candidate_pos, self.size - 1)
       candidate_pos = np.maximum(candidate_pos, 0)
-    self._pos = candidate_pos
+
+    is_forbidden = False
+    for f_pos in self.forbidden_position:
+        if np.all(f_pos==candidate_pos):
+            is_forbidden = True 
+            break
+
+    if not is_forbidden:
+        self._pos = candidate_pos
+    #else:
+    #    print(f"candidate_pos is forbidden: candidate_pos={candidate_pos}")
 
   def _apply_action(self, action):
     """Applies the specified action to the state."""
