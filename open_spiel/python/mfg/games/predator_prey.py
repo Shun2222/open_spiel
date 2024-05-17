@@ -1,5 +1,4 @@
 # Copyright 2019 DeepMind Technologies Limited
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -404,7 +403,7 @@ class MFGPredatorPreyState(pyspiel.State):
     ],
                          dtype=np.float64)
     #rew = -0.5 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
-    r_mu = -0.5 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
+    r_mu = -0.5 * np.log(densities + eps) #+ np.dot(self.reward_matrix, densities)
     goal_pos = np.array([[self.size, self.size], [0, 0], [self.size//2, self.size//2]])
     r_xy = np.array([-np.sum(np.abs(goal_pos[i] - self._pos)) for i in range(len(goal_pos))])
     rew = r_mu + r_xy
