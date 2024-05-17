@@ -42,7 +42,7 @@ from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, save=False, filename="agent_dist"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     rewards = np.zeros((horizon, size, size, nacs))
 
@@ -65,7 +65,16 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, save=False, 
             plt.axis("off")
             ims = [[plt.imshow(img, animated=True)] for img in rewards[:, :, :, a]]
             ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-            path = filename + f'-act{a}.mp4' 
+
+            #  pos: [1, 1] = [right, down] (0,0 left up, size,size right down)
+            #  0: np.array([0, 0]), stop
+            #  1: np.array([1, 0]), right
+            #  2: np.array([0, 1]), down
+            #  3: np.array([0, -1]), up
+            #  4: np.array([-1, 0]), left
+            action_str = ["stop", "right", "down", "up", "left"]
+            path = filename + f'-{action_str[a]}.mp4' 
+            plt.title(f'The reward of Group {pop} ({action_str[a]})')
             ani.save(path, writer="ffmpeg", fps=5)
             plt.close()
             print(f"Save {path}")
@@ -97,10 +106,10 @@ def parse_args():
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
-    parser.add_argument("--reward_filename", type=str, default="disc_reward60_59", help="file path")
-    parser.add_argument("--value_filename", type=str, default="disc_value60_59", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor60_59", help="file path")
-    parser.add_argument("--filename", type=str, default="reward", help="file path")
+    parser.add_argument("--reward_filename", type=str, default="disc_reward250_249", help="file path")
+    parser.add_argument("--value_filename", type=str, default="disc_value250_249", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor250_249", help="file path")
+    parser.add_argument("--filename", type=str, default="reward250", help="file path")
     
     args = parser.parse_args()
     return args
@@ -198,4 +207,4 @@ if __name__ == "__main__":
     inputs = create_rew_input([size, size], nacs, horizon, mu_dists, state_only=False)
     save_path = os.path.join(args.path, args.filename)
     for i in range(num_agent):
-        multi_render_reward(size, nacs, horizon, inputs, discriminators[i], save=True, filename=save_path)
+        multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, save=True, filename=save_path+f"-{i}")
