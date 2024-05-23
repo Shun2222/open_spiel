@@ -30,7 +30,6 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
-from open_spiel.python.mfg.algorithms.mfg_ppo import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 
@@ -86,9 +85,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_maze", help="file path")
     parser.add_argument("--filename", type=str, default="mu_agent_dist", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor250_249", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor50_19", help="file path")
+    parser.add_argument("--single", action='store_true') # --single ã¤ããã¨True
     
     args = parser.parse_args()
     return args
@@ -96,6 +96,12 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    is_single = args.single
+    if is_single:
+       from open_spiel.python.mfg.algorithms.single_type_mfg_ppo import *
+    else:
+       from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
+
 
     # Set the seed 
     seed = args.seed

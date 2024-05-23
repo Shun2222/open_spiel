@@ -12,7 +12,7 @@ from utils import onehot, multionehot
 from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
-from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
+from open_spiel.python.mfg.algorithms.single_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
 
@@ -30,7 +30,7 @@ class MultiTypeAIRL(object):
         self._nmu  = 1 #self._num_agent 
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        self._discriminator = [Discriminator(self._nobs+self._nmu, self._nacs, False, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator(self._nobs+1, self._nacs, False, device) for _ in range(self._num_agent)]
 
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
@@ -85,7 +85,7 @@ class MultiTypeAIRL(object):
                     obs_mu = []
                     for step in range(batch_step):
                         #obs_mu.append(list(obs_list[step]) + list(merge_mu[step]))
-                        obs_mu.append(list(obs_list[step]) + list(mus[idx][step]))
+                        obs_mu.append(list(obs_list[step]) + list([mus[idx][step]]))
                     obs_mu = np.array(obs_mu)
                     nobs = obs_mu.copy()
                     nobs[:-1] = obs_mu[1:]
