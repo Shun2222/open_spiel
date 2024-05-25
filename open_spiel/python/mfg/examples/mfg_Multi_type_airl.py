@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
     parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
-    parser.add_argument("--total_step", type=int, default=2.5e7, help="set a total step")
+    parser.add_argument("--total_step", type=int, default=1.6e5, help="set a total step")
     parser.add_argument("--num_episode", type=int, default=1, help="")
     parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")
     args = parser.parse_args()
