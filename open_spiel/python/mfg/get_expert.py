@@ -150,8 +150,10 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 @click.option('--seed', type=click.INT, default=0)
 @click.option('--num_acs', type=click.INT, default=5)
 @click.option('--num_obs', type=click.INT, default=61)
+@click.option('--num_obs', type=click.INT, default=61)
+@click.option('--notmu', is_flag=True)
 
-def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs):
+def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs, notmu):
     device = torch.device("cpu")
     game = pyspiel.load_game('python_mfg_predator_prey')
     states = game.new_initial_state()
@@ -236,7 +238,10 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 for k in range(num_agent):
                     obs_mu.append(conv_dist[k][obs_t, obs_y, obs_x])
 
-                all_ob.append(obs_mu)
+                if notmu:
+                    all_ob.append(obs)
+                else:
+                    all_ob.append(obs_mu)
                 all_ac.append(onehot(action.item(), num_actions))
                 all_rew.append(rewards)
                 ep_ret += rewards
