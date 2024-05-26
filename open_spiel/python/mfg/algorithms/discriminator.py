@@ -6,11 +6,10 @@ import torch.optim as optim
 import numpy as np
 import logger
 
-def reward_mu(mus, pop):
+def reward_mu(densities, pop):
     eps = 1e-25
     reward_matrix = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
 
-    densities = np.array(mus).reshape(3, 1)
     r_mu = -1.0 * np.log(densities + eps) + np.dot(reward_matrix, densities)
     return r_mu[pop]
 
@@ -49,7 +48,7 @@ class Discriminator(nn.Module):
 
         self.l2_loss = nn.MSELoss()
 
-    def set_player_id(player_id):
+    def set_player_id(self, player_id):
         self._player_id = player_id
 
     def forward(self, obs, acs, obs_next, path_probs):
@@ -94,8 +93,11 @@ class Discriminator(nn.Module):
         if not use_rewmu:
             return score
         else:
-            return score + reward_mu(obs[-3:], self._player_id)
-
+            r_mu = np.array(reward_mu(obs.T[-3:], self._player_id))
+            r_mu = r_mu.reshape(len(r_mu), 1)
+            score_np = score.numpy() 
+            score = torch.from_numpy(score_np + r_mu).to(self._device)
+            return score 
     def save(self, filename=""):
         fname = osp.join(logger.get_dir(), "disc_reward"+filename+".pth")
         torch.save(self.reward_net.state_dict(), fname)

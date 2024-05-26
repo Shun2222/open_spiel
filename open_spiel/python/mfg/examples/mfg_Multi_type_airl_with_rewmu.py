@@ -34,7 +34,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
-from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_with_rew_mu import MultiTypeAIRL
+from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_with_rewmu import MultiTypeAIRL
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
 
 
@@ -49,15 +49,15 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/multi_type_maze_test/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/multi_type_maze_test/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/multi_type_maze_density1.0/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/multi_type_maze_density1.0/actor99_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl2gen", help="log path")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
     parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
-    parser.add_argument("--total_step", type=int, default=2.5e7, help="set a total step")
+    parser.add_argument("--total_step", type=int, default=1.6e6, help="set a total step")
     parser.add_argument("--num_episode", type=int, default=1, help="")
     parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")
     args = parser.parse_args()
