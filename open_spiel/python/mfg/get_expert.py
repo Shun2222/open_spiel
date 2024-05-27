@@ -143,7 +143,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 @click.command()
 @click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/single_type_maze")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
-@click.option('--distrib_filename', type=click.STRING, default="distrib50_19")
+@click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
 @click.option('--actor_filename', type=click.STRING, default="actor99_19")
 @click.option('--critic_filename', type=click.STRING, default="critic99_19")
 @click.option('--num_trajs', type=click.INT, default=1000)
@@ -151,6 +151,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 @click.option('--num_acs', type=click.INT, default=5)
 @click.option('--num_obs', type=click.INT, default=61)
 @click.option('--single', is_flag=True)
+@click.option('--notmu', is_flag=True)
 
 def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs, single, notmu):
     device = torch.device("cpu")

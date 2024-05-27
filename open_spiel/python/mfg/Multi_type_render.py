@@ -86,9 +86,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_maze_airl", help="file path")
-    parser.add_argument("--filename", type=str, default="mu_agent_dist", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor1100_54", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze", help="file path")
+    parser.add_argument("--filename", type=str, default="expert", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor99_19", help="file path")
     
     args = parser.parse_args()
     return args
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     while not time_steps[0].last():
         mu = []
         for i in range(num_agent):
-            obs = time_steps[i].observations["info_state"][0]
+            obs = time_steps[i].observations["info_state"][i]
             obs = torch.Tensor(obs).to(device)
             info_state[i][step] = obs
             with torch.no_grad():

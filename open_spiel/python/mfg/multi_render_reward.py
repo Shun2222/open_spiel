@@ -42,17 +42,24 @@ from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, save=False, filename="agent_dist"):
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     rewards = np.zeros((horizon, size, size, nacs))
 
     for t in range(horizon):
         for x in range(size):
             for y in range(size):
-                obs_mu = inputs[f"{x}-{y}-{t}-m"]
-                obs_mu = np.array([obs_mu for _ in range(nacs)])
+                if single:
+                    obs_input = inputs[f"{x}-{y}-{t}-m-{pop}"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                elif notmu:
+                    obs_input = inputs[f"{x}-{y}-{t}"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                else:
+                    obs_input = inputs[f"{x}-{y}-{t}-m"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
                 reward = discriminator.get_reward(
-                    torch.from_numpy(obs_mu).to(torch.float32),
+                    torch.from_numpy(obs_input).to(torch.float32),
                     torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
                     None, None,
                     discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
@@ -88,15 +95,23 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, save=Fa
         plt.close()
         print(f"Save {path}")
 
-def create_rew_input(obs_shape, nacs, horizon, mu_dists, state_only=False):
+def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
     inputs = {}
     for x in range(obs_shape[1]):
         x_onehot = onehot(x, obs_shape[1]).tolist()
         for y in range(obs_shape[0]):
             xy_onehot = x_onehot + onehot(y, obs_shape[0]).tolist()
             for t in range(horizon):
-                xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
-                inputs[f'{x}-{y}-{t}-m'] = xytm_onehot
+                if single:
+                    for i in range(len(mu_dists)):
+                        xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x]]
+                        inputs[f'{x}-{y}-{t}-m-{i}'] = xytm_onehot
+                elif notmu:
+                    xyt_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] 
+                    inputs[f'{x}-{y}-{t}'] = xyt_onehot
+                else:
+                    xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
+                    inputs[f'{x}-{y}-{t}-m'] = xytm_onehot
     return inputs
     
 
@@ -110,6 +125,8 @@ def parse_args():
     parser.add_argument("--value_filename", type=str, default="disc_value250_249", help="file path")
     parser.add_argument("--actor_filename", type=str, default="actor250_249", help="file path")
     parser.add_argument("--filename", type=str, default="reward250", help="file path")
+    parser.add_argument("--single", action='store_true')
+    parser.add_argument("--notmu, action='store_true')
     
     args = parser.parse_args()
     return args
@@ -124,7 +141,6 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Random seed set as {seed}")
-
 
     device = torch.device("cpu")
     #distrib_path = os.path.join(args.path, args.distrib_filename)
@@ -152,6 +168,8 @@ if __name__ == "__main__":
     nacs = env.action_spec()['num_actions']
     nobs = env.observation_spec()['info_state'][0]
 
+    single = args.single
+    notmu = args.notmu
 
     agents = []
     actor_models = []
@@ -176,7 +194,12 @@ if __name__ == "__main__":
         mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
         mfg_dists.append(mfg_dist)
 
-        discriminator = Discriminator(nobs+num_agent, nacs, False, device)
+        if single:
+            discriminator = Discriminator(nobs+1, nacs, False, device)
+        elif notmu:
+            discriminator = Discriminator(nobs, nacs, False, device)
+        else:
+            discriminator = Discriminator(nobs+num_agent, nacs, False, device)
         reward_path = osp.join(args.path, args.reward_filename + f'-{i}.pth')
         value_path = osp.join(args.path, args.value_filename + f'-{i}.pth')
         discriminator.load(reward_path, value_path, use_eval=True)
@@ -204,7 +227,7 @@ if __name__ == "__main__":
             mu_dists[pop][t,y,x] = v
 
 
-    inputs = create_rew_input([size, size], nacs, horizon, mu_dists, state_only=False)
+    inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
     save_path = os.path.join(args.path, args.filename)
     for i in range(num_agent):
-        multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, save=True, filename=save_path+f"-{i}")
+        multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
