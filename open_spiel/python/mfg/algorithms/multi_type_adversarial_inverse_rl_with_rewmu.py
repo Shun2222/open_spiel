@@ -99,6 +99,7 @@ class MultiTypeAIRL(object):
                     assert len(obs[0])+3==len(obs_mu[0])
                     assert len(obs_next_mu[0])==len(obs_mu[0])
 
+                    self._discriminator[idx].train_mode()
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(obs_mu).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
@@ -189,7 +190,6 @@ class MultiTypeAIRL(object):
                 for step in range(len(mus[0])):
                     merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
-                logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
                     obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret = rout     
                     obs = obs_pth.cpu().detach().numpy()
@@ -221,6 +221,7 @@ class MultiTypeAIRL(object):
                     assert len(obs[0])+3==len(obs_mu[0])
                     assert len(obs_next_mu[0])==len(obs_mu[0])
 
+                    self._discriminator[idx].eval_mode()
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(obs_mu).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
@@ -235,13 +236,18 @@ class MultiTypeAIRL(object):
 
                     adv_pth, returns = self._generator_mu[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
                     v_loss = self._generator_mu[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
+                    logger.record_tabular(f"generator_loss_mu{idx}", v_loss.item())
+                logger.dump_tabular()
 
+                t_step += batch_step 
+                num_update_eps += 1
                 if(num_update_eps%save_interval==0):
                     for i in range(self._num_agent):
+                        fname = f"{num_update_eps}_{num_update_iter}-{i}"
+                        self._generator_mu[i].save(self._game, filename=fname)
+                        self._discriminator[i].save(filename=fname)
                         fname = f"{num_update_eps}_{num_update_iter}-mu-{i}"
                         self._generator_mu[i].save(self._game, filename=fname)
-                    logger.record_tabular(f"generator_loss_mu{idx}", v_loss.item())
-            logger.dump_tabular()
 
 
             #if t_step < total_step_gen:

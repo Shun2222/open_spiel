@@ -51,6 +51,17 @@ class Discriminator(nn.Module):
     def set_player_id(self, player_id):
         self._player_id = player_id
 
+    def train_mode(self):
+        self.reward_net.train()
+        self.value_net.train()
+        self.value_next_net.train()
+
+    def eval_mode(self):
+        self.reward_net.eval()
+        self.value_net.eval()
+        self.value_next_net.eval()
+
+
     def forward(self, obs, acs, obs_next, path_probs):
         rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
         rew_input = rew_input.to(obs.dtype).to(self._device)
