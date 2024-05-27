@@ -244,7 +244,7 @@ class MultiTypeAIRL(object):
                 if(num_update_eps%save_interval==0):
                     for i in range(self._num_agent):
                         fname = f"{num_update_eps}_{num_update_iter}-{i}"
-                        self._generator_mu[i].save(self._game, filename=fname)
+                        self._generator[i].save(self._game, filename=fname)
                         self._discriminator[i].save(filename=fname)
                         fname = f"{num_update_eps}_{num_update_iter}-mu-{i}"
                         self._generator_mu[i].save(self._game, filename=fname)
