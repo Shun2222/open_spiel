@@ -250,6 +250,7 @@ class MultiTypeAIRL(object):
                         self._generator_mu[i].save(self._game, filename=fname)
 
 
+
             #if t_step < total_step_gen:
             mfg_dists = []
             for i in range(self._num_agent):
