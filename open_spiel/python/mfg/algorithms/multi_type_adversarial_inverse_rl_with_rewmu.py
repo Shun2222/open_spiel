@@ -237,6 +237,7 @@ class MultiTypeAIRL(object):
                     adv_pth, returns = self._generator_mu[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
                     v_loss = self._generator_mu[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
                     logger.record_tabular(f"generator_loss_mu{idx}", v_loss.item())
+                    logger.record_tabular(f"mean_ret{idx}-mu", np.mean(ret))
                 logger.dump_tabular()
 
                 t_step += batch_step 
