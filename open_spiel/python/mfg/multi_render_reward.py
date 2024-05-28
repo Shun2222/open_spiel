@@ -73,7 +73,6 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
         #mg.add_datas(list([rewards[:, :, :, a] for a in range(nacs)]))
         #mg.make((10, 10), file_path=path)
         fig, axes = plt.subplots(1, nacs, figsize = (12, 6))
-        plt.axis("off")
         ims = []
         for t in range(len(rewards[:, :, :, 0])):
             ims += [[axes[a].imshow(rewards[:, :, :, a][t], animated=True) for a in range(nacs)]]
@@ -81,6 +80,7 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
         ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
         action_str = ["stop", "right", "down", "up", "left"]
         for i in range(len(action_str)):
+            axes[i].axis('off')
             axes[i].set_title(f"{action_str[i]}")
         path = filename + f'-all-action.gif' 
         #plt.title(f'The reward of Group {pop} ({action_str[a]})')
@@ -142,11 +142,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/target_files/multi_type_maze_notmu_normalairl", help="file path")
-    parser.add_argument("--reward_filename", type=str, default="disc_reward60_59", help="file path")
-    parser.add_argument("--value_filename", type=str, default="disc_value60_59", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor60_59", help="file path")
-    parser.add_argument("--filename", type=str, default="reward10", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
+    parser.add_argument("--reward_filename", type=str, default="disc_reward90_89", help="file path")
+    parser.add_argument("--value_filename", type=str, default="disc_value90_89", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor90_89", help="file path")
+    parser.add_argument("--filename", type=str, default="reward90", help="file path")
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
     
