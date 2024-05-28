@@ -67,11 +67,32 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                     rewards[t, y, x, a] = reward[a]
 
     if save:
-        for a in range(nacs):
-            fig = plt.figure(figsize=(8,8))
-            plt.axis("off")
-            ims = [[plt.imshow(img, animated=True)] for img in rewards[:, :, :, a]]
-            ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
+        #action_str = ["stop", "right", "down", "up", "left"]
+        #path = filename + f'-{action_str[a]}.gif' 
+        #Jmg = make_gif()
+        #mg.add_datas(list([rewards[:, :, :, a] for a in range(nacs)]))
+        #mg.make((10, 10), file_path=path)
+        fig, axes = plt.subplots(1, nacs, figsize = (12, 6))
+        plt.axis("off")
+        ims = []
+        for t in range(len(rewards[:, :, :, 0])):
+            ims += [[axes[a].imshow(rewards[:, :, :, a][t], animated=True) for a in range(nacs)]]
+        print(np.array(ims).shape)
+        ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
+        action_str = ["stop", "right", "down", "up", "left"]
+        for i in range(len(action_str)):
+            axes[i].set_title(f"{action_str[i]}")
+        path = filename + f'-all-action.gif' 
+        #plt.title(f'The reward of Group {pop} ({action_str[a]})')
+        ani.save(path, writer="ffmpeg", fps=5)
+        plt.title(f'Reward of Group {pop} ')
+        plt.close()
+        print(f"Save {path}")
+        #for a in range(nacs):
+            #Jfig = plt.figure(figsize=(8,8))
+            #plt.axis("off")
+            #ims = [[plt.imshow(img, animated=True)] for img in rewards[:, :, :, a]]
+            #ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
 
             #  pos: [1, 1] = [right, down] (0,0 left up, size,size right down)
             #  0: np.array([0, 0]), stop
@@ -79,21 +100,22 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
             #  2: np.array([0, 1]), down
             #  3: np.array([0, -1]), up
             #  4: np.array([-1, 0]), left
-            action_str = ["stop", "right", "down", "up", "left"]
-            path = filename + f'-{action_str[a]}.mp4' 
-            plt.title(f'The reward of Group {pop} ({action_str[a]})')
-            ani.save(path, writer="ffmpeg", fps=5)
-            plt.close()
-            print(f"Save {path}")
+            #action_str = ["stop", "right", "down", "up", "left"]
+            #path = filename + f'-{action_str[a]}.mp4' 
+            #plt.title(f'The reward of Group {pop} ({action_str[a]})')
+            #ani.save(path, writer="ffmpeg", fps=5)
+            #plt.close()
+            #print(f"Save {path}")
 
         fig = plt.figure(figsize=(8,8))
         plt.axis("off")
         ims = [[plt.imshow(img, animated=True)] for img in np.mean(rewards, axis=3)]
         ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-        path = filename + f'-avg.mp4' 
+        path = filename + f'-avg.gif' 
         ani.save(path, writer="ffmpeg", fps=5)
         plt.close()
         print(f"Save {path}")
+
 
 def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
     inputs = {}
@@ -120,13 +142,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
-    parser.add_argument("--reward_filename", type=str, default="disc_reward250_249", help="file path")
-    parser.add_argument("--value_filename", type=str, default="disc_value250_249", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor250_249", help="file path")
-    parser.add_argument("--filename", type=str, default="reward250", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/target_files/multi_type_maze_notmu_normalairl", help="file path")
+    parser.add_argument("--reward_filename", type=str, default="disc_reward60_59", help="file path")
+    parser.add_argument("--value_filename", type=str, default="disc_value60_59", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor60_59", help="file path")
+    parser.add_argument("--filename", type=str, default="reward10", help="file path")
     parser.add_argument("--single", action='store_true')
-    parser.add_argument("--notmu, action='store_true')
+    parser.add_argument("--notmu", action='store_true')
     
     args = parser.parse_args()
     return args
