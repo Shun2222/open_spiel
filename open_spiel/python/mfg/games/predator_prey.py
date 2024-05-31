@@ -410,7 +410,7 @@ class MFGPredatorPreyState(pyspiel.State):
                          dtype=np.float64)
     #rew = -1.0 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
     r_mu = -1.0 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
-    goal_pos = _DEFULT_GOAL_POSITION
+    goal_pos = _DEFAULT_GOAL_POSITION
     r_xy = np.array([-np.sum(np.abs(goal_pos[i] - self._pos)) for i in range(len(goal_pos))])
     rew = r_mu + r_xy
     #print(f'---------------------')
