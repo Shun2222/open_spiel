@@ -90,9 +90,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/target_files/multi_type_maze_notmu_airl2gen", help="file path")
-    parser.add_argument("--filename", type=str, default="airl2gen-mu", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor110_109-mu", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze_airl2gen", help="file path")
+    parser.add_argument("--filename", type=str, default="expert2-airl2gen-test", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor70_69", help="file path")
     
     args = parser.parse_args()
     return args
@@ -220,13 +220,15 @@ if __name__ == "__main__":
     save_path = os.path.join(args.path, f"reward.pkl")
     print(f'Saved as {save_path}')
     pkl.dump(rewards, open(save_path, 'wb'))
+    print(rewards)
     for i in range(num_agent):
         reward_np = np.array(rewards[i])
         print(f'cumulative reward {i}: {np.sum(reward_np)}')
     save_path = os.path.join(args.path, f"{args.filename}k.mp4")
     final_dists = calc_distribution(envs, merge_dist, info_state, save=False, filename=save_path)
 
+    final_dists = np.array(final_dists)
     save_path = os.path.join(args.path, f"{args.filename}.gif")
     print(np.array(final_dists).shape)
-    multi_render(final_dists, save_path, ['Group1', 'Gorup2', 'Group3'])
+    multi_render(final_dists[:, 6:20, :], save_path, ['Group1', 'Gorup2', 'Group3'])
 

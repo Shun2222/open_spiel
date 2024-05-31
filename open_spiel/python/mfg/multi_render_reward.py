@@ -39,6 +39,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
+from gif_maker import *
 
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
@@ -67,54 +68,11 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                     rewards[t, y, x, a] = reward[a]
 
     if save:
-        #action_str = ["stop", "right", "down", "up", "left"]
-        #path = filename + f'-{action_str[a]}.gif' 
-        #Jmg = make_gif()
-        #mg.add_datas(list([rewards[:, :, :, a] for a in range(nacs)]))
-        #mg.make((10, 10), file_path=path)
-        fig, axes = plt.subplots(1, nacs, figsize = (12, 6))
-        ims = []
-        for t in range(len(rewards[:, :, :, 0])):
-            ims += [[axes[a].imshow(rewards[:, :, :, a][t], animated=True) for a in range(nacs)]]
-        print(np.array(ims).shape)
-        ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
+        datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
-        for i in range(len(action_str)):
-            axes[i].axis('off')
-            axes[i].set_title(f"{action_str[i]}")
         path = filename + f'-all-action.gif' 
-        #plt.title(f'The reward of Group {pop} ({action_str[a]})')
-        ani.save(path, writer="ffmpeg", fps=5)
-        plt.title(f'Reward of Group {pop} ')
-        plt.close()
-        print(f"Save {path}")
-        #for a in range(nacs):
-            #Jfig = plt.figure(figsize=(8,8))
-            #plt.axis("off")
-            #ims = [[plt.imshow(img, animated=True)] for img in rewards[:, :, :, a]]
-            #ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-
-            #  pos: [1, 1] = [right, down] (0,0 left up, size,size right down)
-            #  0: np.array([0, 0]), stop
-            #  1: np.array([1, 0]), right
-            #  2: np.array([0, 1]), down
-            #  3: np.array([0, -1]), up
-            #  4: np.array([-1, 0]), left
-            #action_str = ["stop", "right", "down", "up", "left"]
-            #path = filename + f'-{action_str[a]}.mp4' 
-            #plt.title(f'The reward of Group {pop} ({action_str[a]})')
-            #ani.save(path, writer="ffmpeg", fps=5)
-            #plt.close()
-            #print(f"Save {path}")
-
-        fig = plt.figure(figsize=(8,8))
-        plt.axis("off")
-        ims = [[plt.imshow(img, animated=True)] for img in np.mean(rewards, axis=3)]
-        ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-        path = filename + f'-avg.gif' 
-        ani.save(path, writer="ffmpeg", fps=5)
-        plt.close()
-        print(f"Save {path}")
+        multi_render(datas, path, action_str)
+    return rewards
 
 
 def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
@@ -142,11 +100,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/target_files/multi_type_maze_notmu_airl2gen", help="file path")
-    parser.add_argument("--reward_filename", type=str, default="disc_reward70_69", help="file path")
-    parser.add_argument("--value_filename", type=str, default="disc_value70_69", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor70_69", help="file path")
-    parser.add_argument("--filename", type=str, default="reward70", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze_airl2gen", help="file path")
+    parser.add_argument("--update_eps", type=int, default="70", help="file path")
+    parser.add_argument("--reward_filename", type=str, default="disc_reward", help="file path")
+    parser.add_argument("--value_filename", type=str, default="disc_value", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor", help="file path")
+    parser.add_argument("--filename", type=str, default="reward", help="file path")
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
     
@@ -164,8 +123,9 @@ if __name__ == "__main__":
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Random seed set as {seed}")
 
+    update_eps_info = f'{args.update_eps}_{args.update_eps-1}'
     device = torch.device("cpu")
-    #distrib_path = os.path.join(args.path, args.distrib_filename)
+    #distrib_path = os.path.join(args.path, args.distrib_filename+update_eps_info)
     #distrib = pkl.load(open(distrib_path, "rb"))
     #print("load actor model from", distrib_path)
 
@@ -202,7 +162,7 @@ if __name__ == "__main__":
         agent = Agent(nobs, nacs).to(device)
         actor_model = agent.actor
 
-        fname = copy.deepcopy(args.actor_filename)
+        fname = copy.deepcopy(args.actor_filename+update_eps_info)
         fname = fname + f'-{i}.pth' 
         actor_path = osp.join(args.path, fname)
         actor_model.load_state_dict(torch.load(actor_path))
@@ -222,8 +182,8 @@ if __name__ == "__main__":
             discriminator = Discriminator(nobs, nacs, False, device)
         else:
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
-        reward_path = osp.join(args.path, args.reward_filename + f'-{i}.pth')
-        value_path = osp.join(args.path, args.value_filename + f'-{i}.pth')
+        reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
+        value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
         discriminator.load(reward_path, value_path, use_eval=True)
         discriminators.append(discriminator)
 
@@ -250,6 +210,11 @@ if __name__ == "__main__":
 
 
     inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
-    save_path = os.path.join(args.path, args.filename)
+    save_path = os.path.join(args.path, args.filename+str(args.update_eps))
+    datas = []
     for i in range(num_agent):
-        multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
+        rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
+        datas.append(np.mean(rewards, axis=3))
+    path = osp.join(save_path + f'-mean.gif')
+    labels = [f'Group {i}' for i in range(num_agent)]
+    multi_render(datas, path, labels)

@@ -373,6 +373,7 @@ class MFGPredatorPreyState(pyspiel.State):
     if self._player_id != pyspiel.PlayerId.MEAN_FIELD:
       raise ValueError(
           "update_distribution should only be called at a MEAN_FIELD state.")
+    #print(f'updated distribution in game')
     self._distribution = shared_value.SharedValue(distribution)
     self._player_id = self._population
 
@@ -415,6 +416,7 @@ class MFGPredatorPreyState(pyspiel.State):
     #print(f'densities {densities}')
     #print(f'rew_densities {r_mu}')
     #print(f'rew {rew}')
+    #print(f'rew:{rew} = {r_mu} + {r_xy}')
     return list(rew)
 
   # reward of crowd modeling
