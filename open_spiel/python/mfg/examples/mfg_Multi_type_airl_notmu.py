@@ -34,7 +34,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
-from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl import MultiTypeAIRL
+from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_notmu import MultiTypeAIRL
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
 
 
@@ -49,9 +49,9 @@ def parse_args():
 
 
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/multi_type_maze_density1.0/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/multi_type_maze_density1.0/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/single_type_maze/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/single_type_maze/actor99_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/single_type_maze_airlnotmu", help="log path")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")

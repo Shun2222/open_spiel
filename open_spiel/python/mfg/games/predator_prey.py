@@ -372,6 +372,7 @@ class MFGPredatorPreyState(pyspiel.State):
     if self._player_id != pyspiel.PlayerId.MEAN_FIELD:
       raise ValueError(
           "update_distribution should only be called at a MEAN_FIELD state.")
+    #print(f'updated distribution in game')
     self._distribution = shared_value.SharedValue(distribution)
     self._player_id = self._population
 
@@ -402,8 +403,8 @@ class MFGPredatorPreyState(pyspiel.State):
         for population in range(self.num_players())
     ],
                          dtype=np.float64)
-    #rew = -0.5 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
-    r_mu = -1.0 * np.log(densities + eps) #+ np.dot(self.reward_matrix, densities)
+    #rew = -1.0 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
+    r_mu = -1.0 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
     goal_pos = np.array([[self.size, self.size], [0, 0], [self.size//2, self.size//2]])
     r_xy = np.array([-np.sum(np.abs(goal_pos[i] - self._pos)) for i in range(len(goal_pos))])
     rew = r_mu + r_xy
@@ -414,6 +415,7 @@ class MFGPredatorPreyState(pyspiel.State):
     #print(f'densities {densities}')
     #print(f'rew_densities {r_mu}')
     #print(f'rew {rew}')
+    #print(f'rew:{rew} = {r_mu} + {r_xy}')
     return list(rew)
 
   # reward of crowd modeling

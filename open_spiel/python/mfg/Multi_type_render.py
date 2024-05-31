@@ -32,11 +32,12 @@ from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
-
 import copy
+from gif_maker import *
+
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"
 
-def multi_type_render(envs, merge_dist, info_states, save=False, filename="agent_distk.mp4"):
+def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent_distk.mp4"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_agent = len(envs)
     horizon = envs[0].game.get_parameters()['horizon']
@@ -79,16 +80,18 @@ def multi_type_render(envs, merge_dist, info_states, save=False, filename="agent
             ani.save(fname, writer="ffmpeg", fps=5)
             print(f"Saved as {fname}")
             plt.close()
+    return final_dists
+
+
 
 def parse_args():
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze", help="file path")
-    parser.add_argument("--filename", type=str, default="mu_agent_dist", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor99_19", help="file path")
-    parser.add_argument("--single", action='store_true') # --single ã¤ããã¨True
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze_airl2gen", help="file path")
+    parser.add_argument("--filename", type=str, default="expert2-airl2gen-test", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor70_69", help="file path")
     
     args = parser.parse_args()
     return args
@@ -193,7 +196,7 @@ if __name__ == "__main__":
     while not time_steps[0].last():
         mu = []
         for i in range(num_agent):
-            obs = time_steps[i].observations["info_state"][0]
+            obs = time_steps[i].observations["info_state"][i]
             obs = torch.Tensor(obs).to(device)
             info_state[i][step] = obs
             with torch.no_grad():
@@ -222,7 +225,15 @@ if __name__ == "__main__":
     save_path = os.path.join(args.path, f"reward.pkl")
     print(f'Saved as {save_path}')
     pkl.dump(rewards, open(save_path, 'wb'))
+    print(rewards)
+    for i in range(num_agent):
+        reward_np = np.array(rewards[i])
+        print(f'cumulative reward {i}: {np.sum(reward_np)}')
     save_path = os.path.join(args.path, f"{args.filename}k.mp4")
-    multi_type_render(envs, merge_dist, info_state, save=True, filename=save_path)
+    final_dists = calc_distribution(envs, merge_dist, info_state, save=False, filename=save_path)
 
+    final_dists = np.array(final_dists)
+    save_path = os.path.join(args.path, f"{args.filename}.gif")
+    print(np.array(final_dists).shape)
+    multi_render(final_dists[:, 6:20, :], save_path, ['Group1', 'Gorup2', 'Group3'])
 

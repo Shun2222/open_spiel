@@ -39,20 +39,28 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
+from gif_maker import *
 
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     rewards = np.zeros((horizon, size, size, nacs))
 
     for t in range(horizon):
         for x in range(size):
             for y in range(size):
-                obs_mu = inputs[f"{x}-{y}-{t}-m"]
-                obs_mu = np.array([obs_mu for _ in range(nacs)])
+                if single:
+                    obs_input = inputs[f"{x}-{y}-{t}-m-{pop}"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                elif notmu:
+                    obs_input = inputs[f"{x}-{y}-{t}"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                else:
+                    obs_input = inputs[f"{x}-{y}-{t}-m"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
                 reward = discriminator.get_reward(
-                    torch.from_numpy(obs_mu).to(torch.float32),
+                    torch.from_numpy(obs_input).to(torch.float32),
                     torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
                     None, None,
                     discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
@@ -60,34 +68,30 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, save=False, 
                     rewards[t, y, x, a] = reward[a]
 
     if save:
-        for a in range(nacs):
-            fig = plt.figure(figsize=(8,8))
-            plt.axis("off")
-            ims = [[plt.imshow(img, animated=True)] for img in rewards[:, :, :, a]]
-            ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-            path = filename + f'-act{a}.mp4' 
-            ani.save(path, writer="ffmpeg", fps=5)
-            plt.close()
-            print(f"Save {path}")
+        datas = [rewards[:, :, :, a] for a in range(nacs)]
+        action_str = ["stop", "right", "down", "up", "left"]
+        path = filename + f'-all-action.gif' 
+        multi_render(datas, path, action_str)
+    return rewards
 
-        fig = plt.figure(figsize=(8,8))
-        plt.axis("off")
-        ims = [[plt.imshow(img, animated=True)] for img in np.mean(rewards, axis=3)]
-        ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-        path = filename + f'-avg.mp4' 
-        ani.save(path, writer="ffmpeg", fps=5)
-        plt.close()
-        print(f"Save {path}")
 
-def create_rew_input(obs_shape, nacs, horizon, mu_dists, state_only=False):
+def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
     inputs = {}
     for x in range(obs_shape[1]):
         x_onehot = onehot(x, obs_shape[1]).tolist()
         for y in range(obs_shape[0]):
             xy_onehot = x_onehot + onehot(y, obs_shape[0]).tolist()
             for t in range(horizon):
-                xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
-                inputs[f'{x}-{y}-{t}-m'] = xytm_onehot
+                if single:
+                    for i in range(len(mu_dists)):
+                        xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x]]
+                        inputs[f'{x}-{y}-{t}-m-{i}'] = xytm_onehot
+                elif notmu:
+                    xyt_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] 
+                    inputs[f'{x}-{y}-{t}'] = xyt_onehot
+                else:
+                    xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
+                    inputs[f'{x}-{y}-{t}-m'] = xytm_onehot
     return inputs
     
 
@@ -96,11 +100,14 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
-    parser.add_argument("--reward_filename", type=str, default="disc_reward60_59", help="file path")
-    parser.add_argument("--value_filename", type=str, default="disc_value60_59", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor60_59", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze_airl2gen", help="file path")
+    parser.add_argument("--update_eps", type=int, default="70", help="file path")
+    parser.add_argument("--reward_filename", type=str, default="disc_reward", help="file path")
+    parser.add_argument("--value_filename", type=str, default="disc_value", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor", help="file path")
     parser.add_argument("--filename", type=str, default="reward", help="file path")
+    parser.add_argument("--single", action='store_true')
+    parser.add_argument("--notmu", action='store_true')
     
     args = parser.parse_args()
     return args
@@ -116,9 +123,9 @@ if __name__ == "__main__":
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Random seed set as {seed}")
 
-
+    update_eps_info = f'{args.update_eps}_{args.update_eps-1}'
     device = torch.device("cpu")
-    #distrib_path = os.path.join(args.path, args.distrib_filename)
+    #distrib_path = os.path.join(args.path, args.distrib_filename+update_eps_info)
     #distrib = pkl.load(open(distrib_path, "rb"))
     #print("load actor model from", distrib_path)
 
@@ -143,6 +150,8 @@ if __name__ == "__main__":
     nacs = env.action_spec()['num_actions']
     nobs = env.observation_spec()['info_state'][0]
 
+    single = args.single
+    notmu = args.notmu
 
     agents = []
     actor_models = []
@@ -153,7 +162,7 @@ if __name__ == "__main__":
         agent = Agent(nobs, nacs).to(device)
         actor_model = agent.actor
 
-        fname = copy.deepcopy(args.actor_filename)
+        fname = copy.deepcopy(args.actor_filename+update_eps_info)
         fname = fname + f'-{i}.pth' 
         actor_path = osp.join(args.path, fname)
         actor_model.load_state_dict(torch.load(actor_path))
@@ -167,9 +176,14 @@ if __name__ == "__main__":
         mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
         mfg_dists.append(mfg_dist)
 
-        discriminator = Discriminator(nobs+num_agent, nacs, False, device)
-        reward_path = osp.join(args.path, args.reward_filename + f'-{i}.pth')
-        value_path = osp.join(args.path, args.value_filename + f'-{i}.pth')
+        if single:
+            discriminator = Discriminator(nobs+1, nacs, False, device)
+        elif notmu:
+            discriminator = Discriminator(nobs, nacs, False, device)
+        else:
+            discriminator = Discriminator(nobs+num_agent, nacs, False, device)
+        reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
+        value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
         discriminator.load(reward_path, value_path, use_eval=True)
         discriminators.append(discriminator)
 
@@ -195,7 +209,12 @@ if __name__ == "__main__":
             mu_dists[pop][t,y,x] = v
 
 
-    inputs = create_rew_input([size, size], nacs, horizon, mu_dists, state_only=False)
-    save_path = os.path.join(args.path, args.filename)
+    inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
+    save_path = os.path.join(args.path, args.filename+str(args.update_eps))
+    datas = []
     for i in range(num_agent):
-        multi_render_reward(size, nacs, horizon, inputs, discriminators[i], save=True, filename=save_path)
+        rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
+        datas.append(np.mean(rewards, axis=3))
+    path = osp.join(save_path + f'-mean.gif')
+    labels = [f'Group {i}' for i in range(num_agent)]
+    multi_render(datas, path, labels)
