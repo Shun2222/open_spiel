@@ -90,9 +90,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze_airl2gen", help="file path")
-    parser.add_argument("--filename", type=str, default="expert2-airl2gen-test", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor70_69", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0614/multi_maze2_colrew200", help="file path")
+    parser.add_argument("--filename", type=str, default="expert99", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor99_19", help="file path")
     
     args = parser.parse_args()
     return args
