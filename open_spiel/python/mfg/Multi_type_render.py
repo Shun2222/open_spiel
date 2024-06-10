@@ -72,15 +72,9 @@ def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent
         final_dist = mu_dist
         final_dists.append(final_dist)
 
-        if save:
-            fig = plt.figure(figsize=(8,8))
-            plt.axis("off")
-            ims = [[plt.imshow(img, animated=True)] for img in final_dist]
-            ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-            fname = filename[0:-5] + str(idx) + filename[-4:]
-            ani.save(fname, writer="ffmpeg", fps=5)
-            print(f"Saved as {fname}")
-            plt.close()
+    final_dists = np.array(final_dists)
+    if save:
+        multi_render(final_dists[:, :, :], filename, [f'Group{i}' for i in range(num_agent)])
     return final_dists
 
 
@@ -225,10 +219,5 @@ if __name__ == "__main__":
         reward_np = np.array(rewards[i])
         print(f'cumulative reward {i}: {np.sum(reward_np)}')
     save_path = os.path.join(args.path, f"{args.filename}k.mp4")
-    final_dists = calc_distribution(envs, merge_dist, info_state, save=False, filename=save_path)
-
-    final_dists = np.array(final_dists)
-    save_path = os.path.join(args.path, f"{args.filename}.gif")
-    print(np.array(final_dists).shape)
-    multi_render(final_dists[:, 6:20, :], save_path, ['Group1', 'Gorup2', 'Group3'])
+    final_dists = calc_distribution(envs, merge_dist, info_state, save=False, vmin=-1.0, vmax=1.0, filename=save_path)
 

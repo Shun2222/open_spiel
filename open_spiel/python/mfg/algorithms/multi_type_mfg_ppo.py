@@ -421,7 +421,13 @@ if __name__ == "__main__":
     mfg_dists = []
     for i in range(num_agent):
         uniform_policy = policy_std.UniformRandomPolicy(game)
+        start = time.time()
+
         mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+
+        end = time.time()
+        print(f'time: {end - start}s')
+
         mfg_dists.append(mfg_dist)
     merge_dist = distribution.MergeDistribution(game, mfg_dists)
 
@@ -453,7 +459,10 @@ if __name__ == "__main__":
         mfg_dists = []
         for i in range(num_agent):
             policy = mfgppo[i]._ppo_policy
+            start = time.time()
             mfg_dist = distribution.DistributionPolicy(game, policy)
+            end = time.time()
+            print(f'time: {end - start}s')
             mfg_dists.append(mfg_dist)
         
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
