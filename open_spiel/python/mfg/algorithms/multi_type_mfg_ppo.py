@@ -395,7 +395,7 @@ def parse_args():
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/multi_type_maze_density1.0", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/multi_maze2", help="logdir")
     
     args = parser.parse_args()
     return args
@@ -421,7 +421,13 @@ if __name__ == "__main__":
     mfg_dists = []
     for i in range(num_agent):
         uniform_policy = policy_std.UniformRandomPolicy(game)
+        start = time.time()
+
         mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+
+        end = time.time()
+        print(f'time: {end - start}s')
+
         mfg_dists.append(mfg_dist)
     merge_dist = distribution.MergeDistribution(game, mfg_dists)
 
@@ -453,7 +459,10 @@ if __name__ == "__main__":
         mfg_dists = []
         for i in range(num_agent):
             policy = mfgppo[i]._ppo_policy
+            start = time.time()
             mfg_dist = distribution.DistributionPolicy(game, policy)
+            end = time.time()
+            print(f'time: {end - start}s')
             mfg_dists.append(mfg_dist)
         
         merge_dist = distribution.MergeDistribution(game, mfg_dists)

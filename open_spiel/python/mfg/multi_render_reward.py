@@ -41,6 +41,7 @@ from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 from gif_maker import *
 
+plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
@@ -100,7 +101,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/single_type_maze_airl2gen", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0530/multi_type_maze_airl", help="file path")
     parser.add_argument("--update_eps", type=int, default="70", help="file path")
     parser.add_argument("--reward_filename", type=str, default="disc_reward", help="file path")
     parser.add_argument("--value_filename", type=str, default="disc_value", help="file path")
@@ -217,4 +218,39 @@ if __name__ == "__main__":
         datas.append(np.mean(rewards, axis=3))
     path = osp.join(save_path + f'-mean.gif')
     labels = [f'Group {i}' for i in range(num_agent)]
+    print(np.array(datas).shape)
     multi_render(datas, path, labels)
+
+    for i in range(num_agent):
+        plt.rcParams["font.size"] = 8 
+        fig = plt.figure(figsize=(16, 12))
+        ax = fig.add_subplot(1, 1, 1)
+        points = datas[i]
+        col = 1
+        for s in range(len(points[0].shape)):
+            col *= points[0].shape[s]
+        points = points.reshape(len(points), col).T
+        bp = ax.boxplot(points)
+        plt.xlabel(r"$\mu_{time}$")
+        save_path = os.path.join(args.path, args.filename+f'-mutime-box-{j}-{i}.png')
+        plt.savefig(save_path)
+        plt.close()
+        print(f'saved {save_path} ')
+
+        figsizes = [(16, 12), (64, 12)]
+        fontsizes = [8, 24]
+        for j in range(len(figsizes)):
+            plt.rcParams["font.size"] = fontsizes[j]
+            fig = plt.figure(figsize=figsizes[j])
+            ax = fig.add_subplot(1, 1, 1)
+            points = datas[i]
+            col = 1
+            for s in range(len(points[0].shape)):
+                col *= points[0].shape[s]
+            points = points.reshape(len(points), col)
+            bp = ax.boxplot(points)
+            plt.xlabel(r"$\state$")
+            save_path = os.path.join(args.path, args.filename+f'-box-{j}-{i}.png')
+            plt.savefig(save_path)
+            plt.close()
+            print(f'saved {save_path} ')

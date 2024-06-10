@@ -39,14 +39,18 @@ class Geometry(enum.IntEnum):
   TORUS = 1
 
 
-_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
 _DEFAULT_SIZE = 10
 _DEFAULT_HORIZON = 40 
 _NUM_ACTIONS = 5
-_NUM_CHANCE = 5
-_DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
 _DEFAULT_NUM_PLAYERS = 3
 
+#_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
+#_DEFAULT_GOAL_POSITION = np.array([[self.size, self.size], [0, 0], [self.size//2, self.size//2]])
+_DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+_DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+_DEFAULT_REWARD_MATRIX = np.array([[0, -200, -200], [-200, 0, -200], [-200, -200, 0]])
+
+_NUM_CHANCE = 5
 _DEFAULT_GEOMETRY = Geometry.SQUARE
 
 _DEFAULT_PARAMS = {
@@ -405,7 +409,7 @@ class MFGPredatorPreyState(pyspiel.State):
                          dtype=np.float64)
     #rew = -1.0 * np.log(densities + eps) + 10 * np.dot(self.reward_matrix, densities)
     r_mu = -1.0 * np.log(densities + eps) + np.dot(self.reward_matrix, densities)
-    goal_pos = np.array([[self.size, self.size], [0, 0], [self.size//2, self.size//2]])
+    goal_pos = _DEFAULT_GOAL_POSITION
     r_xy = np.array([-np.sum(np.abs(goal_pos[i] - self._pos)) for i in range(len(goal_pos))])
     rew = r_mu + r_xy
     #print(f'---------------------')

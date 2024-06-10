@@ -16,7 +16,8 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO,
 from open_spiel.python import policy as policy_std
 from utils import onehot, multionehot
 #from render import render
-from Multi_type_render import multi_type_render
+from Multi_type_render import calc_distribution 
+from gif_maker import *
 
 
 @click.command()
@@ -141,7 +142,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/single_type_maze")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0614/multi_maze2")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
 @click.option('--actor_filename', type=click.STRING, default="actor99_19")
@@ -150,10 +151,11 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 @click.option('--seed', type=click.INT, default=0)
 @click.option('--num_acs', type=click.INT, default=5)
 @click.option('--num_obs', type=click.INT, default=61)
+@click.option('--printinfo', is_flag=True)
 @click.option('--single', is_flag=True)
 @click.option('--notmu', is_flag=True)
 
-def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs, single, notmu):
+def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs, printinfo, single, notmu):
     device = torch.device("cpu")
     game = pyspiel.load_game('python_mfg_predator_prey')
     states = game.new_initial_state()
@@ -212,6 +214,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         return action
         
 
+    state_visitation_count = np.zeros((num_agent, horizon, size, size))
     sample_trajs = [[] for _ in range(num_agent)]
     avg_ret = [[] for _ in range(num_agent)]
     best_traj = [None for _ in range(num_agent)]
@@ -221,6 +224,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         for i in range(num_trajs):
             all_ob, all_ac, all_dist, all_rew = [], [], [], []
             ep_ret = 0.0
+            time = 0
 
             time_step = envs[idx].reset()
             while not time_step.last():
@@ -235,6 +239,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 obs_y = obs[size:2*size].index(1)
                 obs_t = obs[2*size:].index(1)
                 obs_mu = obs.copy()
+                state_visitation_count[idx][time][obs_y][obs_x] += 1
                 if single:
                     obs_mu.append(conv_dist[idx][obs_t, obs_y, obs_x])
                 else:
@@ -252,6 +257,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 all_ac.append(onehot(action.item(), num_actions))
                 all_rew.append(rewards)
                 ep_ret += rewards
+                time += 1
                 if len(info_states[idx])<horizon:
                     info_states[idx].append(obs)
 
@@ -265,7 +271,12 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 best_traj[idx] = traj_data
 
             sample_trajs[idx].append(traj_data)
-            print(f'traj_num:{i}/{num_trajs}, expected_return:{ep_ret}')
+            
+            if printinfo:
+                print(f'traj_num:{i}/{num_trajs}, expected_return:{ep_ret}')
+            elif i%(int(num_trajs/10))==0:
+                print(f'{10+100*i/num_trajs}%')
+
             avg_ret[idx].append(ep_ret)
 
         print(f'expert avg ret{idx}:{np.mean(avg_ret[idx])}, std:{np.std(avg_ret[idx])}')
@@ -278,7 +289,22 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
 
     for i in range(num_agent):
         info_states[i] = np.array(info_states[i])
-    multi_type_render(envs, merge_dist, info_states, save=True, filename=path+f"/expert_best{idx}.mp4")
+    final_dists = calc_distribution(envs, merge_dist, info_states, save=True, filename=path+f"/experts.gif")
+
+    save_path = os.path.join(path, f"expert_state_visitation_count.gif")
+    multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
+
+    state_visitation_count /= num_trajs
+    diff_mu_svf = final_dists - state_visitation_count  
+    save_path = os.path.join(path, f"dif_mu-svf.gif")
+    multi_render(diff_mu_svf, save_path, [f'Group{i}' for i in range(num_agent)], vmin=-1.0, vmax=1.0, cmap='seismic')
+
+    for i in range(num_agent):
+        for h in range(horizon):
+            state_visitation_count[i][h] /= np.max(state_visitation_count[i][h])
+    save_path = os.path.join(path, f"expert_state_visitation_normalized.gif")
+    multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
+    
     #print(f"Saved expert trajs and best expert mp4 in {path}")
 
 
