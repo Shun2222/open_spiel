@@ -110,7 +110,7 @@ pathes = ["/mnt/shunsuke/result/0614/multi_maze2",
          "/mnt/shunsuke/result/0614/multi_maze2_colrew100",
          "/mnt/shunsuke/result/0614/multi_maze2_colrew200",
          ] 
-pathesname = ["50rew", 
+pathnames = ["50rew", 
              "0rew",
              "100rew",
              "200rew",
