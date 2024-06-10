@@ -148,6 +148,7 @@ class MultiTypeAIRL(object):
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
 
+                    self._discriminator[idx].train_mode()
                     total_loss = self._discriminator[idx].train(
                         self._optimizers[idx],
                         torch.from_numpy(d_obs_mu).to(torch.float32).to(self._device),
@@ -156,6 +157,7 @@ class MultiTypeAIRL(object):
                         torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
                         torch.from_numpy(d_labels).to(torch.int64).to(self._device),
                     )
+                    self._discriminator[idx].eval_mode()
 
                     pear = ""
                     spear = ""
