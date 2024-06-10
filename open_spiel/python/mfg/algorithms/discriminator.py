@@ -6,6 +6,13 @@ import torch.optim as optim
 import numpy as np
 import logger
 
+def reward_mu(densities, pop):
+    eps = 1e-25
+    reward_matrix = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+
+    r_mu = -1.0 * np.log(densities + eps) + np.dot(reward_matrix, densities)
+    return r_mu[pop]
+
 class Discriminator(nn.Module):
     def __init__(self, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
         super(Discriminator, self).__init__()
@@ -14,6 +21,7 @@ class Discriminator(nn.Module):
         self.hidden_size = hidden_size
         self.l2_loss_ratio = l2_loss_ratio
         self._device = device
+        self._player_id = None
 
         # Define layers for reward network
         self.reward_net = nn.Sequential(
@@ -39,6 +47,20 @@ class Discriminator(nn.Module):
 
 
         self.l2_loss = nn.MSELoss()
+
+    def set_player_id(self, player_id):
+        self._player_id = player_id
+
+    def train_mode(self):
+        self.reward_net.train()
+        self.value_net.train()
+        self.value_next_net.train()
+
+    def eval_mode(self):
+        self.reward_net.eval()
+        self.value_net.eval()
+        self.value_next_net.eval()
+
 
     def forward(self, obs, acs, obs_next, path_probs):
         rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
@@ -70,7 +92,7 @@ class Discriminator(nn.Module):
         optimizer.step()
         return loss.item()
 
-    def get_reward(self, obs, acs, obs_next, path_probs, discrim_score=False):
+    def get_reward(self, obs, acs, obs_next, path_probs, discrim_score=False, use_rewmu=False):
         with torch.no_grad():
             if discrim_score:
                 log_q_tau, log_p_tau, log_pq, discrim_output = self(obs, acs, obs_next, path_probs)
@@ -79,8 +101,14 @@ class Discriminator(nn.Module):
                 rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
                 rew_input = rew_input.to(self._device)
                 score = self.reward_net(rew_input.to(torch.float32))
-        return score
-
+        if not use_rewmu:
+            return score
+        else:
+            r_mu = np.array(reward_mu(obs.T[-3:], self._player_id))
+            r_mu = r_mu.reshape(len(r_mu), 1)
+            score_np = score.numpy() 
+            score = torch.from_numpy(score_np + r_mu).to(self._device)
+            return score 
     def save(self, filename=""):
         fname = osp.join(logger.get_dir(), "disc_reward"+filename+".pth")
         torch.save(self.reward_net.state_dict(), fname)

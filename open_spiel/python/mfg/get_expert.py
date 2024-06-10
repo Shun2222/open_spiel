@@ -142,7 +142,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0614/multi_maze2")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/multi_maze2")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
 @click.option('--actor_filename', type=click.STRING, default="actor99_19")
@@ -245,14 +245,11 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                 else:
                     for k in range(num_agent):
                         obs_mu.append(conv_dist[k][obs_t, obs_y, obs_x])
-<<<<<<< HEAD
-=======
 
                 if notmu:
                     all_ob.append(obs)
                 else:
                     all_ob.append(obs_mu)
->>>>>>> feature/utils
 
                 all_ac.append(onehot(action.item(), num_actions))
                 all_rew.append(rewards)
