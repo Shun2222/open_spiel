@@ -204,3 +204,32 @@ class MergeDistribution(tabular_distribution.TabularDistribution):
             pop = get_pop(str_state)
             self.distribution[str_state] = self._distributions[pop].distribution[str_state]
          
+class MergeEstimatedDistribution(tabular_distribution.TabularDistribution):
+
+    def __init__(self, game: pyspiel.Game,
+               est_distributions,
+               root_state: pyspiel.State = None):
+        super().__init__(game)
+        self._est_distributions = est_distributions
+        if root_state is None:
+          self._root_states = game.new_initial_states()
+        else:
+          self._root_states = [root_state]
+        self._est_distributions = est_distributions
+        self.merge_distributions()
+
+    def merge_distributions(self):
+        def get_pop(str_state):
+            pop = str_state[5]
+            if pop!='i':
+                return int(pop)
+            else:
+                pop = str_state[-1]
+                return int(pop)
+
+        for str_state in self._distributions[0].distribution.keys():
+            pop = get_pop(str_state)
+            print(str_state)
+            print(pop)
+            input()
+            #self.distribution[str_state] = self._est_distributions[pop][str_state]
