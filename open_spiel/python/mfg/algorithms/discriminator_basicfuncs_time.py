@@ -10,8 +10,7 @@ def divide_obs(obs, size, one_vec=False):
     if one_vec:
         obs_x = np.argmax(obs[:size])
         obs_y = np.argmax(obs[size:2*size])
-        obs_t = np.argmax(obs[2*size:-4])
-        obs_hatena = obs[-4]
+        obs_t = np.argmax(obs[2*size:-3])
         obs_mu = obs[-3:]
 
         obs_x = obs_x.reshape(1, 1)
@@ -33,7 +32,7 @@ def divide_obs(obs, size, one_vec=False):
     return obs_x, obs_y, obs_t, obs_mu
 
 class Discriminator(nn.Module):
-    def __init__(self, n_agent, distance_size, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
+    def __init__(self, n_agent, time_size, distance_size, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
         super(Discriminator, self).__init__()
         self.state_only = state_only
         self.gamma = discount
@@ -43,13 +42,13 @@ class Discriminator(nn.Module):
 
         # Define layers for reward network
         self.distance_net = nn.Sequential(
-            nn.Linear(distance_size, hidden_size),
+            nn.Linear(distance_size+time_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
         ).to(self._device)
 
         self.mu_net = nn.Sequential(
-            nn.Linear(n_agent, hidden_size),
+            nn.Linear(n_agent+time_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
         ).to(self._device)

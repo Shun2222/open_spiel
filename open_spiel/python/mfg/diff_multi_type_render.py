@@ -95,33 +95,31 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0614/multi_maze2", help="file path")
-    parser.add_argument("--path2", type=str, default="/mnt/shunsuke/result/0614/multi_maze2_colrew0", help="file path")
-    parser.add_argument("--filename", type=str, default="expert99", help="file path")
-    parser.add_argument("--diff_filename", type=str, default="diff-colrew50-0-expert99", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor99_19", help="file path")
     
     args = parser.parse_args()
     return args
 
+# 4items: args actor_filename, filename, pathes, pathnames
 filename = "expert99"
-pathes = ["/mnt/shunsuke/result/0614/multi_maze2", 
-         "/mnt/shunsuke/result/0614/multi_maze2_colrew0",
-         "/mnt/shunsuke/result/0614/multi_maze2_colrew100",
-         "/mnt/shunsuke/result/0614/multi_maze2_colrew200",
+pathes = [
+            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+            "/mnt/shunsuke/result/0614/multi_maze2", 
          ] 
-pathnames = ["50rew", 
-             "0rew",
-             "100rew",
-             "200rew",
-             ] 
+pathnames = [
+                "basicfuncs", 
+                "expert",
+            ] 
+actor_filenames = [
+                    "actor200_1",
+                    "actor99_19"
+                  ]
 
 if __name__ == "__main__":
     args = parse_args()
     res_final_dists = []
     gifMaker = GifMaker()
 
-    for target_path in pathes:
+    for ip, target_path in enumerate(pathes):
 
         # Set the seed 
         seed = args.seed
@@ -168,7 +166,7 @@ if __name__ == "__main__":
             agent = Agent(nobs, nacs).to(device)
             actor_model = agent.actor
 
-            fname = copy.deepcopy(args.actor_filename)
+            fname = copy.deepcopy(actor_filenames[ip])
             fname = fname + f'-{i}.pth' 
             actor_path = os.path.join(target_path, fname)
             actor_model.load_state_dict(torch.load(actor_path))
@@ -266,18 +264,10 @@ if __name__ == "__main__":
         res_final_dists.append(final_dists)
 
 
-    #save_path = os.path.join(pathes[0], f"test-diff-{args.filename}.gif")
+    #save_path = os.path.join(pathes[0], f"test-diff-{filename}.gif")
     #titles = [[f"Group {n} (time={i})" for n in range(num_agent)] for i in range(len(final_dists[0]))] 
     #gifMaker.add_datas([res_final_dists])
     #gifMaker.make(save_path, titles, cmap='seismic', min_value=-1.0, max_value=1.0)
 
     labels = [f"Group {n}" for n in range(num_agent)] 
-    for p1 in range(len(pathes)):
-        for p2 in range(p1+1, len(pathes)):
-            save_path = os.path.join(pathes[p1], f"{pathnames[p1]}-{pathnames[p2]}.gif")
-            final_dists = res_final_dists[p1] - res_final_dists[p2]
-            multi_render(final_dists[:, :, :], save_path, labels, vmin=-1.0, vmax=1.0, cmap='seismic')
-
-            res1 = res_final_dists[p1].reshape(3, 40, 100)
-            res2 = res_final_dists[p2].reshape(3, 40, 100)
-            distance_plot(res1, res2, pathes[p1], f'{pathnames[p1]}-{pathnames[p2]}')
+    diff_render_distance_plot(res_final_dists, pathes, pathnames, labels)
