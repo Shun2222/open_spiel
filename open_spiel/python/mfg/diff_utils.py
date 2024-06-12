@@ -29,7 +29,7 @@ def distances_plot(data1, data2, path, filename, xlabel="Time"):
             cos_sim = 1-distance.cosine(a, b)
             corr, p_value = spearmanr(a, b)
             epsilon = 0.0000001
-            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(a+epsilon, b+epsilon)]) 
+            kl_div = np.sum([ai * np.log(bi / ai) for ai, bi in zip(a+epsilon, b+epsilon)]) 
             euclid = np.sqrt(np.sum((a-b)**2))
             all_cos_sim.append(cos_sim)
             all_spearmanr.append(corr)
@@ -85,7 +85,7 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
         
         plt.rcParams["font.size"] = 12 
         fig = plt.figure(figsize=(48, 12))
-        ax = fig.add_subplot(1, 4, 1)
+        ax = fig.add_subplot(2, 4, 1)
         im = ax.imshow(np.array(all_cos_sim).reshape(size), vmin=-1.0, vmax=1.0, cmap='seismic')
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"Cos sim")
@@ -94,7 +94,7 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
         cax = divider.append_axes('right', size="5%", pad=0.1)
         plt.colorbar(im, cax=cax)
 
-        ax = fig.add_subplot(1, 4, 2)
+        ax = fig.add_subplot(2, 4, 2)
         im = ax.imshow(np.array(all_spearmanr).reshape(size), vmin=-1.0, vmax=1.0, cmap='seismic')
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"Spearmanr")
@@ -103,7 +103,7 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
         cax = divider.append_axes('right', size="5%", pad=0.1)
         plt.colorbar(im, cax=cax)
 
-        ax = fig.add_subplot(1, 4, 3)
+        ax = fig.add_subplot(2, 4, 3)
         im = ax.imshow(np.array(all_kl_div).reshape(size))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"KL divergence")
@@ -112,10 +112,32 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
         cax = divider.append_axes('right', size="5%", pad=0.1)
         plt.colorbar(im, cax=cax)
 
-        ax = fig.add_subplot(1, 4, 4)
+        ax = fig.add_subplot(2, 4, 4)
         im = ax.imshow(np.array(all_euclid).reshape(size))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"Euclid Distance")
+        ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size="5%", pad=0.1)
+        plt.colorbar(im, cax=cax)
+
+        ax = fig.add_subplot(2, 4, 5)
+        all_cos_sim2 = np.array(all_cos_sim)
+        all_cos_sim2 = all_cos_sim2[all_cos_sim2<0.8 and all_cos_sim2>-0.8]=0
+        im = ax.imshow(all_cos_sim2.reshape(size), vmin=-1.0, vmax=1.0, cmap='seismic')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(r"Cos sim")
+        ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size="5%", pad=0.1)
+        plt.colorbar(im, cax=cax)
+
+        ax = fig.add_subplot(2, 4, 6)
+        all_spearmanr2 = np.array(all_spearmanr)
+        all_spearmanr2 = all_spearmanr2[all_spearmanr2<0.8 and all_spearmanr2>-0.8]=0
+        im = ax.imshow(all_spearmanr2.reshape(size), vmin=-1.0, vmax=1.0, cmap='seismic')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(r"Spearmanr")
         ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size="5%", pad=0.1)
@@ -128,17 +150,70 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
         print(f'saved {save_path} ')
         print(f'mean cos_sim: {np.mean(all_cos_sim)}')
 
+
+
 def diff_render_distance_plot(datas, pathes, filenames, labels):
+    num_agent = len(datas[0]) 
+
+    fig1 = plt.figure(figsize=(16, 12))
+    fig2 = plt.figure(figsize=(16, 12))
+    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
     for p1 in range(len(datas)):
         for p2 in range(p1+1, len(datas)):
             save_path = os.path.join(pathes[p1], f"{filenames[p1]}-{filenames[p2]}.gif")
             diff_data = datas[p1] - datas[p2]
             multi_render(diff_data, save_path, labels, vmin=-1.0, vmax=1.0, cmap='seismic')
 
-            res1 = datas[p1].reshape(3, 40, 100)
-            res2 = datas[p2].reshape(3, 40, 100)
-            distances_plot(res1, res2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-time')
+            data1 = datas[p1].reshape(3, 40, 100)
+            data2 = datas[p2].reshape(3, 40, 100)
+            distances_plot(data1, data2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-time')
 
-            res1 = np.array([res1[n].T for n in range(len(res1))])
-            res2 = np.array([res2[n].T for n in range(len(res2))])
-            distances_imshow(res1, res2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-state', xlabel='State')
+            data1 = np.array([data1[n].T for n in range(len(data1))])
+            data2 = np.array([data2[n].T for n in range(len(data2))])
+            distances_imshow(data1, data2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-state', xlabel='State')
+
+            if p1==0:
+                for i in range(num_agent):
+                    all_cos_sim = []
+                    all_spearmanr = []
+                    all_kl_div = []
+                    all_euclid = []
+                    for t in range(len(data1[0])):
+                        a = data1[i][t]
+                        b = data2[i][t]
+                        cos_sim = 1-distance.cosine(a, b)
+                        corr, p_value = spearmanr(a, b)
+                        epsilon = 0.0000001
+                        kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(a+epsilon, b+epsilon)]) 
+                        euclid = np.sqrt(np.sum((a-b)**2))
+                        all_cos_sim.append(cos_sim)
+                        all_spearmanr.append(corr)
+                        all_kl_div.append(kl_div)
+                        all_euclid.append(euclid)
+
+                    ax = fig1.add_subplot(2, num_agent, i)
+                    im = ax.plot(np.arange(len(all_cos_sim)), all_cos_sim, label=f'cos sim:{labels[p1]}-{labels[p2]}', color=colors[p2-1])
+                    im = ax.plot(np.arange(len(all_spearmanr)), all_spearmanr, label='spearmanrm:{labels[p1]}-{labels[p2]}', color=colors[p2-1], marker='-')
+                    if p2==len(datas)-1:
+                        plt.rcParams["font.size"] = 16 
+                        ax.set_xlabel(xlabel)
+                        ax.set_ylabel(r"Corr")
+                        ax.legend()
+                        save_path = os.path.join(path, f'corr-{filename}-{i}-plots.png')
+                        plt.savefig(save_path)
+                        plt.close()
+
+                    ax = fig2.add_subplot(2, num_agent, i)
+                    im = ax.plot(np.arange(len(all_kl_div)), all_kl_div, label='kl divergence:{labels[p1]}-{labels[p2]}', color=colors[p2-1])
+                    im = ax.plot(np.arange(len(all_euclid)), all_euclid, label='euclid:{labels[p1]}-{labels[p2]}', color=colors[p2-1], marker='-')
+                    if p2==len(datas)-1:
+                        plt.rcParams["font.size"] = 16 
+                        ax.set_xlabel(r"Time")
+                        ax.set_ylabel(r"Corr")
+                        ax.legend()
+                        save_path = os.path.join(path, f'distance-{filename}-{i}-plots.png')
+                        plt.savefig(save_path)
+                        plt.close()
+
+                    print(f'saved {save_path} ')
+                    print(f'mean cos_sim: {np.mean(all_cos_sim)}')

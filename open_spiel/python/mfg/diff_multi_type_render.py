@@ -102,17 +102,22 @@ def parse_args():
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "expert99"
 pathes = [
-            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+            "/mnt/shunsuke/result/multi_maze2_ppo_distrew",
+            "/mnt/shunsuke/result/multi_maze2_ppo_basicfuncs",
             "/mnt/shunsuke/result/0614/multi_maze2", 
          ] 
 pathnames = [
+                "basicfuncs-distrew", 
                 "basicfuncs", 
                 "expert",
             ] 
 actor_filenames = [
-                    "actor200_1",
+                    "actor99_19",
+                    "actor99_19",
                     "actor99_19"
                   ]
+            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+            #        "actor200_1",
 
 if __name__ == "__main__":
     args = parse_args()
