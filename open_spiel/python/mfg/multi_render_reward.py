@@ -43,7 +43,14 @@ from gif_maker import *
 plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, save=False, filename="agent_dist"):
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, save=False, filename="agent_dist"):
+    if basicfuncs_time:
+        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_time import Discriminator, divide_obs
+    elif basicfuncs:
+        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
+    else:
+        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     rewards = np.zeros((horizon, size, size, nacs))
     dist_rewards = np.zeros((horizon, size, size, nacs))
@@ -57,6 +64,17 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                     obs_input = np.array([obs_input for _ in range(nacs)])
                 elif notmu:
                     obs_input = inputs[f"{x}-{y}-{t}"]
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                elif basicfuncs_time:
+                    from games.predator_prey import goal_distance
+                    obs_input = inputs[f"{x}-{y}-{t}-m"]
+                    x2, y2, t2, mu = divide_obs(np.array(obs_input), size, one_vec=True)
+                    obs_t = np.array([obs_input[2*size:-4]])
+                    dx, dy = goal_distance(x2, y2, pop)
+                    dxy = np.concatenate([dx, dy, obs_t], axis=1)
+                    mu = np.concatenate([mu, obs_t], axis=1)
+                    dxy = np.array([dxy[0] for _ in range(nacs)])
+                    mu = np.array([mu[0] for _ in range(nacs)])
                     obs_input = np.array([obs_input for _ in range(nacs)])
                 elif basicfuncs:
                     from games.predator_prey import goal_distance
@@ -228,7 +246,7 @@ if __name__ == "__main__":
             discriminator = Discriminator(nobs+1, nacs, False, device)
         elif notmu:
             discriminator = Discriminator(nobs, nacs, False, device)
-        elif basicfuncs:
+        elif basicfuncs_time:
             discriminator = Discriminator(num_agent, 2, nobs+num_agent, nacs, False, device)
         else:
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
@@ -275,11 +293,11 @@ if __name__ == "__main__":
     mu_datas = []
     for i in range(num_agent):
         if basicfuncs:
-            rewards, dist_rew, mu_rew = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, save=True, filename=save_path+f"-{i}")
+            rewards, dist_rew, mu_rew = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, basicfuncs_time, save=True, filename=save_path+f"-{i}")
             dist_datas.append(np.mean(dist_rew, axis=3))
             mu_datas.append(np.mean(mu_rew, axis=3))
         else:
-            rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, save=True, filename=save_path+f"-{i}")
+            rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, basicfuncs_time, save=True, filename=save_path+f"-{i}")
         datas.append(np.mean(rewards, axis=3))
     path = osp.join(save_path + f'-mean.gif')
     labels = [f'Group {i}' for i in range(num_agent)]

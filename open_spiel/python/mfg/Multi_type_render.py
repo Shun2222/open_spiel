@@ -34,6 +34,7 @@ from open_spiel.python.mfg.algorithms.mfg_ppo import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 import copy
+import os.path as osp
 from gif_maker import *
 
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"

@@ -35,45 +35,15 @@ from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.algorithms.mfg_ppo import *
+from open_spiel.python.mfg.multi_render_reward import multi_render_reward 
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
-from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
+from diff_utils import *
 from gif_maker import *
 
 plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
-
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
-    # this functions is used to generate an animated video of the distribuiton propagating throught the game 
-    rewards = np.zeros((horizon, size, size, nacs))
-
-    for t in range(horizon):
-        for x in range(size):
-            for y in range(size):
-                if single:
-                    obs_input = inputs[f"{x}-{y}-{t}-m-{pop}"]
-                    obs_input = np.array([obs_input for _ in range(nacs)])
-                elif notmu:
-                    obs_input = inputs[f"{x}-{y}-{t}"]
-                    obs_input = np.array([obs_input for _ in range(nacs)])
-                else:
-                    obs_input = inputs[f"{x}-{y}-{t}-m"]
-                    obs_input = np.array([obs_input for _ in range(nacs)])
-                reward = discriminator.get_reward(
-                    torch.from_numpy(obs_input).to(torch.float32),
-                    torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
-                    None, None,
-                    discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                for a in range(nacs):
-                    rewards[t, y, x, a] = reward[a]
-
-    if save:
-        datas = [rewards[:, :, :, a] for a in range(nacs)]
-        action_str = ["stop", "right", "down", "up", "left"]
-        path = filename + f'-all-action.gif' 
-        multi_render(datas, path, action_str)
-    return rewards
 
 
 def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
@@ -101,13 +71,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--update_eps", type=int, default="70", help="file path")
-    parser.add_argument("--reward_filename", type=str, default="disc_reward", help="file path")
-    parser.add_argument("--value_filename", type=str, default="disc_value", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor", help="file path")
-    parser.add_argument("--filename", type=str, default="reward", help="file path")
-    parser.add_argument("--single", action='store_true')
-    parser.add_argument("--notmu", action='store_true')
     
     args = parser.parse_args()
     return args
@@ -115,31 +78,110 @@ def parse_args():
 filename = "actor"
 pathes = [
             "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-            "/mnt/shunsuke/result/0614/multi_maze2_airl...", 
+            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
+            "/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
          ] 
+            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_episode1",
+            #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
+           #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "basicfuncs", 
-                "expert",
+                "BFMF-AIRL", 
+                "BFMF-AIRL (use time)", 
+                "MF-AIRL", 
             ] 
-update_info = [
-                "200_1",
-                "200_1",
+                #"BFMF-AIRL ep1", 
+                #"MF-AIRL ep1", 
+                #"BFMF-AIRL (use time)", 
+update_infos = [
+                "200_2",
+                "200_2",
+                "200_2",
               ]
+                #"134_134",
+                #"200_2",
 
-disc_filenames = 
-disc_reward
-value_filenames = 
-disc_value
-actor_filenames = 
-actor
-is_single = [False, False]
-is_notmu = [False, False]
+is_single = [False, False, False, False, False]
+is_notmu = [False, False, False, False, False]
+is_basicfuncs = [True, True, False, False, False]
+is_basicfuncs_time = [False, True, False, False]
+
+#pathes = [
+#            "/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
+#            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+#         ] 
+#           #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
+#
+#pathnames = [
+##                "MF-AIRL", 
+#                "BFMF-AIRL", 
+#                "BFMF-AIRL (use time)", 
+#            ] 
+#update_infos = [
+#                "200_2",
+#                "200_2",
+#              ]
+#
+#is_single = [False, False, False, False, False]
+#is_notmu = [False, False, False, False, False]
+#is_basicfuncs = [False, True]
+#is_basicfuncs_time = [False, False]
+
+reward_filename = disc_filename = 'disc_reward'
+value_filename = 'disc_value'
+distance_filename = 'disc_distance'
+mu_filename = 'disc_mu'
+actor_filename = 'actor'
 
 if __name__ == "__main__":
     args = parse_args()
-    for p in range(len(pathes)):
+    assert len(pathes)<9, 'corlo num Error'
 
-        # Set the seepd 
+    for ip, target_path in enumerate(pathes):
+        for i in range(3):
+            fname = reward_filename
+            fname = fname + f'{update_infos[ip]}-{i}.pth' 
+            fpath = osp.join(target_path, fname)
+            assert osp.isfile(fpath), f'isFileError: {fpath}'
+
+            fname = value_filename
+            fname = fname + f'{update_infos[ip]}-{i}.pth' 
+            fpath = osp.join(target_path, fname)
+            assert osp.isfile(fpath), f'isFileError: {fpath}'
+
+            fname = actor_filename
+            fname = fname + f'{update_infos[ip]}-{i}.pth' 
+            fpath = osp.join(target_path, fname)
+            assert osp.isfile(fpath), f'isFileError: {fpath}'
+
+            if is_basicfuncs[ip]:
+                fname = distance_filename
+                fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                fpath = osp.join(target_path, fname)
+                assert osp.isfile(fpath), f'isFileError: {fpath}'
+
+                fname = mu_filename
+                fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                fpath = osp.join(target_path, fname)
+                assert osp.isfile(fpath), f'isFileError: {fpath}'
+
+
+    res = []
+    dist_res = []
+    mu_res = []
+    for p in range(len(pathes)):
+        single = is_single[p]
+        notmu = is_notmu[p]
+        basicfuncs = is_basicfuncs[p]
+        basicfuncs_time = is_basicfuncs_time[p]
+
+        if basicfuncs_time:
+            from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_time import Discriminator, divide_obs
+        elif basicfuncs:
+            from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
+        else:
+            from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+
+        # Set the seed 
         seed = args.seed
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -147,8 +189,9 @@ if __name__ == "__main__":
         os.environ["PYTHONHASHSEED"] = str(seed)
         print(f"Random seed set as {seed}")
 
+        update_info = update_eps_info = f'{update_infos[p]}'
         device = torch.device("cpu")
-        #distrib_path = os.path.join(args.path, args.distrib_filename+update_eps_info)
+        #distrib_path = os.path.join(pathes[p], distrib_filename+update_eps_info)
         #distrib = pkl.load(open(distrib_path, "rb"))
         #print("load actor model from", distrib_path)
 
@@ -172,9 +215,8 @@ if __name__ == "__main__":
         env = envs[0]
         nacs = env.action_spec()['num_actions']
         nobs = env.observation_spec()['info_state'][0]
-
-        single = is_single[p] 
-        notmu = is_notmu[p] 
+        horizon = env.game.get_parameters()['horizon']
+        size = env.game.get_parameters()['size']
 
         agents = []
         actor_models = []
@@ -185,7 +227,7 @@ if __name__ == "__main__":
             agent = Agent(nobs, nacs).to(device)
             actor_model = agent.actor
 
-            fname = copy.deepcopy(actor_filename[p])
+            fname = copy.deepcopy(actor_filename+update_eps_info)
             fname = fname + f'-{i}.pth' 
             actor_path = osp.join(pathes[p], fname)
             actor_model.load_state_dict(torch.load(actor_path))
@@ -203,20 +245,28 @@ if __name__ == "__main__":
                 discriminator = Discriminator(nobs+1, nacs, False, device)
             elif notmu:
                 discriminator = Discriminator(nobs, nacs, False, device)
+            elif basicfuncs_time:
+                discriminator = Discriminator(num_agent, horizon, 2, nobs+num_agent, nacs, False, device)
+            elif basicfuncs:
+                discriminator = Discriminator(num_agent, 2, nobs+num_agent, nacs, False, device)
             else:
                 discriminator = Discriminator(nobs+num_agent, nacs, False, device)
-            reward_path = osp.join(pathes[p], reward_filename[p] + f'-{i}.pth')
-            value_path = osp.join(pathes[p], value_filenames[p] + f'-{i}.pth')
-            discriminator.load(reward_path, value_path, use_eval=True)
+            reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
+            value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
+            if basicfuncs:
+                distance_path = osp.join(pathes[p], distance_filename+update_eps_info + f'-{i}.pth')
+                mu_path = osp.join(pathes[p], mu_filename+update_info + f'-{i}.pth')
+                discriminator.load(distance_path, mu_path, reward_path, value_path, use_eval=True)
+                discriminator.print_weights()
+            else:
+                distance_path = osp.join(pathes[p], distance_filename+update_info + f'-{i}.pth')
+                mu_path = osp.join(pathes[p], mu_filename+update_eps_info + f'-{i}.pth')
+                discriminator.load(reward_path, value_path, use_eval=True)
             discriminators.append(discriminator)
 
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
         for env in envs:
           env.update_mfg_distribution(merge_dist)
-
-        
-        horizon = env.game.get_parameters()['horizon']
-        size = env.game.get_parameters()['size']
 
         agent_dist = np.zeros((horizon,size,size))
         mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
@@ -233,15 +283,32 @@ if __name__ == "__main__":
 
 
         inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
-        save_path = os.path.join(pathes[p], filename)
+        save_path = os.path.join(pathes[p], filename+str(update_info))
         datas = []
+        dist_datas = []
+        mu_datas = []
         for i in range(num_agent):
-            rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
+            if basicfuncs:
+                rewards, dist_rew, mu_rew = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, basicfuncs_time, save=True, filename=save_path+f"-{i}")
+                dist_datas.append(np.mean(dist_rew, axis=3))
+                mu_datas.append(np.mean(mu_rew, axis=3))
+            else:
+                rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, basicfuncs_time, save=True, filename=save_path+f"-{i}")
             datas.append(np.mean(rewards, axis=3))
+
+        res.append(datas)
+        dist_res.append(dist_datas)
+        mu_res.append(mu_datas)
         path = osp.join(save_path + f'-mean.gif')
         labels = [f'Group {i}' for i in range(num_agent)]
-        print(np.array(datas).shape)
         multi_render(datas, path, labels)
+        if basicfuncs:
+            labels = [f'Group {i}' for i in range(num_agent)]
+            path = osp.join(save_path + f'-mean-dist.gif')
+            multi_render(dist_datas, path, labels)
+
+            path = osp.join(save_path + f'-mean-mu.gif')
+            multi_render(mu_datas, path, labels)
 
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 
@@ -254,10 +321,40 @@ if __name__ == "__main__":
             points = points.reshape(len(points), col).T
             bp = ax.boxplot(points)
             plt.xlabel(r"$\mu_{time}$")
-            save_path = os.path.join(pathes[p], filename+f'-mutime-box-{j}-{i}.png')
+            save_path = os.path.join(pathes[p], filename+f'-mutime-box-{i}.png')
             plt.savefig(save_path)
             plt.close()
             print(f'saved {save_path} ')
+            if basicfuncs:
+                fig = plt.figure(figsize=(16, 12))
+                ax = fig.add_subplot(1, 1, 1)
+                points = dist_datas[i]
+                col = 1
+                for s in range(len(points[0].shape)):
+                    col *= points[0].shape[s]
+                points = points.reshape(len(points), col).T
+                bp = ax.boxplot(points)
+                plt.xlabel(r"$\mu_{time}$")
+                plt.ylabel(r"Distance Reward")
+                save_path = os.path.join(pathes[p], filename+f'-mutime-box-dist-{i}.png')
+                plt.savefig(save_path)
+                plt.close()
+                print(f'saved {save_path} ')
+
+                fig = plt.figure(figsize=(16, 12))
+                ax = fig.add_subplot(1, 1, 1)
+                points = mu_datas[i]
+                col = 1
+                for s in range(len(points[0].shape)):
+                    col *= points[0].shape[s]
+                points = points.reshape(len(points), col).T
+                bp = ax.boxplot(points)
+                plt.xlabel(r"$\mu_{time}$")
+                plt.ylabel(r"Mu Reward")
+                save_path = os.path.join(pathes[p], filename+f'-mutime-box-mu-{i}.png')
+                plt.savefig(save_path)
+                plt.close()
+                print(f'saved {save_path} ')
 
             figsizes = [(16, 12), (64, 12)]
             fontsizes = [8, 24]
@@ -271,8 +368,48 @@ if __name__ == "__main__":
                     col *= points[0].shape[s]
                 points = points.reshape(len(points), col)
                 bp = ax.boxplot(points)
-                plt.xlabel(r"$\state$")
+                plt.xlabel(r"State")
                 save_path = os.path.join(pathes[p], filename+f'-box-{j}-{i}.png')
                 plt.savefig(save_path)
                 plt.close()
                 print(f'saved {save_path} ')
+                if basicfuncs:
+                    fig = plt.figure(figsize=figsizes[j])
+                    ax = fig.add_subplot(1, 1, 1)
+                    points = dist_datas[i]
+                    col = 1
+                    for s in range(len(points[0].shape)):
+                        col *= points[0].shape[s]
+                    points = points.reshape(len(points), col)
+                    bp = ax.boxplot(points)
+                    plt.xlabel(r"State")
+                    plt.ylabel(r"Distance Reward")
+                    save_path = os.path.join(pathes[p], filename+f'-box-dist-{j}-{i}.png')
+                    plt.savefig(save_path)
+                    plt.close()
+                    print(f'saved {save_path} ')
+
+                    fig = plt.figure(figsize=figsizes[j])
+                    ax = fig.add_subplot(1, 1, 1)
+                    points = mu_datas[i]
+                    col = 1
+                    for s in range(len(points[0].shape)):
+                        col *= points[0].shape[s]
+                    points = points.reshape(len(points), col)
+                    bp = ax.boxplot(points)
+                    plt.xlabel(r"State")
+                    plt.ylabel(r"Mu Reward")
+                    path = os.path.join(pathes[p], filename+f'-box-mu-{j}-{i}.png')
+                    plt.savefig(save_path)
+                    plt.close()
+                    print(f'saved {save_path} ')
+
+    labels = [f"Group {n}" for n in range(num_agent)] 
+    diff_render_distance_plot(np.array(res), pathes, pathnames, labels)
+    if np.sum(is_basicfuncs)==len(is_basicfuncs):
+        dist_pathnames = ['dist-'+p for p in pathnames] 
+        mu_pathnames = ['mu-'+p for p in pathnames] 
+        diff_render_distance_plot(np.array(dist_res), pathes, dist_pathnames, labels)
+        diff_render_distance_plot(np.array(mu_res), pathes, mu_pathnames, labels)
+
+

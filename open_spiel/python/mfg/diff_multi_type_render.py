@@ -100,29 +100,56 @@ def parse_args():
     return args
 
 # 4items: args actor_filename, filename, pathes, pathnames
-filename = "expert99"
+filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/multi_maze2_ppo_distrew",
-            "/mnt/shunsuke/result/multi_maze2_ppo_basicfuncs",
             "/mnt/shunsuke/result/0614/multi_maze2", 
+            "/mnt/shunsuke/result/0614/multi_maze2_colrew0", 
+            "/mnt/shunsuke/result/0614/multi_maze2_colrew100", 
+            "/mnt/shunsuke/result/0614/multi_maze2_colrew200", 
+            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
+            "/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
          ] 
+            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
+            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
+            #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
 pathnames = [
-                "basicfuncs-distrew", 
-                "basicfuncs", 
                 "expert",
+                "expert0",
+                "expert100",
+                "expert200",
+                "BFMF-AITL",
+                "BFMF-AITL(time)",
+                "MF-AITL",
             ] 
+                #"BFMF-AIRL", 
+                #"BFMF-AIRL (use time)", 
+                #"MF-AIRL", 
 actor_filenames = [
                     "actor99_19",
                     "actor99_19",
-                    "actor99_19"
+                    "actor99_19",
+                    "actor99_19",
+                    "actor200_2",
+                    "actor200_2",
+                    "actor200_2",
                   ]
+                    #"actor200_2",
             #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
             #        "actor200_1",
 
 if __name__ == "__main__":
     args = parse_args()
+
     res_final_dists = []
     gifMaker = GifMaker()
+    for ip, target_path in enumerate(pathes):
+        for i in range(3):
+            fname = copy.deepcopy(actor_filenames[ip])
+            fname = fname + f'-{i}.pth' 
+            fpath = osp.join(target_path, fname)
+            assert osp.isfile(fpath), f'isFileError: {fpath}'
 
     for ip, target_path in enumerate(pathes):
 
@@ -133,7 +160,6 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(seed)
         os.environ["PYTHONHASHSEED"] = str(seed)
         print(f"Random seed set as {seed}")
-
 
         device = torch.device("cpu")
         #distrib_path = os.path.join(args.path, args.distrib_filename)

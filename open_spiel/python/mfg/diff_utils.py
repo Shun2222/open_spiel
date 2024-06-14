@@ -29,7 +29,7 @@ def distances_plot(data1, data2, path, filename, xlabel="Time"):
             cos_sim = 1-distance.cosine(a, b)
             corr, p_value = spearmanr(a, b)
             epsilon = 0.0000001
-            kl_div = np.sum([ai * np.log(bi / ai) for ai, bi in zip(a+epsilon, b+epsilon)]) 
+            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(a+epsilon, b+epsilon)]) 
             euclid = np.sqrt(np.sum((a-b)**2))
             all_cos_sim.append(cos_sim)
             all_spearmanr.append(corr)
@@ -123,7 +123,8 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
 
         ax = fig.add_subplot(2, 4, 5)
         all_cos_sim2 = np.array(all_cos_sim)
-        all_cos_sim2 = all_cos_sim2[all_cos_sim2<0.8 and all_cos_sim2>-0.8]=0
+        tf = (all_cos_sim2<0.8) & (all_cos_sim2>0)
+        all_cos_sim2[tf] = 0
         im = ax.imshow(all_cos_sim2.reshape(size), vmin=-1.0, vmax=1.0, cmap='seismic')
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"Cos sim")
@@ -134,7 +135,8 @@ def distances_imshow(data1, data2, path, filename, size=(10, 10), xlabel="State"
 
         ax = fig.add_subplot(2, 4, 6)
         all_spearmanr2 = np.array(all_spearmanr)
-        all_spearmanr2 = all_spearmanr2[all_spearmanr2<0.8 and all_spearmanr2>-0.8]=0
+        tf = (all_spearmanr2<0.8) & (all_spearmanr2>0)
+        all_spearmanr2[tf] = 0
         im = ax.imshow(all_spearmanr2.reshape(size), vmin=-1.0, vmax=1.0, cmap='seismic')
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"Spearmanr")
@@ -191,27 +193,27 @@ def diff_render_distance_plot(datas, pathes, filenames, labels):
                         all_kl_div.append(kl_div)
                         all_euclid.append(euclid)
 
-                    ax = fig1.add_subplot(2, num_agent, i)
-                    im = ax.plot(np.arange(len(all_cos_sim)), all_cos_sim, label=f'cos sim:{labels[p1]}-{labels[p2]}', color=colors[p2-1])
-                    im = ax.plot(np.arange(len(all_spearmanr)), all_spearmanr, label='spearmanrm:{labels[p1]}-{labels[p2]}', color=colors[p2-1], marker='-')
+                    ax = fig1.add_subplot(2, num_agent+1, i+1)
+                    im = ax.plot(np.arange(len(all_cos_sim)), all_cos_sim, label=f'cos sim:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1])
+                    im = ax.plot(np.arange(len(all_spearmanr)), all_spearmanr, label='spearmanrm:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1], marker='o')
                     if p2==len(datas)-1:
                         plt.rcParams["font.size"] = 16 
-                        ax.set_xlabel(xlabel)
+                        ax.set_xlabel('State')
                         ax.set_ylabel(r"Corr")
                         ax.legend()
-                        save_path = os.path.join(path, f'corr-{filename}-{i}-plots.png')
+                        save_path = os.path.join(pathes[0], f'corr-{i}-plots.png')
                         plt.savefig(save_path)
                         plt.close()
 
-                    ax = fig2.add_subplot(2, num_agent, i)
-                    im = ax.plot(np.arange(len(all_kl_div)), all_kl_div, label='kl divergence:{labels[p1]}-{labels[p2]}', color=colors[p2-1])
-                    im = ax.plot(np.arange(len(all_euclid)), all_euclid, label='euclid:{labels[p1]}-{labels[p2]}', color=colors[p2-1], marker='-')
+                    ax = fig2.add_subplot(2, num_agent+1, i+1)
+                    im = ax.plot(np.arange(len(all_kl_div)), all_kl_div, label='kl divergence:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1])
+                    im = ax.plot(np.arange(len(all_euclid)), all_euclid, label='euclid:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1], marker='o')
                     if p2==len(datas)-1:
                         plt.rcParams["font.size"] = 16 
                         ax.set_xlabel(r"Time")
                         ax.set_ylabel(r"Corr")
                         ax.legend()
-                        save_path = os.path.join(path, f'distance-{filename}-{i}-plots.png')
+                        save_path = os.path.join(pathes[0], f'distance-{i}-plots.png')
                         plt.savefig(save_path)
                         plt.close()
 

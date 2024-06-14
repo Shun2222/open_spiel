@@ -10,7 +10,8 @@ def divide_obs(obs, size, one_vec=False):
     if one_vec:
         obs_x = np.argmax(obs[:size])
         obs_y = np.argmax(obs[size:2*size])
-        obs_t = np.argmax(obs[2*size:-3])
+        obs_t = np.argmax(obs[2*size:-4])
+        obs_hatena = obs[-4]
         obs_mu = obs[-3:]
 
         obs_x = obs_x.reshape(1, 1)
