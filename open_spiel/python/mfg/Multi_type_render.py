@@ -34,20 +34,25 @@ from open_spiel.python.mfg.algorithms.mfg_ppo import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 import copy
+import os.path as osp
 from gif_maker import *
 
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"
 
-def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent_distk.mp4"):
+def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent_distk"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_agent = len(envs)
     horizon = envs[0].game.get_parameters()['horizon']
     d_size = size = envs[0].game.get_parameters()['size']
 
     final_dists = []
+    final_dists_a = []
+    final_dists_p = []
     for idx in range(num_agent):
         agent_dist = np.zeros((horizon,d_size,d_size))
         mu_dist = np.zeros((horizon,d_size,d_size))
+        a_dist = np.zeros((horizon,d_size,d_size))
+        p_dist = np.zeros((horizon,d_size,d_size))
 
         for k,v in merge_dist.distribution.items():
             if "mu" in k:
@@ -60,6 +65,30 @@ def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent
                 x = int(xy[1].split("[")[-1])
                 y = int(xy[2].split("]")[0])
                 mu_dist[t,y,x] = v
+            elif "a" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                if pop!=idx:
+                    continue
+                t = int(tt[1].split('=')[1].split('_')[0])
+                if t>=40:
+                    continue
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                a_dist[t,y,x] = v
+            elif "t=" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                if pop!=idx:
+                    continue
+                t = int(tt[1].split('=')[1])
+                if t>=40:
+                    continue
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                p_dist[t,y,x] = v
 
         for i in range(horizon):
             obs = info_states[idx][i].tolist()
@@ -70,11 +99,20 @@ def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent
 
         #final_dist = agent_dist + mu_dist
         final_dist = mu_dist
+        final_dist_a = a_dist
+        final_dist_p = p_dist
+
         final_dists.append(final_dist)
+        final_dists_a.append(final_dist_a)
+        final_dists_p.append(final_dist_p)
 
     final_dists = np.array(final_dists)
+    final_dists_a = np.array(final_dists_a)
+    final_dists_p = np.array(final_dists_p)
     if save:
-        multi_render(final_dists[:, :, :], filename, [f'Group{i}' for i in range(num_agent)])
+        multi_render(final_dists[:, :, :], filename+'.gif', [f'Group{i}' for i in range(num_agent)])
+        multi_render(final_dists_p[:, :, :], filename+'p.gif', [f'Group{i}' for i in range(num_agent)])
+        multi_render(final_dists_a[:, :, :], filename+'a.gif', [f'Group{i}' for i in range(num_agent)])
     return final_dists
 
 
@@ -84,9 +122,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0614/multi_maze2_1episode", help="file path")
-    parser.add_argument("--filename", type=str, default="expert99", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor200_2", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_maze2_ppo_basicfuncs", help="file path")
+    parser.add_argument("--filename", type=str, default="actor99", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor99_19", help="file path")
     
     args = parser.parse_args()
     return args
@@ -218,6 +256,6 @@ if __name__ == "__main__":
     for i in range(num_agent):
         reward_np = np.array(rewards[i])
         print(f'cumulative reward {i}: {np.sum(reward_np)}')
-    save_path = os.path.join(args.path, f"{args.filename}k.mp4")
-    final_dists = calc_distribution(envs, merge_dist, info_state, save=False, vmin=-1.0, vmax=1.0, filename=save_path)
+    save_path = os.path.join(args.path, f"{args.filename}")
+    final_dists = calc_distribution(envs, merge_dist, info_state, save=True, filename=save_path)
 

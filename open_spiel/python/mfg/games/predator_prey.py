@@ -35,6 +35,7 @@ import pyspiel
 from open_spiel.python.utils import shared_value
 
 
+
 class Geometry(enum.IntEnum):
   SQUARE = 0
   TORUS = 1
@@ -82,6 +83,10 @@ _GAME_TYPE = pyspiel.GameType(
     provides_observation_tensor=True,
     parameter_specification=_DEFAULT_PARAMS)
 
+def goal_distance(x, y, pop):
+    dx = x - _DEFAULT_GOAL_POSITION[pop][0]
+    dy = y - _DEFAULT_GOAL_POSITION[pop][1]
+    return dx, dy 
 
 def get_param(param_name, params):
   return params.get(param_name, _DEFAULT_PARAMS[param_name])

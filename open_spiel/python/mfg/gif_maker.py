@@ -33,6 +33,33 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis'):
     plt.close()
     print(f"Save {path}")
 
+    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+    ims = []
+    for t in range(len(datas[0])):
+        imt = []
+        for i in range(n_datas):
+            axes[i].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+            vmin = np.nanmin(datas[i][t])
+            vmax = np.nanmax(datas[i][t])
+            if np.abs(vmin)>np.abs(vmax):
+                vmax = np.abs(vmin)
+            else:
+                vmin = -np.abs(vmax)
+            im = axes[i].imshow(datas[i][t], animated=True, vmin=vmin, vmax=vmax, cmap=cmap) 
+            if t==0 and i==n_datas-1:
+                axes[n_datas].axis('off')
+                #fig.colorbar(im, ax=axes[n_datas])
+            imt.append(im)
+        ims.append(imt)
+        #ims += [[axes[i].imshow(datas[i][t], animated=True, cmap=cmap) for i in range(n_datas)]]
+    ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
+    for i in range(n_datas):
+        axes[i].set_title(labels[i])
+    path =filename[:-4] + 'vimin-max' + filename[-4:]
+    ani.save(path, writer="ffmpeg", fps=5)
+    plt.close()
+    print(f"Save {path}")
+
 class GifMaker():
     def __init__(self):
         self.datas = []
