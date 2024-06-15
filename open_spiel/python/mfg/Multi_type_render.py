@@ -110,9 +110,9 @@ def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent
     final_dists_a = np.array(final_dists_a)
     final_dists_p = np.array(final_dists_p)
     if save:
-        multi_render(final_dists[:, :, :], filename+'.gif', [f'Group{i}' for i in range(num_agent)])
-        multi_render(final_dists_p[:, :, :], filename+'p.gif', [f'Group{i}' for i in range(num_agent)])
-        multi_render(final_dists_a[:, :, :], filename+'a.gif', [f'Group{i}' for i in range(num_agent)])
+        multi_render(final_dists[:, :, :], filename+'.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
+        multi_render(final_dists_p[:, :, :], filename+'p.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
+        multi_render(final_dists_a[:, :, :], filename+'a.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
     return final_dists
 
 
@@ -122,9 +122,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_maze2_ppo_basicfuncs", help="file path")
-    parser.add_argument("--filename", type=str, default="actor99", help="file path")
-    parser.add_argument("--actor_filename", type=str, default="actor99_19", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/multi_type_maze_airl", help="file path")
+    parser.add_argument("--filename", type=str, default="actor", help="file path")
+    parser.add_argument("--actor_filename", type=str, default="actor1100_1099", help="file path")
     
     args = parser.parse_args()
     return args

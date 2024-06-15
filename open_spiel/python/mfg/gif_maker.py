@@ -20,8 +20,9 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         for i in range(n_datas):
             axes[i].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
             im = axes[i].imshow(datas[i][t], animated=True, vmin=vmin, vmax=vmax, cmap=cmap) 
-            X, Y, Z, _ = calc_kde(data[i][t])
-            im = axes[i].contour(X+0.5, Y+0.5, Z, 10)
+            if use_kde:
+                X, Y, Z, _ = calc_kde(data[i][t])
+                im = axes[i].contour(X+0.5, Y+0.5, Z, 10)
             if t==0 and i==n_datas-1:
                 axes[n_datas].axis('off')
                 fig.colorbar(im, ax=axes[n_datas])
@@ -49,6 +50,9 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
             else:
                 vmin = -np.abs(vmax)
             im = axes[i].imshow(datas[i][t], animated=True, vmin=vmin, vmax=vmax, cmap=cmap) 
+            if use_kde:
+                X, Y, Z, _ = calc_kde(data[i][t])
+                im = axes[i].contour(X+0.5, Y+0.5, Z, 10)
             if t==0 and i==n_datas-1:
                 axes[n_datas].axis('off')
                 #fig.colorbar(im, ax=axes[n_datas])
