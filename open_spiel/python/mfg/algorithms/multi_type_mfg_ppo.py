@@ -35,7 +35,6 @@ from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
-from open_spiel.python.mfg.games.predator_prey import obs_xytm_to_obs_xym
 
 def convert_distrib(envs, distrib):
     env = envs[0]
@@ -152,8 +151,7 @@ class MultiTypeMFGPPO(object):
     def __init__(self, game, env, merge_dist, conv_dist, device, player_id=0, expert_policy=None):
         self._device = device
 
-        self._horizon = env.game.get_parameters()['horizon']
-        info_state_size = env.observation_spec()["info_state"][0] - self._horizon - 1
+        info_state_size = env.observation_spec()["info_state"][0]
         num_actions = env.action_spec()["num_actions"]
         self._num_agent = game.num_players()
         self._player_id = player_id
@@ -192,8 +190,7 @@ class MultiTypeMFGPPO(object):
             rew = 0
             while not time_step.last():
                 obs = time_step.observations["info_state"][self._player_id]
-                obs_xym = obs_xytm_to_obs_xym(obs)
-                obs_pth = torch.Tensor(obs_xym).to(self._device)
+                obs_pth = torch.Tensor(obs).to(self._device)
                 info_state[step] = obs_pth
                 with torch.no_grad():
                     t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth)
