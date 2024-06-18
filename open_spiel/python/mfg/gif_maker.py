@@ -150,7 +150,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     for i in range(n_datas):
         axes[i].set_title(labels[i])
 
-    path =filename[:-4] + 'vimin-max1' + filename[-4:]
+    path =filename[:-4] + 'vimin-max' + filename[-4:]
     ani.save(path, writer="ffmpeg", fps=5)
     plt.close()
     print(f"Save {path}")
