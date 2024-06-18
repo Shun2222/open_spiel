@@ -19,3 +19,4 @@ tensorboard
 click
 tqdm
 torch
+scikit-learn
