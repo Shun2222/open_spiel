@@ -13,8 +13,7 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
-from games.predator_prey import goal_distance
+from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
 
 class MultiTypeAIRL(object):
@@ -23,17 +22,15 @@ class MultiTypeAIRL(object):
         self._envs = envs
         self._device = device
         self._num_agent = len(envs)
-        self._size = game.get_parameters()['size']
 
         env = envs[0]
-        self._horizon = env.game.get_parameters()['horizon']
         self._experts = experts
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        self._discriminator = [Discriminator(self._num_agent, 2, self._nobs+self._nmu, self._nacs, False, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator(self._nobs+self._nmu, self._nacs, False, device) for _ in range(self._num_agent)]
 
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
@@ -97,13 +94,7 @@ class MultiTypeAIRL(object):
                     assert len(obs[0])+3==len(obs_mu[0])
                     assert len(obs_next_mu[0])==len(obs_mu[0])
 
-                    x, y, t, mu = divide_obs(obs_mu, self._size)
-                    dx, dy = goal_distance(x, y, idx)
-                    dxy = np.concatenate([dx, dy], axis=1)
-
                     disc_rewards_pth = self._discriminator[idx].get_reward(
-                        torch.from_numpy(dxy).to(self._device),
-                        torch.from_numpy(mu).to(self._device),
                         torch.from_numpy(obs_mu).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
                         torch.from_numpy(obs_next).to(self._device),
@@ -149,18 +140,7 @@ class MultiTypeAIRL(object):
 
                     e_log_prob = np.array([e_log_prob])
                     g_log_prob = np.array([g_log_prob])
-
-                    x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size)
-                    dx, dy = goal_distance(x, y, idx)
-                    g_dxy = np.concatenate([dx, dy], axis=1)
                 
-
-                    x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size)
-                    dx, dy = goal_distance(x, y, idx)
-                    e_dxy = np.concatenate([dx, dy], axis=1)
-
-                    d_dist = np.concatenate([g_dxy, e_dxy], axis=0)
-                    d_mu = np.concatenate([g_mu, e_mu], axis=0)
                     d_obs_mu = np.concatenate([g_obs_mu[0], e_obs_mu[0]], axis=0)
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
@@ -169,8 +149,6 @@ class MultiTypeAIRL(object):
                     d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
 
                     total_loss = self._discriminator[idx].train(
-                        torch.from_numpy(d_dist).to(torch.float32).to(self._device),
-                        torch.from_numpy(d_mu).to(torch.float32).to(self._device),
                         self._optimizers[idx],
                         torch.from_numpy(d_obs_mu).to(torch.float32).to(self._device),
                         torch.from_numpy(d_acs).to(torch.int64).to(self._device),
