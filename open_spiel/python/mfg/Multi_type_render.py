@@ -111,8 +111,8 @@ def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent
     final_dists_p = np.array(final_dists_p)
     if save:
         multi_render(final_dists[:, :, :], filename+'.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
-        multi_render(final_dists_p[:, :, :], filename+'p.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
-        multi_render(final_dists_a[:, :, :], filename+'a.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
+        #multi_render(final_dists_p[:, :, :], filename+'-p.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
+        #multi_render(final_dists_a[:, :, :], filename+'-a.gif', [f'Group{i}' for i in range(num_agent)], use_kde=True)
     return final_dists
 
 

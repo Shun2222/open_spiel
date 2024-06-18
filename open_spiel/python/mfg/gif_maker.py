@@ -19,24 +19,88 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     axes[n_datas].axis('off')
     im = axes[n_datas-1].imshow(datas[n_datas-1][0], vmin=vmin, vmax=vmax, cmap=cmap) 
     fig.colorbar(im, ax=axes[n_datas])
+    imgs = []
+    contours = []
+    for n in range(n_datas):
+        axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
+        imgs.append(im)
+        if use_kde:
+            X, Y, Z, _ = calc_kde(datas[n][0])
+            Y = -Y + 9 
+            cs = axes[n].contour(Y, X, Z, 10, animated=True)
+            contours.append(cs)
 
-    def animate(i):
+    def animate(i, imgs, contours, datas):
         for n in range(n_datas):
             axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            im = axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
+            #axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
+            imgs[n].set_array(datas[n][i])
 
             if use_kde:
+                for c in contours[n].collections:
+                    c.remove()
                 X, Y, Z, _ = calc_kde(datas[n][i])
-                cs = axes[n].contour(X+0.5, Y+0.5, Z, 10)
-                im = cs.collections
-        return axes
+                Y = -Y + 9 
+                contours[n] = axes[n].contour(Y, X, Z, 10)
+        return imgs, contours 
 
-    ani = animation.FuncAnimation(fig, animate, frames=range(len(datas[0])), blit=True, interval = 200)
+    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
 
     for i in range(n_datas):
         axes[i].set_title(labels[i])
 
     path = filename
+    ani.save(path, writer="ffmpeg", fps=5)
+    plt.close()
+    print(f"Save {path}")
+
+    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+    vmax = np.nanmax(datas)
+    vmin = np.nanmin(datas)
+
+    axes[n_datas].axis('off')
+    im = axes[n_datas-1].imshow(datas[n_datas-1][0], vmin=vmin, vmax=vmax, cmap=cmap) 
+    #cbar = fig.colorbar(im, ax=axes[n_datas])
+    imgs = []
+    contours = []
+    for n in range(n_datas):
+        vmin = np.nanmin(datas[n][i])
+        vmax = np.nanmax(datas[n][i])
+        if np.abs(vmin)>np.abs(vmax):
+            vmax = np.abs(vmin)
+        else:
+            vmin = -np.abs(vmax)
+        axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
+        imgs.append(im)
+        if use_kde:
+            X, Y, Z, _ = calc_kde(datas[n][0])
+            Y = -Y + 9 
+            cs = axes[n].contour(Y, X, Z, 10, animated=True)
+            contours.append(cs)
+
+    def animate(i, imgs, contours, datas):
+        for n in range(n_datas):
+            axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+            #axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
+            imgs[n].set_array(datas[n][i])
+            #cbar.update_normal(imgs)
+
+            if use_kde:
+                for c in contours[n].collections:
+                    c.remove()
+                X, Y, Z, _ = calc_kde(datas[n][i])
+                Y = -Y + 9 
+                contours[n] = axes[n].contour(Y, X, Z, 10)
+        return imgs, contours 
+
+    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
+
+    for i in range(n_datas):
+        axes[i].set_title(labels[i])
+
+    path =filename[:-4] + 'vimin-max' + filename[-4:]
     ani.save(path, writer="ffmpeg", fps=5)
     plt.close()
     print(f"Save {path}")
@@ -343,21 +407,15 @@ def calc_kde(prob_datas, num_agent=1000):
     for i in range(len(Z)):
         Z2.append(Z[len(Z)-i-1])
     Z = Z2
+
     return X, Y, Z, n_data
 
-    ## 等高線プロット4
-    #plt.figure(figsize=(8, 6))
-    #plt.imshow(n_data,  extent=[0, d_shape[0], 0, d_shape[1]], alpha=0.3)
-    #heatmap = plt.imshow(Z, extent=[0, d_shape[0], 0, d_shape[1]], origin='lower', cmap='viridis', alpha=0.8)
-    #plt.contour(X+0.5, Y+0.5, Z, 10)
-    #plt.xlabel('X')
-    #Jplt.ylabel('Y')
-    #plt.title('2D Probability Density Function')
-    #plt.legend()
-    #plt.show()
 
 if __name__=="__main__":
     datas = pkl.load(open('test.pkl', 'rb'))
-    filename = 'test.gif'
     labels = [f'label {i}' for i in range(len(datas))]
+
+    filename = 'test.gif'
     multi_render(datas, filename, labels, use_kde=True)
+    filename = 'test2.gif'
+    multi_render(datas, filename, labels, use_kde=False)
