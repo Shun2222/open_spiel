@@ -19,14 +19,18 @@ class Discriminator(nn.Module):
         self.reward_net = nn.Sequential(
             nn.Linear(ob_shape if state_only else ob_shape + ac_shape, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, 1)
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.ReLU(),
+            nn.Linear(hidden_size//2, 1)
         ).to(self._device)
 
         # Define layers for value function network
         self.value_net = nn.Sequential(
             nn.Linear(ob_shape, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, 1)
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.ReLU(),
+            nn.Linear(hidden_size//2, 1)
         ).to(self._device)
 
         # Define layers for value next function network
