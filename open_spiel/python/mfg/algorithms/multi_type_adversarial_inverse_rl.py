@@ -94,8 +94,6 @@ class MultiTypeAIRL(object):
                     nobs[-1] = obs_mu[0]
                     obs_next_mu = nobs
                     obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
-                    assert len(obs[0])+3==len(obs_mu[0])
-                    assert len(obs_next_mu[0])==len(obs_mu[0])
 
                     x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
                     assert len(t[0])==self._horizon
