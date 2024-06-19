@@ -115,7 +115,7 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
 
         obs_x = obs_x.reshape(1, 1)
         obs_y = obs_y.reshape(1, 1)
-        obs_t = obs_y.reshape(1, 1)
+        obs_t = obs_t.reshape(1, 1)
 
       else:
         obs_x = obs[:size]
@@ -124,7 +124,7 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
 
         obs_x = obs_x.reshape(size, 1)
         obs_y = obs_y.reshape(size, 1)
-        obs_t = obs_y.reshape(len(obs)-3-2*size, 1)
+        obs_t = obs_t.reshape(len(obs)-3-2*size, 1)
       obs_mu = obs[-3:]
 
       obs_mu = obs_mu.reshape(1, 3)
@@ -137,14 +137,14 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
           obs_t = np.argmax(obs[2*size:-3].T, axis=1)
           obs_x = obs_x.reshape(len(obs_x), 1)
           obs_y = obs_y.reshape(len(obs_y), 1)
-          obs_t = obs_y.reshape(len(obs_t), 1)
+          obs_t = obs_t.reshape(len(obs_t), 1)
         else:
           obs_x = obs[:size].T
           obs_y = obs[size:2*size].T
           obs_t = obs[2*size:-3].T
           obs_x = obs_x.reshape(len(obs_x), size)
           obs_y = obs_y.reshape(len(obs_y), size)
-          obs_t = obs_y.reshape(len(obs_t), len(obs)-3-2*size)
+          obs_t = obs_t.reshape(len(obs_t), len(obs)-3-2*size)
         obs_mu = obs[-3:].T
 
         obs_mu = obs_mu.reshape(len(obs_mu), 3)
