@@ -90,6 +90,7 @@ class MultiTypeAIRL(object):
                         obs_list = list(obs[step][:-1])
                         obs_mu.append(obs_list + list(merge_mu[step]))
                     obs_mu = np.array(obs_mu)
+
                     nobs = obs_mu.copy()
                     nobs[:-1] = obs_mu[1:]
                     nobs[-1] = obs_mu[0]
