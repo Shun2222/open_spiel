@@ -137,12 +137,12 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
     save_path = os.path.join(path, "agent_dist.mp4")
     pkl.dump(sample_trajs, open(path + '/expert-%dtra.pkl' % num_trajs, 'wb'))
 
-    #render(env, mfg_dist, np.array(best_traj["ob"]), save=True, filename=path+"/expert_best.mp4")
+    render(env, mfg_dist, np.array(best_traj["ob"]), save=True, filename=path+"/expert_best.mp4")
     print(f"Saved expert trajs and best expert mp4 in {path}")
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0627/multi_maze2_expert")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/multi_maze2")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
 @click.option('--actor_filename', type=click.STRING, default="actor99_19")
@@ -237,14 +237,12 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
 
                 obs_x = obs[:size].index(1)
                 obs_y = obs[size:2*size].index(1)
-                obs_t = obs[2*size:-1].index(1)
-                obs_xyt = obs[:-1]
+                obs_t = obs[2*size:].index(1)
+                obs_mu = obs.copy()
                 state_visitation_count[idx][time][obs_y][obs_x] += 1
                 if single:
-                    obs_mu = list(obs_xyt)
                     obs_mu.append(conv_dist[idx][obs_t, obs_y, obs_x])
                 else:
-                    obs_mu = list(obs_xyt)
                     for k in range(num_agent):
                         obs_mu.append(conv_dist[k][obs_t, obs_y, obs_x])
 
