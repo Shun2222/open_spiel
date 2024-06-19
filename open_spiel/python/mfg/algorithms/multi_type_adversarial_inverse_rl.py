@@ -14,6 +14,7 @@ from scipy.stats import pearsonr, spearmanr
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+from games.predator_prey import divide_obs
 
 
 class MultiTypeAIRL(object):
@@ -27,10 +28,12 @@ class MultiTypeAIRL(object):
         self._experts = experts
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
+        self._horizon = env.game.get_parameters()['horizon']
         self._nmu  = self._num_agent 
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        self._discriminator = [Discriminator(self._nobs+self._nmu, self._nacs, False, device) for _ in range(self._num_agent)]
+        obs_input_size = self._nobs-1+self._nmu-self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        self._discriminator = [Discriminator(obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
 
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
@@ -81,10 +84,10 @@ class MultiTypeAIRL(object):
                     t_actions = t_actions_pth.cpu().detach().numpy()
                     t_logprobs = t_logprobs_pth.cpu().detach().numpy()
 
-                    obs_list = list(obs)
                     obs_mu = []
                     for step in range(batch_step):
-                        obs_mu.append(list(obs_list[step]) + list(merge_mu[step]))
+                        obs_list = list(obs[step][:-1])
+                        obs_mu.append(obs_list + list(merge_mu[step]))
                     obs_mu = np.array(obs_mu)
                     nobs = obs_mu.copy()
                     nobs[:-1] = obs_mu[1:]
@@ -94,10 +97,20 @@ class MultiTypeAIRL(object):
                     assert len(obs[0])+3==len(obs_mu[0])
                     assert len(obs_next_mu[0])==len(obs_mu[0])
 
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    assert len(t[0])==self._horizon
+
+                    obs_xym = np.concatenate([x, y, mu], axis=1)
+                    nobs = obs_xym.copy()
+                    nobs[:-1] = obs_mu[1:]
+                    nobs[-1] = obs_xym[0]
+                    obs_next_xym = nobs
+                    obs_next_xym_pth = torch.from_numpy(obs_next_xym).to(self._device)
+
                     disc_rewards_pth = self._discriminator[idx].get_reward(
-                        torch.from_numpy(obs_mu).to(self._device),
+                        torch.from_numpy(obs_xym).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
-                        torch.from_numpy(obs_next).to(self._device),
+                        torch.from_numpy(obs_next_xym).to(self._device),
                         torch.from_numpy(logprobs).to(self._device),
                         discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
@@ -140,11 +153,21 @@ class MultiTypeAIRL(object):
 
                     e_log_prob = np.array([e_log_prob])
                     g_log_prob = np.array([g_log_prob])
-                
-                    d_obs_mu = np.concatenate([g_obs_mu[0], e_obs_mu[0]], axis=0)
+
+                    x, y, t, mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
+                    e_obs_mu = np.concatenate([x, y, mu], axis=1)
+                    x, y, t, mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
+                    g_obs_mu = np.concatenate([x, y, mu], axis=1)
+
+                    x, y, t, mu = divide_obs(e_nobs[0], self._size, use_argmax=False)
+                    e_nobs = np.concatenate([x, y, mu], axis=1)
+                    x, y, t, mu = divide_obs(g_nobs[0], self._size, use_argmax=False)
+                    g_nobs = np.concatenate([x, y, mu], axis=1)
+
+                    d_obs_mu = np.concatenate([g_obs_mu, e_obs_mu], axis=0)
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
-                    d_nobs = np.concatenate([np.array(g_nobs[0]), np.array(e_nobs[0])], axis=0)
+                    d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
 

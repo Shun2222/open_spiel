@@ -68,13 +68,13 @@ class MultiTypeAIRL(object):
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
-                    obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret = rout     
-                    obs = obs_pth.cpu().detach().numpy()
-                    nobs = obs.copy()
-                    nobs[:-1] = obs[1:]
-                    nobs[-1] = obs[0]
-                    obs_next = nobs
-                    obs_next_pth = torch.from_numpy(obs_next).to(self._device)
+                    obs_xytm_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret = rout     
+                    obs_xytm = obs_xytm_pth.cpu().detach().numpy()
+                    nobs = obs_xytm.copy()
+                    nobs[:-1] = obs_xytm[1:]
+                    nobs[-1] = obs_xytm[0]
+                    obs_xytm_next = nobs
+                    obs_xytm_next_pth = torch.from_numpy(obs_xytm_next).to(self._device)
 
                     actions = actions_pth.cpu().detach().numpy()
                     logprobs = logprobs_pth.cpu().detach().numpy()
@@ -85,24 +85,24 @@ class MultiTypeAIRL(object):
                     t_actions = t_actions_pth.cpu().detach().numpy()
                     t_logprobs = t_logprobs_pth.cpu().detach().numpy()
 
-                    obs_list = list(obs)
-                    obs_mu = []
+                    obs_xytm_list = list(obs_xytm)
+                    obs_xytms = []
                     for step in range(batch_step):
-                        obs_mu.append(list(obs_list[step]) + list(merge_mu[step]))
-                    obs_mu = np.array(obs_mu)
-                    nobs = obs_mu.copy()
-                    nobs[:-1] = obs_mu[1:]
-                    nobs[-1] = obs_mu[0]
-                    obs_next_mu = nobs
-                    obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
-                    assert len(obs[0])+3==len(obs_mu[0])
-                    assert len(obs_next_mu[0])==len(obs_mu[0])
+                        obs_xytms.append(list(obs_xytm_list[step]) + list(merge_mu[step]))
+                    obs_xytms = np.array(obs_xytms)
+                    nobs = obs_xytms.copy()
+                    nobs[:-1] = obs_xytms[1:]
+                    nobs[-1] = obs_xytms[0]
+                    obs_xytms_next = nobs
+                    obs_xytms_next_pth = torch.from_numpy(obs_xytms_next).to(self._device)
+                    assert len(obs_xytms[0])+3==len(obs_xytms[0])
+                    assert len(obs_xytms_next[0])==len(obs_xytms[0])
 
-                    x, y, t, mu = divide_obs(obs_mu, self._size)
+                    x, y, t, mu = divide_obs(obs_xytms, self._size)
 
                     dx, dy = goal_distance(x, y, idx)
 
-                    obs_t = copy.deepcopy(obs_mu.T)
+                    obs_t = copy.deepcopy(obs_xytms.T)
                     obs_t = obs_t[2*self._size:-4].T
                     dxy_t = np.concatenate([dx, dy, obs_t], axis=1)
                     mu_t = np.concatenate([mu, obs_t], axis=1)
@@ -110,9 +110,9 @@ class MultiTypeAIRL(object):
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(dxy_t).to(self._device),
                         torch.from_numpy(mu_t).to(self._device),
-                        torch.from_numpy(obs_mu).to(self._device),
+                        torch.from_numpy(obs_xytm).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
-                        torch.from_numpy(obs_next).to(self._device),
+                        torch.from_numpy(obs_xytm_next).to(self._device),
                         torch.from_numpy(logprobs).to(self._device),
                         discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
@@ -122,13 +122,13 @@ class MultiTypeAIRL(object):
                     adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
                     v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
 
-                    mh_obs = [np.array(obs)]
+                    mh_obs = [np.array(obs_xytm)]
                     mh_actions = [np.array(multionehot(actions, self._nacs))]
-                    mh_obs_next = [np.array(obs_next)]
-                    all_obs = np.array(obs)
+                    mh_obs_next = [np.array(obs_xytm_next)]
+                    all_obs = np.array(obs_xytm)
                     mh_values = [np.array(values)]
-                    mh_obs_mu = [np.array(obs_mu)]
-                    mh_obs_next_mu = [np.array(obs_next_mu)]
+                    mh_obs_mu = [np.array(obs_xytms)]
+                    mh_obs_next_mu = [np.array(obs_xytms_next)]
 
                     if buffer[idx]:
                         buffer[idx].update(mh_obs_mu, mh_actions, mh_obs_next_mu, all_obs, mh_values)
