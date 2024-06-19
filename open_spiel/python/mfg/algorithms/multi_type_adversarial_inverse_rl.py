@@ -23,6 +23,7 @@ class MultiTypeAIRL(object):
         self._envs = envs
         self._device = device
         self._num_agent = len(envs)
+        self._size = game.get_parameters()['size']
 
         env = envs[0]
         self._experts = experts

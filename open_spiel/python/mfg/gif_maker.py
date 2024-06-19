@@ -28,7 +28,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         if use_kde:
             X, Y, Z, _ = calc_kde(datas[n][0])
             Y = -Y + 9 
-            cs = axes[n].contour(Y, X, Z, 10, animated=True)
+            cs = axes[n].contour(Y, X, Z, 10)
             contours.append(cs)
 
     def animate(i, imgs, contours, datas):
@@ -77,7 +77,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         if use_kde:
             X, Y, Z, _ = calc_kde(datas[n][0])
             Y = -Y + 9 
-            cs = axes[n].contour(Y, X, Z, 10, animated=True)
+            cs = axes[n].contour(Y, X, Z, 10)
             contours.append(cs)
 
     def animate(i, imgs, contours, datas):
