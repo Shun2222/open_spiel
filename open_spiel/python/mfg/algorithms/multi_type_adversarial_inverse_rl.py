@@ -101,7 +101,7 @@ class MultiTypeAIRL(object):
 
                     obs_xym = np.concatenate([x, y, mu], axis=1)
                     nobs = obs_xym.copy()
-                    nobs[:-1] = obs_mu[1:]
+                    nobs[:-1] = obs_xym[1:]
                     nobs[-1] = obs_xym[0]
                     obs_next_xym = nobs
                     obs_next_xym_pth = torch.from_numpy(obs_next_xym).to(self._device)
