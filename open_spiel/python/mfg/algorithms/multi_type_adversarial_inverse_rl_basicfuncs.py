@@ -183,7 +183,7 @@ class MultiTypeAIRL(object):
 
                     d_state_a = np.concatenate([g_state_a, e_state_a], axis=0)
                     d_mu = np.concatenate([g_mu, e_mu], axis=0)
-                    d_obs_mu = np.concatenate([g_state_ma, e_state_ma], axis=0)
+                    d_state_ma = np.concatenate([g_state_ma, e_state_ma], axis=0)
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
                     d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
@@ -194,7 +194,7 @@ class MultiTypeAIRL(object):
                         torch.from_numpy(d_state_a).to(torch.float32).to(self._device),
                         torch.from_numpy(d_mu).to(torch.float32).to(self._device),
                         self._optimizers[idx],
-                        torch.from_numpy(d_state_a).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_state_ma).to(torch.float32).to(self._device),
                         torch.from_numpy(d_acs).to(torch.int64).to(self._device),
                         torch.from_numpy(d_nobs).to(torch.float32).to(self._device),
                         torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
