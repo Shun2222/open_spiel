@@ -62,7 +62,7 @@ class Discriminator(nn.Module):
         #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
         distance_output = self.distance_net(distance.to(torch.float32))
         mu_output = self.mu_net(mus.to(torch.float32))
-        ac_output = self.ac_net(acs.to(torch.int64))
+        ac_output = self.ac_net(acs.to(torch.float32))
         reward_input = torch.cat((distance_output, mu_output, ac_output), dim=1)
         reward = self.reward_net(reward_input)
         value_fn = self.value_net(obs)
@@ -99,7 +99,7 @@ class Discriminator(nn.Module):
             else:
                 distance_output = self.distance_net(distance.to(torch.float32))
                 mu_output = self.mu_net(mus.to(torch.float32))
-                ac_output = self.ac_net(acs.to(torch.int64))
+                ac_output = self.ac_net(acs.to(torch.float32))
                 rew_input = torch.cat((distance_output, mu_output, ac_output), dim=1)
                 score = self.reward_net(rew_input.to(torch.float32))
         if only_rew:
