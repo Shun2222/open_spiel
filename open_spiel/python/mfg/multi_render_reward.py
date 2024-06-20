@@ -65,21 +65,12 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                 elif notmu:
                     obs_input = inputs[f"{x}-{y}-{t}"]
                     obs_input = np.array([obs_input for _ in range(nacs)])
-                elif basicfuncs_time:
-                    from games.predator_prey import goal_distance
-                    obs_input = inputs[f"{x}-{y}-{t}-m"]
-                    x2, y2, t2, mu = divide_obs(np.array(obs_input), size, one_vec=True)
-                    obs_t = np.array([obs_input[2*size:-4]])
-                    dx, dy = goal_distance(x2, y2, pop)
-                    dxy = np.concatenate([dx, dy, obs_t], axis=1)
-                    mu = np.concatenate([mu, obs_t], axis=1)
-                    dxy = np.array([dxy[0] for _ in range(nacs)])
-                    mu = np.array([mu[0] for _ in range(nacs)])
-                    obs_input = np.array([obs_input for _ in range(nacs)])
                 elif basicfuncs:
                     from games.predator_prey import goal_distance
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
-                    x2, y2, t2, mu = divide_obs(np.array(obs_input), size, one_vec=True)
+                    obs2 = obs_input.T
+                    x2 = np.argmax(obs[:size].T, axis=1)
+                    y2 = np.argmax(obs[size:2*size].T, axis=1)
                     dx, dy = goal_distance(x2, y2, pop)
                     dxy = np.concatenate([dx, dy], axis=1)
                     dxy = np.array([dxy[0] for _ in range(nacs)])
@@ -117,6 +108,7 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
         datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
         path = filename + f'-all-action.gif' 
+        print(np.array(datas).shape)
         multi_render(datas, path, action_str)
         if basicfuncs:
             dist_datas = [dist_rewards[:, :, :, a] for a in range(nacs)]

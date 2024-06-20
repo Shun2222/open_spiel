@@ -142,7 +142,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/multi_maze2")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0627/multi_maze2_expert")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
 @click.option('--actor_filename', type=click.STRING, default="actor99_19")

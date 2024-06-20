@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from matplotlib.colors import Normalize 
 import numpy as np
 from gif_maker import *
 from sklearn.neighbors import KernelDensity
@@ -7,7 +8,7 @@ import pickle as pkl
 
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"
 
-def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', use_kde=False):
+def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', use_kde=True, kde_agents=1000):
 
     n_datas = len(datas)
 
@@ -25,8 +26,8 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
         im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
         imgs.append(im)
-        if use_kde:
-            X, Y, Z, _ = calc_kde(datas[n][0])
+        if use_kde and np.min(datas[n][0])>=0.0:
+            X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
             Y = -Y + 9 
             cs = axes[n].contour(Y, X, Z, 10)
             contours.append(cs)
@@ -37,10 +38,10 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
             #axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
             imgs[n].set_array(datas[n][i])
 
-            if use_kde:
+            if use_kde and np.min(datas[n][i])>=0.0:
                 for c in contours[n].collections:
                     c.remove()
-                X, Y, Z, _ = calc_kde(datas[n][i])
+                X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
                 Y = -Y + 9 
                 contours[n] = axes[n].contour(Y, X, Z, 10)
         return imgs, contours 
@@ -74,23 +75,31 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
         im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
         imgs.append(im)
-        if use_kde:
-            X, Y, Z, _ = calc_kde(datas[n][0])
+        if use_kde and np.min(datas[n][0])>=0.0:
+            X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
             Y = -Y + 9 
             cs = axes[n].contour(Y, X, Z, 10)
             contours.append(cs)
 
     def animate(i, imgs, contours, datas):
         for n in range(n_datas):
+            vmin = np.nanmin(datas[n][i])
+            vmax = np.nanmax(datas[n][i])
+            if np.abs(vmin)>np.abs(vmax):
+                vmax = np.abs(vmin)
+            else:
+                vmin = -np.abs(vmax)
             axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            #axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
             imgs[n].set_array(datas[n][i])
+            norm = Normalize(vmin=vmin, vmax=vmax)
+            imgs[n].set_norm(norm)
+            imgs[n].autoscale()
             #cbar.update_normal(imgs)
 
-            if use_kde:
+            if use_kde and np.min(datas[n][i])>=0.0:
                 for c in contours[n].collections:
                     c.remove()
-                X, Y, Z, _ = calc_kde(datas[n][i])
+                X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
                 Y = -Y + 9 
                 contours[n] = axes[n].contour(Y, X, Z, 10)
         return imgs, contours 
@@ -380,7 +389,14 @@ def calc_kde(prob_datas, num_agent=1000):
     d_shape = datas.shape
     assert len(d_shape)==2, f'shape error in kde plot {d_shape}'
 
-    n_data = (datas*1000).astype(np.int64)
+    count = 0
+    while np.sum(datas)<num_agent:
+        datas *= 10
+        count += 1
+        if count > 100000:
+            print(f'cannot reach target num in calc_kde')
+            break
+    n_data = (datas).astype(np.int64)
 
     # 2次元の確率データの例（仮のデータ）
     #data = np.random.randn(1000, 2)  # 1000個の2次元データポイント

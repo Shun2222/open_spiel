@@ -51,6 +51,24 @@ def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_on
     for x in range(obs_shape[1]):
         x_onehot = onehot(x, obs_shape[1]).tolist()
         for y in range(obs_shape[0]):
+            for t in range(horizon):
+                xy_onehot = x_onehot + onehot(y, obs_shape[0]).tolist()
+                if single:
+                    for i in range(len(mu_dists)):
+                        xym_onehot = xy_onehot + [mu_dists[i][t, y, x]]
+                        inputs[f'{x}-{y}-{t}-m-{i}'] = xym_onehot
+                elif notmu:
+                    inputs[f'{x}-{y}-{t}'] = xy_onehot
+                else:
+                    xym_onehot = xy_onehot + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
+                    inputs[f'{x}-{y}-{t}-m'] = xym_onehot
+    return inputs
+
+def create_rew_with_tieme_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
+    inputs = {}
+    for x in range(obs_shape[1]):
+        x_onehot = onehot(x, obs_shape[1]).tolist()
+        for y in range(obs_shape[0]):
             xy_onehot = x_onehot + onehot(y, obs_shape[0]).tolist()
             for t in range(horizon):
                 if single:
@@ -77,54 +95,33 @@ def parse_args():
 
 filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
-            "/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
+            "/mnt/shunsuke/result/0627/multi_maze2_airl",
+            "/mnt/shunsuke/result/0627/multi_maze2_1hidden_mfairl",
          ] 
+            #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
+            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
+            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
+            #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
             #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_episode1",
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "BFMF-AIRL", 
-                "BFMF-AIRL (use time)", 
                 "MF-AIRL", 
+                "MF-AIRL_1hidden", 
+                "MF-AIRL_time", 
             ] 
-                #"BFMF-AIRL ep1", 
-                #"MF-AIRL ep1", 
-                #"BFMF-AIRL (use time)", 
 update_infos = [
                 "200_2",
                 "200_2",
                 "200_2",
               ]
-                #"134_134",
-                #"200_2",
 
 is_single = [False, False, False, False, False]
 is_notmu = [False, False, False, False, False]
-is_basicfuncs = [True, True, False, False, False]
-is_basicfuncs_time = [False, True, False, False]
+is_basicfuncs = [False, False, False]
+is_basicfuncs_time = [False, False, False]
+is_1hiddens = [False, True, False]
 
-#pathes = [
-#            "/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
-#            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-#         ] 
-#           #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
-#
-#pathnames = [
-##                "MF-AIRL", 
-#                "BFMF-AIRL", 
-#                "BFMF-AIRL (use time)", 
-#            ] 
-#update_infos = [
-#                "200_2",
-#                "200_2",
-#              ]
-#
-#is_single = [False, False, False, False, False]
-#is_notmu = [False, False, False, False, False]
-#is_basicfuncs = [False, True]
-#is_basicfuncs_time = [False, False]
 
 reward_filename = disc_filename = 'disc_reward'
 value_filename = 'disc_value'
@@ -173,11 +170,14 @@ if __name__ == "__main__":
         notmu = is_notmu[p]
         basicfuncs = is_basicfuncs[p]
         basicfuncs_time = is_basicfuncs_time[p]
+        is_1hidden = is_1hiddens[p]
 
         if basicfuncs_time:
             from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_time import Discriminator, divide_obs
         elif basicfuncs:
             from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
+        elif is_1hidden:
+            from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -250,7 +250,7 @@ if __name__ == "__main__":
             elif basicfuncs:
                 discriminator = Discriminator(num_agent, 2, nobs+num_agent, nacs, False, device)
             else:
-                discriminator = Discriminator(nobs+num_agent, nacs, False, device)
+                discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
             if basicfuncs:
@@ -301,6 +301,7 @@ if __name__ == "__main__":
         mu_res.append(mu_datas)
         path = osp.join(save_path + f'-mean.gif')
         labels = [f'Group {i}' for i in range(num_agent)]
+        print(np.array(datas).shape)
         multi_render(datas, path, labels)
         if basicfuncs:
             labels = [f'Group {i}' for i in range(num_agent)]

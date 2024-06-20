@@ -102,42 +102,24 @@ def parse_args():
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/0614/multi_maze2", 
-            "/mnt/shunsuke/result/0614/multi_maze2_colrew0", 
-            "/mnt/shunsuke/result/0614/multi_maze2_colrew100", 
-            "/mnt/shunsuke/result/0614/multi_maze2_colrew200", 
-            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-            "/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
-            "/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
+            "/mnt/shunsuke/result/0627/multi_maze2_expert",
+            "/mnt/shunsuke/result/0627/multi_maze2_airl",
+            "/mnt/shunsuke/result/0627/multi_maze2_1hidden_mfairl",
          ] 
-            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
-            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
-            #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
+            #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
                 "expert",
-                "expert0",
-                "expert100",
-                "expert200",
-                "BFMF-AITL",
-                "BFMF-AITL(time)",
                 "MF-AITL",
+                "MF-AITL_1hidden",
+                "MF-AITL_time",
             ] 
-                #"BFMF-AIRL", 
-                #"BFMF-AIRL (use time)", 
-                #"MF-AIRL", 
+
 actor_filenames = [
-                    "actor99_19",
-                    "actor99_19",
-                    "actor99_19",
                     "actor99_19",
                     "actor200_2",
                     "actor200_2",
                     "actor200_2",
                   ]
-                    #"actor200_2",
-            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-            #        "actor200_1",
 
 if __name__ == "__main__":
     args = parse_args()
