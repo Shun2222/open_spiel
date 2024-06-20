@@ -108,6 +108,7 @@ class MultiTypeAIRL(object):
                     nobs[-1] = obs_xyma[0]
                     obs_next_xyma = nobs
 
+                    print(f'mu shpae {mu.shape}')
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(dxy).to(self._device),
                         torch.from_numpy(mu).to(self._device),
