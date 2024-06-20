@@ -13,7 +13,7 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator
+from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_dxdy import Discriminator
 from games.predator_prey import goal_distance, divide_obs
 
 
@@ -34,7 +34,7 @@ class MultiTypeAIRL(object):
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         obs_input_size = self._nobs -1 - self._horizon + self._nacs # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        self._discriminator = [Discriminator(self._num_agent, 2, obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator(2, self._num_agent, obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 
@@ -160,12 +160,14 @@ class MultiTypeAIRL(object):
                     x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size)
                     dx, dy = goal_distance(x, y, idx)
                     g_dxy = np.concatenate([dx, dy], axis=1)
+                    x, y, t, _ = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
                     g_obs_mua = np.concatenate([x, y, g_mu, g_actions[0]], axis=1)
                 
 
                     x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size)
                     dx, dy = goal_distance(x, y, idx)
                     e_dxy = np.concatenate([dx, dy], axis=1)
+                    x, y, t, _ = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
                     e_obs_mua = np.concatenate([x, y, e_mu, e_actions[0]], axis=1)
 
 
@@ -190,7 +192,7 @@ class MultiTypeAIRL(object):
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
                     d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
-                    d_labels = np.concatenate([np.zeros([g_obs_mu.shape[0], 1]), np.ones([e_obs_mu.shape[0], 1])], axis=0)
+                    d_labels = np.concatenate([np.zeros([g_dxy.shape[0], 1]), np.ones([e_dxy.shape[0], 1])], axis=0)
 
                     total_loss = self._discriminator[idx].train(
                         torch.from_numpy(d_dist).to(torch.float32).to(self._device),
