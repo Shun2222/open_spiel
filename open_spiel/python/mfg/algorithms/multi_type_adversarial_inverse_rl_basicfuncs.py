@@ -155,13 +155,13 @@ class MultiTypeAIRL(object):
                     e_log_prob = np.array([e_log_prob])
                     g_log_prob = np.array([g_log_prob])
 
-                    x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size)
+                    x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
                     g_state_a = np.concatenate([x, y, g_actions[0]], axis=1)
                     g_state_ma = np.concatenate([x, y, g_mu, g_actions[0]], axis=1)
                     g_obs_mu = np.concatenate([x, y, g_mu, g_actions[0]], axis=1)
                 
 
-                    x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size)
+                    x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
                     e_state_a = np.concatenate([x, y, e_actions[0]], axis=1)
                     e_state_ma = np.concatenate([x, y, e_mu, e_actions[0]], axis=1)
                     e_obs_mu = np.concatenate([x, y, e_mu, e_actions[0]], axis=1)
