@@ -8,7 +8,7 @@ import os.path as osp
 
 
 class Discriminator(nn.Module):
-    def __init__(self, n_agent, distance_size, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
+    def __init__(self, ob_shape, n_agent, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
         super(Discriminator, self).__init__()
         self.state_only = state_only
         self.gamma = discount
@@ -18,7 +18,7 @@ class Discriminator(nn.Module):
 
         # Define layers for reward network
         self.distance_net = nn.Sequential(
-            nn.Linear(distance_size, hidden_size),
+            nn.Linear(ob_shape, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
         ).to(self._device)
