@@ -6,31 +6,6 @@ import logger
 import os
 import os.path as osp
 
-def divide_obs(obs, size, one_vec=False):
-    if one_vec:
-        obs_x = np.argmax(obs[:size])
-        obs_y = np.argmax(obs[size:2*size])
-        obs_t = np.argmax(obs[2*size:-4])
-        obs_hatena = obs[-4]
-        obs_mu = obs[-3:]
-
-        obs_x = obs_x.reshape(1, 1)
-        obs_y = obs_y.reshape(1, 1)
-        obs_t = obs_y.reshape(1, 1)
-        obs_mu = obs_mu.reshape(1, 3)
-
-    else:
-        obs = obs.T
-        obs_x = np.argmax(obs[:size].T, axis=1)
-        obs_y = np.argmax(obs[size:2*size].T, axis=1)
-        obs_t = np.argmax(obs[2*size:-3].T, axis=1)
-        obs_mu = obs[-3:].T
-
-        obs_x = obs_x.reshape(len(obs_x), 1)
-        obs_y = obs_y.reshape(len(obs_y), 1)
-        obs_t = obs_y.reshape(len(obs_t), 1)
-        obs_mu = obs_mu.reshape(len(obs_mu), 3)
-    return obs_x, obs_y, obs_t, obs_mu
 
 class Discriminator(nn.Module):
     def __init__(self, n_agent, distance_size, ob_shape, ac_shape, state_only, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
