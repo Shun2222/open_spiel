@@ -24,7 +24,7 @@ class Discriminator(nn.Module):
         ).to(self._device)
 
         self.mu_net = nn.Sequential(
-            nn.Linear(n_agent, hidden_size),
+            nn.Linear(n_agent+n_agent, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
         ).to(self._device)
@@ -35,7 +35,7 @@ class Discriminator(nn.Module):
 
         # Define layers for value function network
         self.value_net = nn.Sequential(
-            nn.Linear(ob_shape, hidden_size),
+            nn.Linear(ob_shape+n_agent, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
         ).to(self._device)
