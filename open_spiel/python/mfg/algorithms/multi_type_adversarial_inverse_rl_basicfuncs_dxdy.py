@@ -112,7 +112,7 @@ class MultiTypeAIRL(object):
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(dxy).to(self._device),
                         torch.from_numpy(mu).to(self._device),
-                        torch.from_numpy(obs_mu).to(self._device),
+                        torch.from_numpy(obs_xyma).to(self._device),
                         torch.from_numpy(onehot_acs).to(self._device),
                         torch.from_numpy(obs_next_xyma).to(self._device),
                         torch.from_numpy(logprobs).to(self._device),
@@ -186,10 +186,10 @@ class MultiTypeAIRL(object):
 
                     d_dist = np.concatenate([g_dxy, e_dxy], axis=0)
                     d_mu = np.concatenate([g_mu, e_mu], axis=0)
-                    d_obs_mu = np.concatenate([g_obs_mua, e_obs_mua], axis=0)
+                    d_obs_mua = np.concatenate([g_obs_mua, e_obs_mua], axis=0)
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
-                    d_nobs = np.concatenate([g_nobs, e_nobs[0]], axis=0)
+                    d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_mu.shape[0], 1]), np.ones([e_obs_mu.shape[0], 1])], axis=0)
 
@@ -197,7 +197,7 @@ class MultiTypeAIRL(object):
                         torch.from_numpy(d_dist).to(torch.float32).to(self._device),
                         torch.from_numpy(d_mu).to(torch.float32).to(self._device),
                         self._optimizers[idx],
-                        torch.from_numpy(d_obs_mu).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_obs_mua).to(torch.float32).to(self._device),
                         torch.from_numpy(d_acs).to(torch.int64).to(self._device),
                         torch.from_numpy(d_nobs).to(torch.float32).to(self._device),
                         torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
