@@ -179,7 +179,7 @@ class MultiTypeAIRL(object):
                     nacs[-1] = g_actions[0][0]
                     g_acs_next = nacs
                     x, y, t, mu = divide_obs(g_nobs[0], self._size, use_argmax=False)
-                    g_nobs = np.concatenate([x, y, mu, g_actions[0]], axis=1)
+                    g_nobs = np.concatenate([x, y, mu, g_acs_next], axis=1)
 
                     d_state = np.concatenate([g_state, e_state], axis=0)
                     d_mu = np.concatenate([g_mu, e_mu], axis=0)
