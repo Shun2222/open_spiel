@@ -34,7 +34,7 @@ class MultiTypeAIRL(object):
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         obs_input_size = self._nobs -1 - self._horizon + self._nacs # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        self._discriminator = [Discriminator( obs_input_size, self._num_agent, obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator( self._size*2, self._num_agent, obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 
