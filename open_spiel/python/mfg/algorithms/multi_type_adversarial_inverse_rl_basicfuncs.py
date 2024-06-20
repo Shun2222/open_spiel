@@ -24,9 +24,9 @@ class MultiTypeAIRL(object):
         self._device = device
         self._num_agent = len(envs)
         self._size = game.get_parameters()['size']
-        self._horizon = env.game.get_parameters()['horizon']
 
         env = envs[0]
+        self._horizon = env.game.get_parameters()['horizon']
         self._experts = experts
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
