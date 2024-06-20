@@ -33,7 +33,7 @@ class MultiTypeAIRL(object):
         self._nmu  = self._num_agent 
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        obs_input_size = self._nobs -1 + self._nmu - self._horizon + self._nacs # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_input_size = self._nobs -1 - self._horizon + self._nacs # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         self._discriminator = [Discriminator( obs_input_size, self._num_agent, self._nacs, False, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
@@ -97,7 +97,7 @@ class MultiTypeAIRL(object):
                     obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
 
                     onehot_acs = multionehot(actions, self._nacs)
-                    x, y, t, mu = divide_obs(obs_mu, self._size)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
                     state_a = np.concatenate([x, y, onehot_acs], axis=1)
                     state_ma = np.concatenate([x, y, mu, onehot_acs], axis=1)
 
