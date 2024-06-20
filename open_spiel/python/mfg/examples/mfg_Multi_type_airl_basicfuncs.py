@@ -46,6 +46,7 @@ def parse_args():
 
     parser.add_argument("--dxdy_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--dxdy_mua_input", action='store_true', help="cpu or cuda")
+    parser.add_argument("--dxdy_mu_a_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--time_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
@@ -74,6 +75,8 @@ if __name__ == "__main__":
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy import MultiTypeAIRL
     elif args.dxdy_mua_input:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mua import MultiTypeAIRL
+    elif args.dxdy_mu_a_input:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mu_a import MultiTypeAIRL
     else:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs import MultiTypeAIRL
 
