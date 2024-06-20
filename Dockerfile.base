@@ -19,6 +19,9 @@ RUN sudo pip3 install matplotlib
 
 # install
 COPY . .
+RUN mkdir -p /mnt/shunsuke/
+RUN ln -s . /mnt/shunsuke/ln_openspiel
+
 RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
 RUN ./install.sh
 RUN pip3 install --upgrade setuptools testresources
