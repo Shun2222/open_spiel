@@ -42,11 +42,14 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_dxdy", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0627/test", help="log path")
 
-    parser.add_argument("--dxdy_input", action='store_true', help="cpu or cuda")
+    parser.add_argument("--dxdy_mu_input", action='store_true', help="cpu or cuda")
+    parser.add_argument("--dxdya_mu_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--dxdy_mua_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--dxdy_mu_a_input", action='store_true', help="cpu or cuda")
+    parser.add_argument("--s_mua_input", action='store_true', help="cpu or cuda")
+    parser.add_argument("--s_mu_a_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--time_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
@@ -71,12 +74,18 @@ if __name__ == "__main__":
     args = parse_args()
     if args.time_input:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_time import MultiTypeAIRL
-    elif args.dxdy_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy import MultiTypeAIRL
+    elif args.dxdy_mu_input:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mu import MultiTypeAIRL
+    elif args.dxdya_mu_input:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdya_mu import MultiTypeAIRL
     elif args.dxdy_mua_input:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mua import MultiTypeAIRL
     elif args.dxdy_mu_a_input:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mu_a import MultiTypeAIRL
+    elif args.s_mua_input:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_s_mua import MultiTypeAIRL
+    elif args.s_mu_a_input:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_s_mu_a import MultiTypeAIRL
     else:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs import MultiTypeAIRL
 

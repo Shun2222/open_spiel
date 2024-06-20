@@ -13,7 +13,7 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_dxdy import Discriminator
+from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator
 from games.predator_prey import goal_distance, divide_obs
 
 
@@ -26,15 +26,15 @@ class MultiTypeAIRL(object):
         self._size = game.get_parameters()['size']
 
         env = envs[0]
-        self._experts = experts
         self._horizon = env.game.get_parameters()['horizon']
+        self._experts = experts
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        obs_input_size = self._nobs -1 - self._horizon + self._nacs # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        self._discriminator = [Discriminator(2, self._num_agent+self._nacs, obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
+        obs_input_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        self._discriminator = [Discriminator( obs_input_size, self._num_agent+self._nacs, self._nacs, False, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 
@@ -97,24 +97,22 @@ class MultiTypeAIRL(object):
                     obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
 
                     onehot_acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    state = np.concatenate([x, y], axis=1)
+                    mu_a = np.concatenate([mu, onehot_acs], axis=1)
+                    state_ma = np.concatenate([x, y, mu, onehot_acs], axis=1)
 
-                    x, y, t, mu = divide_obs(obs_mu, self._size)
-                    dx, dy = goal_distance(x, y, idx)
-                    dxy = np.concatenate([dx, dy], axis=1)
-                    mua = np.concatenate([mu, onehot_acs], axis=1)
-
-                    obs_xyma = np.concatenate([x, y, mu, onehot_acs], axis=1)
-                    nobs = obs_xyma.copy()
-                    nobs[:-1] = obs_xyma[1:]
-                    nobs[-1] = obs_xyma[0]
-                    obs_next_xyma = nobs
+                    nobs = state_ma.copy()
+                    nobs[:-1] = state_ma[1:]
+                    nobs[-1] = state_ma[0]
+                    obs_next_xym = nobs
 
                     disc_rewards_pth = self._discriminator[idx].get_reward(
-                        torch.from_numpy(dxy).to(self._device),
-                        torch.from_numpy(mua).to(self._device),
-                        torch.from_numpy(obs_xyma).to(self._device),
+                        torch.from_numpy(state).to(self._device),
+                        torch.from_numpy(mu_a).to(self._device),
+                        torch.from_numpy(state_ma).to(self._device),
                         torch.from_numpy(onehot_acs).to(self._device),
-                        torch.from_numpy(obs_next_xyma).to(self._device),
+                        torch.from_numpy(obs_next_xym).to(self._device),
                         torch.from_numpy(logprobs).to(self._device),
                         discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
@@ -158,20 +156,18 @@ class MultiTypeAIRL(object):
                     e_log_prob = np.array([e_log_prob])
                     g_log_prob = np.array([g_log_prob])
 
-                    x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size)
-                    dx, dy = goal_distance(x, y, idx)
-                    g_dxy = np.concatenate([dx, dy], axis=1)
-                    g_mua = np.concatenate([g_mu, g_actions[0]], axis=1)
-                    x, y, t, _ = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
-                    g_obs_mua = np.concatenate([x, y, g_mu, g_actions[0]], axis=1)
+                    x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
+                    g_state = np.concatenate([x, y], axis=1)
+                    g_state_ma = np.concatenate([x, y, g_mu, g_actions[0]], axis=1)
+                    g_mu_a = np.concatenate([g_mu, g_actions[0]], axis=1)
+                    g_obs_mu = np.concatenate([x, y, g_mu, g_actions[0]], axis=1)
                 
 
-                    x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size)
-                    dx, dy = goal_distance(x, y, idx)
-                    e_dxy = np.concatenate([dx, dy], axis=1)
-                    e_mua = np.concatenate([e_mu, e_actions[0]], axis=1)
-                    x, y, t, _ = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
-                    e_obs_mua = np.concatenate([x, y, e_mu, e_actions[0]], axis=1)
+                    x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
+                    e_state = np.concatenate([x, y], axis=1)
+                    e_state_ma = np.concatenate([x, y, e_mu, e_actions[0]], axis=1)
+                    e_mu_a = np.concatenate([e_mu, e_actions[0]], axis=1)
+                    e_obs_mu = np.concatenate([x, y, e_mu, e_actions[0]], axis=1)
 
 
                     x, y, t, mu = divide_obs(e_nobs[0], self._size, use_argmax=False)
@@ -181,27 +177,28 @@ class MultiTypeAIRL(object):
                     e_acs_next = nacs
                     e_nobs = np.concatenate([x, y, mu, e_acs_next], axis=1)
 
-                    x, y, t, mu = divide_obs(g_nobs[0], self._size, use_argmax=False)
                     nacs = g_actions[0].copy()
                     nacs[:-1] = g_actions[0][1:]
                     nacs[-1] = g_actions[0][0]
                     g_acs_next = nacs
+                    x, y, t, mu = divide_obs(g_nobs[0], self._size, use_argmax=False)
                     g_nobs = np.concatenate([x, y, mu, g_acs_next], axis=1)
 
-                    d_dist = np.concatenate([g_dxy, e_dxy], axis=0)
-                    d_mua = np.concatenate([g_mua, e_mua], axis=0)
-                    d_obs_mua = np.concatenate([g_obs_mua, e_obs_mua], axis=0)
+                    d_state = np.concatenate([g_state, e_state], axis=0)
+                    d_mu_a = np.concatenate([g_mu_a, e_mu_a], axis=0)
+                    d_state_ma = np.concatenate([g_state_ma, e_state_ma], axis=0)
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
+
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
                     d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
-                    d_labels = np.concatenate([np.zeros([g_dxy.shape[0], 1]), np.ones([e_dxy.shape[0], 1])], axis=0)
+                    d_labels = np.concatenate([np.zeros([g_obs_mu.shape[0], 1]), np.ones([e_obs_mu.shape[0], 1])], axis=0)
 
                     total_loss = self._discriminator[idx].train(
-                        torch.from_numpy(d_dist).to(torch.float32).to(self._device),
-                        torch.from_numpy(d_mua).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_state).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_mu_a).to(torch.float32).to(self._device),
                         self._optimizers[idx],
-                        torch.from_numpy(d_obs_mua).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_state_ma).to(torch.float32).to(self._device),
                         torch.from_numpy(d_acs).to(torch.int64).to(self._device),
                         torch.from_numpy(d_nobs).to(torch.float32).to(self._device),
                         torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
