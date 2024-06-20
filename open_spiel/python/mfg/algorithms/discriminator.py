@@ -47,12 +47,16 @@ class Discriminator(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
             nn.Linear(hidden_size, 1)
         ).to(self._device)
 
         # Define layers for value function network
         self.value_net = nn.Sequential(
             nn.Linear(ob_shape, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
