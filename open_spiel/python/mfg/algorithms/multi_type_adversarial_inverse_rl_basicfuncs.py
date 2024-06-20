@@ -13,8 +13,8 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
-from games.predator_prey import goal_distance
+from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator
+from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
