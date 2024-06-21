@@ -39,6 +39,21 @@ class MultiTypeAIRL(object):
         if disc_type=='s_mu_a':
             inputs = [state_size, self._nmu, self._nacs]
             labels = ['state', 'mu', 'act']
+        elif disc_type=='sa_mu':
+            inputs = [state_size+self._nacs, self._nmu]
+            labels = ['state_a', 'mu']
+        elif disc_type=='s_mua':
+            inputs = [state_size, self._nmu+self._nacs]
+            labels = ['state', 'mu_a']
+        elif disc_type=='dxy_mu_a':
+            inputs = [2, self._nmu, self._nacs]
+            labels = ['dxy', 'mu', 'act']
+        elif disc_type=='dxya_mu':
+            inputs = [2+self._nacs, self._nmu]
+            labels = ['dxy_a', 'mu']
+        elif disc_type=='dxy_mua':
+            inputs = [2, self._nmu+self._nacs]
+            labels = ['dxy', 'mu_a']
         else:
             assert False, f'not matched disc type: {disc_type}'
 
@@ -112,6 +127,48 @@ class MultiTypeAIRL(object):
                         inputs = [torch.from_numpy(state), 
                                   torch.from_numpy(mu), 
                                   torch.from_numpy(acs)]
+                    elif self._disc_type=='sa_mu':
+                        acs = multionehot(actions, self._nacs)
+                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                        state_a = np.concatenate([x, y, acs], axis=1)
+
+                        inputs = [torch.from_numpy(state_a), 
+                                  torch.from_numpy(mu)]
+                    elif self._disc_type=='s_mua':
+                        acs = multionehot(actions, self._nacs)
+                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                        state = np.concatenate([x, y], axis=1)
+                        mua = np.concatenate([mu, acs], axis=1)
+
+                        inputs = [torch.from_numpy(state), 
+                                  torch.from_numpy(mua)]
+                    elif self._disc_type=='dxy_mu_a':
+                        acs = multionehot(actions, self._nacs)
+                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
+                        dx, dy = goal_distance(x, y, idx)
+                        dxy = np.concatenate([dx, dy], axis=1)
+
+                        inputs = [torch.from_numpy(dxy), 
+                                  torch.from_numpy(mu),
+                                  torch.from_numpy(acs),]
+                    elif self._disc_type=='dxya_mu':
+                        acs = multionehot(actions, self._nacs)
+                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
+                        dx, dy = goal_distance(x, y, idx)
+                        dxy_a = np.concatenate([dx, dy, acs], axis=1)
+
+                        inputs = [torch.from_numpy(dxy_a),
+                                  torch.from_numpy(mu),]
+                    elif self._disc_type=='dxy_mua':
+                        acs = multionehot(actions, self._nacs)
+                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
+                        dx, dy = goal_distance(x, y, idx)
+                        dxy = np.concatenate([dx, dy], axis=1)
+                        mua = np.concatenate([mu, acs], axis=1)
+
+                        inputs = [torch.from_numpy(dxy),
+                                  torch.from_numpy(mua),]
+
 
                     x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
                     obs_xym = np.concatenate([x, y, mu], axis=1)
@@ -168,22 +225,17 @@ class MultiTypeAIRL(object):
                     e_log_prob = np.array([e_log_prob])
                     g_log_prob = np.array([g_log_prob])
 
-                    if self._disc_type=='s_mu_a':
-                        x, y, t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
-                        g_state = np.concatenate([x, y], axis=1)
-                        g_obs_xym = np.concatenate([x, y, g_mu], axis=1)
+                    g_x, g_y, g_t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
+                    g_state = np.concatenate([g_x, g_y], axis=1)
+                    g_nx, g_ny, g_nt, g_nmu = divide_obs(g_nobs[0], self._size, use_argmax=False)
+                    g_dx, g_dy = goal_distance(g_x, g_y, idx)
+                    g_dxy = np.concatenate([g_dx, g_dy], axis=1)
 
-                        x, y, t, mu = divide_obs(g_nobs[0], self._size, use_argmax=False)
-                        g_nobs_xym = np.concatenate([x, y, mu], axis=1)
-                
-                        x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
-                        e_state = np.concatenate([x, y], axis=1)
-                        e_obs_xym = np.concatenate([x, y, e_mu], axis=1)
-
-                        x, y, t, mu = divide_obs(e_nobs[0], self._size, use_argmax=False)
-                        e_nobs_xym = np.concatenate([x, y, mu], axis=1)
-
-
+                    e_x, e_y, e_t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
+                    e_state = np.concatenate([e_x, e_y], axis=1)
+                    e_nx, e_ny, e_nt, e_nmu = divide_obs(e_nobs[0], self._size, use_argmax=False)
+                    e_dx, e_dy = goal_distance(e_x, e_y, idx)
+                    e_dxy = np.concatenate([e_dx, e_dy], axis=1)
 
                     if self._disc_type=='s_mu_a':
                         d_state = np.concatenate([g_state, e_state], axis=0)
@@ -193,7 +245,56 @@ class MultiTypeAIRL(object):
                         inputs = [torch.from_numpy(d_state), 
                                   torch.from_numpy(d_mu), 
                                   torch.from_numpy(d_acs)]
+                    elif self._disc_type=='sa_mu':
+                        g_state_a = np.concatenate([g_state, g_actions[0]], axis=1)
+                        e_state_a = np.concatenate([e_state, e_actions[0]], axis=1)
 
+                        d_state_a = np.concatenate([g_state_a, e_state_a], axis=0)
+                        d_mu = np.concatenate([g_mu, e_mu], axis=0)
+
+                        inputs = [torch.from_numpy(d_state_a), 
+                                  torch.from_numpy(d_mu)]
+                    elif self._disc_type=='s_mua':
+                        g_mua = np.concatenate([g_mu, g_actions[0]], axis=1)
+                        e_mua = np.concatenate([e_mu, e_actions[0]], axis=1)
+
+                        d_state = np.concatenate([g_state, e_state], axis=0)
+                        d_mua = np.concatenate([g_mua, e_mua], axis=0)
+
+                        inputs = [torch.from_numpy(d_state), 
+                                  torch.from_numpy(d_mua)]
+                    elif self._disc_type=='dxy_mu_a':
+                        d_dxy = np.concatenate([g_dxy, e_dxy], axis=0)
+                        d_mua = np.concatenate([g_mu, e_mu], axis=0)
+                        d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
+
+                        inputs = [torch.from_numpy(d_dxy), 
+                                  torch.from_numpy(d_mu),
+                                  torch.from_numpy(d_acs),]
+                    elif self._disc_type=='dxya_mu':
+                        g_dxya = np.concatenate([g_dxy, g_actions[0]], axis=1)
+                        e_dxya = np.concatenate([e_dxy, e_actions[0]], axis=1)
+
+                        d_dxya = np.concatenate([g_dxya, e_dxya], axis=0)
+                        d_mu = np.concatenate([g_mu, e_mu], axis=0)
+
+                        inputs = [torch.from_numpy(d_dxya), 
+                                  torch.from_numpy(d_mu),]
+                    elif self._disc_type=='dxy_mua':
+                        g_mua = np.concatenate([g_mu, g_actions[0]], axis=1)
+                        e_mua = np.concatenate([e_mu, e_actions[0]], axis=1)
+
+                        d_dxy = np.concatenate([g_dxy, e_dxy], axis=0)
+                        d_mua = np.concatenate([g_mua, e_mua], axis=0)
+
+                        inputs = [torch.from_numpy(d_dxy), 
+                                  torch.from_numpy(d_mua),]
+                                  
+
+                    g_obs_xym = np.concatenate([g_x, g_y, g_mu], axis=1)
+                    g_nobs_xym = np.concatenate([g_nx, g_ny, g_nmu], axis=1)
+                    e_obs_xym = np.concatenate([e_x, e_y, e_mu], axis=1)
+                    e_nobs_xym = np.concatenate([e_nx, e_ny, e_nmu], axis=1)
                     d_obs_xym = np.concatenate([g_obs_xym, e_obs_xym], axis=0)
                     d_nobs_xym = np.concatenate([g_nobs_xym, e_nobs_xym], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
