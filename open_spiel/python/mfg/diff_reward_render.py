@@ -136,6 +136,7 @@ update_infos = [
 is_single = [False, False, False, False, False, False, False, False, False]
 is_notmu = [False, False, False, False, False, False, False, False, False]
 is_1hiddens = [False, True, False, False, False, False, False, False, False]
+all_nets = False
 
 
 reward_filename = disc_filename = 'disc_reward'
@@ -423,8 +424,7 @@ if __name__ == "__main__":
                         print(f'saved {save_path} ')
 
     labels = [f"Group {n}" for n in range(num_agent)] 
-    diff_render_distance_plot(np.array(res), pathes, pathnames, labels)
-    if np.sum(is_basicfuncs)==len(is_basicfuncs):
+    if all_nets:
         for j in range(n_nets):
             output_pathnames = [f'{net_labels[j]}-'+p for p in pathnames] 
             diff_render_distance_plot(np.array(outputs[j]), pathes, output_pathnames, labels)
