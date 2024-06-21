@@ -120,7 +120,6 @@ class MultiTypeAIRL(object):
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         inputs, 
                         torch.from_numpy(obs_xym).to(self._device),
-                        torch.from_numpy(acs).to(self._device),
                         torch.from_numpy(obs_next_xym).to(self._device),
                         torch.from_numpy(logprobs).to(self._device),
                         discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
@@ -198,7 +197,6 @@ class MultiTypeAIRL(object):
                         inputs, 
                         self._optimizers[idx],
                         torch.from_numpy(d_obs_xym).to(torch.float32).to(self._device),
-                        torch.from_numpy(d_acs).to(torch.int64).to(self._device),
                         torch.from_numpy(d_nobs_xym).to(torch.float32).to(self._device),
                         torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
                         torch.from_numpy(d_labels).to(torch.int64).to(self._device),
