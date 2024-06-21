@@ -270,11 +270,11 @@ class MultiTypeMFGPPO(object):
                     nobs[:-1] = obs_xym[1:]
                     nobs[-1] = obs_xym[0]
                     obs_next_xym = nobs
-                    reward, dist_rew, mu_rew = discriminator.get_reward(
+                    reward, outputs = discriminator.get_reward(
                         inputs,
                         torch.from_numpy(obs_xym).to(self._device),
                         torch.from_numpy(obs_next_xym).to(self._device),
-                        None, None,
+                        None,
                         discrim_score=False,
                         only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
