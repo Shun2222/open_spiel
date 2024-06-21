@@ -186,7 +186,7 @@ class MultiTypeMFGPPO(object):
         entropies = torch.zeros((nsteps,), device=self._device)
         t_actions = torch.zeros((nsteps,), device=self._device)
         t_logprobs = torch.zeros((nsteps,), device=self._device)
-        mu = [] 
+        all_mu = [] 
         ret = []
 
         size = self._size
@@ -209,7 +209,7 @@ class MultiTypeMFGPPO(object):
                 obs_y = obs_list[size:2*size].index(1)
                 obs_t = obs_list[2*size:].index(1)
                 mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
-                mu.append(mus[self._player_id])
+                all_mu.append(mus[self._player_id])
                 obs_mu = np.array(obs_list+mus)
 
                 idx = self._player_id
@@ -309,7 +309,7 @@ class MultiTypeMFGPPO(object):
             ret.append(rew)
         ret = np.array(ret)
         assert step==nsteps
-        return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, mu, ret
+        return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
 
     def cal_Adv(self, rewards, values, dones, gamma=0.99, norm=True):
