@@ -348,13 +348,13 @@ if __name__ == "__main__":
         path = osp.join(save_path + f'-mean.gif')
         labels = [f'Group {i}' for i in range(num_agent)]
         print(np.array(datas).shape)
-        multi_render(datas, path, labels)
+        multi_render(datas, path, labels, use_kde=False)
         if is_nets:
             labels = [f'Group {i}' for i in range(num_agent)]
             net_labels = discriminators[0].get_net_labels()
             for i in range(n_nets):
                 path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
-                multi_render(outputs[i], path, labels)
+                multi_render(outputs[i], path, labels, False)
 
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 
