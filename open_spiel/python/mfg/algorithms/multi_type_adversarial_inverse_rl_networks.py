@@ -107,7 +107,10 @@ class MultiTypeAIRL(object):
                         acs = multionehot(actions, self._nacs)
                         x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
                         state = np.concatenate([x, y], axis=1)
-                        inputs = [state, mu, acs]
+
+                        inputs = [torch.from_numpy(state), 
+                                  torch.from_numpy(mu), 
+                                  torch.from_numpy(acs)]
 
                     x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
                     obs_xym = np.concatenate([x, y, mu], axis=1)
@@ -185,7 +188,10 @@ class MultiTypeAIRL(object):
                         d_state = np.concatenate([g_state, e_state], axis=0)
                         d_mu = np.concatenate([g_mu, e_mu], axis=0)
                         d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
-                        inputs = [d_state, d_mu, d_acs]
+
+                        inputs = [torch.from_numpy(d_state), 
+                                  torch.from_numpy(d_mu), 
+                                  torch.from_numpy(d_acs)]
 
                     d_obs_xym = np.concatenate([g_obs_xym, e_obs_xym], axis=0)
                     d_nobs_xym = np.concatenate([g_nobs, e_nobs], axis=0)
