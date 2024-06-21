@@ -154,7 +154,7 @@ class MultiTypeMFGPPO(object):
         self._device = device
 
         info_state_size = env.observation_spec()["info_state"][0]
-        num_actions = env.action_spec()["num_actions"]
+        self._nacs = num_actions = env.action_spec()["num_actions"]
         self._num_agent = game.num_players()
         self._player_id = player_id
 
