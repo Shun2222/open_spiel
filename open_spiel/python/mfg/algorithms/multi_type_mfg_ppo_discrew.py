@@ -204,7 +204,7 @@ class MultiTypeMFGPPO(object):
 
                 time_step = env.step([action.item()])
 
-                obs_list = obs
+                obs_list = obs[:-1]
                 obs_x = obs_list[:size].index(1)
                 obs_y = obs_list[size:2*size].index(1)
                 obs_t = obs_list[2*size:].index(1)
