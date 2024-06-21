@@ -68,11 +68,8 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
                         dist_rewards[t, y, x, a] = dist_rew[a]
                         mu_rewards[t, y, x, a] = mu_rew[a]
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, is_nets=False, net_input=None, save=False, filename="agent_dist"):
-    if is_nets:
-        from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
-    else:
-        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
+    from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     rewards = np.zeros((horizon, size, size, nacs))
@@ -88,62 +85,25 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                 elif notmu:
                     obs_input = inputs[f"{x}-{y}-{t}"]
                     obs_input = np.array([obs_input for _ in range(nacs)])
-                elif basicfuncs:
-                    from games.predator_prey import goal_distance
-                    obs_input = inputs[f"{x}-{y}-{t}-m"]
-                    obs2 = obs_input.T
-                    x2 = np.argmax(obs2[:size].T, axis=1)
-                    y2 = np.argmax(obs2[size:2*size].T, axis=1)
-                    dx, dy = goal_distance(x2, y2, pop)
-                    dxy = np.concatenate([dx, dy], axis=1)
-                    dxy = np.array([dxy[0] for _ in range(nacs)])
-                    mu = np.array([mu[0] for _ in range(nacs)])
-                    obs_input = np.array([obs_input for _ in range(nacs)])
-                    
                 else:
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
                     obs_input = np.array([obs_input for _ in range(nacs)])
                 
-                if basicfuncs:
-                    reward, dist_rew, mu_rew = discriminator.get_reward(
-                        torch.from_numpy(dxy),
-                        torch.from_numpy(mu),
-                        torch.from_numpy(obs_input).to(torch.float32),
-                        torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
-                        None, None,
-                        discrim_score=False,
-                        only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                else:
-                    reward = discriminator.get_reward(
-                        torch.from_numpy(obs_input).to(torch.float32),
-                        torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
-                        None, None,
-                        discrim_score=False,
-                        ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                reward = discriminator.get_reward(
+                    torch.from_numpy(obs_input).to(torch.float32),
+                    torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
+                    None, None,
+                    discrim_score=False,
+                    ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                 for a in range(nacs):
                     rewards[t, y, x, a] = reward[a]
-                    if basicfuncs:
-                        dist_rewards[t, y, x, a] = dist_rew[a]
-                        mu_rewards[t, y, x, a] = mu_rew[a]
-
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
         path = filename + f'-all-action.gif' 
         print(np.array(datas).shape)
         multi_render(datas, path, action_str)
-        if basicfuncs:
-            dist_datas = [dist_rewards[:, :, :, a] for a in range(nacs)]
-            mu_datas = [mu_rewards[:, :, :, a] for a in range(nacs)]
-
-            path = filename + f'-all-action-dist.gif' 
-            multi_render(dist_datas, path, action_str)
-            path = filename + f'-all-action-mu.gif' 
-            multi_render(mu_datas, path, action_str)
-    if basicfuncs:
-        return rewards, dist_rewards, mu_rewards
-    else:
         return rewards
 
 

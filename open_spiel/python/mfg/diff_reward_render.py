@@ -35,7 +35,7 @@ from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.algorithms.mfg_ppo import *
-from open_spiel.python.mfg.multi_render_reward import multi_render_reward 
+from open_spiel.python.mfg.multi_render_reward import multi_render_reward, multi_render_reward_nets 
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
@@ -336,7 +336,7 @@ if __name__ == "__main__":
             outs = [[] for _ in range(n_nets)]
         for i in range(num_agent):
             if is_nets:
-                rewards, output = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, is_nets=is_nets, net_input=net_input, save=True, filename=save_path+f"-{i}")
+                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, is_nets=is_nets, net_input=net_input, save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
