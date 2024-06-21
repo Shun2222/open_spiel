@@ -122,7 +122,7 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
       else:
         obs_x = obs[:size]
         obs_y = obs[size:2*size]
-        obs_t = obs[2*size:-4]
+        obs_t = obs[2*size:-3]
 
         obs_x = obs_x.reshape(size, 1)
         obs_y = obs_y.reshape(size, 1)

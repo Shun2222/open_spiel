@@ -264,7 +264,7 @@ class MultiTypeMFGPPO(object):
                                 torch.from_numpy(mua),]
 
                 if self._is_nets:
-                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
                     obs_xym = np.concatenate([x, y, mu], axis=1)
                     nobs = obs_xym.copy()
                     nobs[:-1] = obs_xym[1:]
