@@ -97,10 +97,9 @@ filename = "actor"
 pathes = [
             "/mnt/shunsuke/result/0627/multi_maze2_airl",
             "/mnt/shunsuke/result/0627/multi_maze2_1hidden_mfairl",
-            "/mnt/shunsuke/result/0627/multi_maze2_2hidden_mfairl",
-             "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mu_a",
+             "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
              "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
-             "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mua.py",
+             "/mnt/shunsuke/result/0627/multi_maze2_s_mua",
              "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a",
              "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
@@ -115,7 +114,6 @@ pathes = [
 pathnames = [
                 "MF-AITL",
                 "MF-AITL_2hidden",
-                "MF-AITL_3hidden",
                 "MF-AITL_s_mu_a",
                 "MF-AITL_sa_mu",
                 "MF-AITL_s_mua",
@@ -133,14 +131,11 @@ update_infos = [
                 "200_2",
                 "200_2",
                 "200_2",
-                "200_2",
               ]
 
-is_single = [False, False, False, False, False]
-is_notmu = [False, False, False, False, False]
-is_basicfuncs = [False, False, False]
-is_basicfuncs_time = [False, False, False]
-is_1hiddens = [False, True, False]
+is_single = [False, False, False, False, False, False, False, False, False]
+is_notmu = [False, False, False, False, False, False, False, False, False]
+is_1hiddens = [False, True, False, False, False, False, False, False, False]
 
 
 reward_filename = disc_filename = 'disc_reward'
