@@ -253,11 +253,6 @@ class MultiTypeMFGPPO(object):
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
                     dx, dy = goal_distance(x, y, idx)
                     dxy = np.concatenate([dx, dy], axis=1)
-                    print(dx.shape)
-                    print(dy.shape)
-                    print(dxy.shape)
-                    print(mu.shape)
-                    print(acs.shape)
                     mua = np.concatenate([mu, acs], axis=1)
 
                     inputs = [torch.from_numpy(dxy),
