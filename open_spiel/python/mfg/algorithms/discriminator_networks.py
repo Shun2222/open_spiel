@@ -16,6 +16,7 @@ class Discriminator(nn.Module):
         self.hidden_size = hidden_size
         self.l2_loss_ratio = l2_loss_ratio
         self._device = device
+        self.labels = labels
 
         self.n_networks = len(input_shapes)
         self.networks = []
@@ -94,7 +95,7 @@ class Discriminator(nn.Module):
 
     def save(self, filename=""):
         for i in range(self.n_networks):
-            fname = osp.join(logger.get_dir(), "disc_"+f"{labels[i]}"+filename+".pth")
+            fname = osp.join(logger.get_dir(), "disc_"+f"{self.labels[i]}"+filename+".pth")
             torch.save(self.networks[i].state_dict(), fname)
 
         fname = osp.join(logger.get_dir(), "disc_reward"+filename+".pth")
