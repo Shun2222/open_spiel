@@ -174,7 +174,7 @@ class MultiTypeAIRL(object):
                         g_obs_xym = np.concatenate([x, y, g_mu], axis=1)
 
                         x, y, t, mu = divide_obs(g_nobs[0], self._size, use_argmax=False)
-                        g_nobs = np.concatenate([x, y, mu], axis=1)
+                        g_nobs_xym = np.concatenate([x, y, mu], axis=1)
                 
                         x, y, t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
                         e_state = np.concatenate([x, y], axis=1)
@@ -195,7 +195,7 @@ class MultiTypeAIRL(object):
                                   torch.from_numpy(d_acs)]
 
                     d_obs_xym = np.concatenate([g_obs_xym, e_obs_xym], axis=0)
-                    d_nobs_xym = np.concatenate([g_nobs, e_nobs], axis=0)
+                    d_nobs_xym = np.concatenate([g_nobs_xym, e_nobs_xym], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_mu.shape[0], 1]), np.ones([e_obs_mu.shape[0], 1])], axis=0)
