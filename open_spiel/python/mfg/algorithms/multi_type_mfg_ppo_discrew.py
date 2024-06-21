@@ -297,7 +297,7 @@ class MultiTypeMFGPPO(object):
                 values[step] = value
                 actions[step] = action
                 #rewards[step] = reward
-                rewards[step] = dist_rew
+                rewards[step] = reward 
                 rew += time_step.rewards[self._player_id]
 
                 #print(f'xyt: {obs_x},{obs_y},{obs_t}')
