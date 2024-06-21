@@ -198,7 +198,7 @@ class MultiTypeAIRL(object):
                     d_nobs_xym = np.concatenate([g_nobs_xym, e_nobs_xym], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
-                    d_labels = np.concatenate([np.zeros([g_obs_mu.shape[0], 1]), np.ones([e_obs_mu.shape[0], 1])], axis=0)
+                    d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
                     total_loss = self._discriminator[idx].train(
                         inputs, 
