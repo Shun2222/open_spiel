@@ -213,8 +213,8 @@ class MultiTypeMFGPPO(object):
                 obs_mu = np.array(obs_list+mus)
 
                 idx = self._player_id
+                acs = multionehot(np.array([actions]), self._nacs)
                 if self._net_input=='s_mu_a':
-                    acs = multionehot([actions], self._nacs)
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
                     state = np.concatenate([x, y], axis=1)
 
@@ -222,14 +222,12 @@ class MultiTypeMFGPPO(object):
                                 torch.from_numpy(mu), 
                                 torch.from_numpy(acs)]
                 elif self._net_input=='sa_mu':
-                    acs = multionehot([actions], self._nacs)
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
                     state_a = np.concatenate([x, y, acs], axis=1)
 
                     inputs = [torch.from_numpy(state_a), 
                                 torch.from_numpy(mu)]
                 elif self._net_input=='s_mua':
-                    acs = multionehot([actions], self._nacs)
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
                     state = np.concatenate([x, y], axis=1)
                     mua = np.concatenate([mu, acs], axis=1)
@@ -237,7 +235,6 @@ class MultiTypeMFGPPO(object):
                     inputs = [torch.from_numpy(state), 
                                 torch.from_numpy(mua)]
                 elif self._net_input=='dxy_mu_a':
-                    acs = multionehot([actions], self._nacs)
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
                     dx, dy = goal_distance(x, y, idx)
                     dxy = np.concatenate([dx, dy], axis=1)
@@ -246,7 +243,6 @@ class MultiTypeMFGPPO(object):
                                 torch.from_numpy(mu),
                                 torch.from_numpy(acs),]
                 elif self._net_input=='dxya_mu':
-                    acs = multionehot([actions], self._nacs)
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
                     dx, dy = goal_distance(x, y, idx)
                     dxy_a = np.concatenate([dx, dy, acs], axis=1)
@@ -254,7 +250,6 @@ class MultiTypeMFGPPO(object):
                     inputs = [torch.from_numpy(dxy_a),
                                 torch.from_numpy(mu),]
                 elif self._net_input=='dxy_mua':
-                    acs = multionehot([actions], self._nacs)
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
                     dx, dy = goal_distance(x, y, idx)
                     dxy = np.concatenate([dx, dy], axis=1)
