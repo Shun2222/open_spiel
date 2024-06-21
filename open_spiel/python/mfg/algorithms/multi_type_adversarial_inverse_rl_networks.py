@@ -34,14 +34,15 @@ class MultiTypeAIRL(object):
         self._nmu  = self._num_agent 
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        obs_input_size = self._nobs -1 - self._horizon + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_xym_size = self._nobs -1 - self._horizon + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         if disc_type=='s_mu_a':
-            inputs = [obs_input_size, self._nmu, self._nacs]
+            inputs = [state_size, self._nmu, self._nacs]
             labels = ['state', 'mu', 'act']
         else:
             assert False, f'not matched disc type: {disc_type}'
 
-        self._discriminator = [Discriminator(inputs, obs_input_size, labels, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 
