@@ -103,7 +103,7 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
         action_str = ["stop", "right", "down", "up", "left"]
         path = filename + f'-all-action.gif' 
         print(np.array(datas).shape)
-        multi_render(datas, path, action_str)
+        multi_render(datas, path, action_str, use_kde=False)
         return rewards
 
 
@@ -277,13 +277,13 @@ if __name__ == "__main__":
     path = osp.join(save_path + f'-mean.gif')
     labels = [f'Group {i}' for i in range(num_agent)]
     print(np.array(datas).shape)
-    multi_render(datas, path, labels)
+    multi_render(datas, path, labels, use_kde=False)
     if basicfuncs:
         path = osp.join(save_path + f'-mean-dist.gif')
-        multi_render(dist_datas, path, labels)
+        multi_render(dist_datas, path, labels, use_kde=False)
 
         path = osp.join(save_path + f'-mean-mu.gif')
-        multi_render(mu_datas, path, labels)
+        multi_render(mu_datas, path, labels, use_kde=False)
 
     for i in range(num_agent):
         plt.rcParams["font.size"] = 8 
