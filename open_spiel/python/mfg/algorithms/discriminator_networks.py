@@ -6,6 +6,18 @@ import logger
 import os
 import os.path as osp
 
+def onehot(value, depth):
+    a = np.zeros([depth])
+    a[value] = 1
+    return a
+
+
+def multionehot(values, depth):
+    a = np.zeros([values.shape[0], depth])
+    for i in range(values.shape[0]):
+        a[i, int(values[i])] = 1
+    return a
+
 
 class Discriminator(nn.Module):
     def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
@@ -92,6 +104,10 @@ class Discriminator(nn.Module):
         else:
             return score, outputs 
 
+    def get_num_nets(self):
+        return self.n_networks
+    def get_nets_labels(self):
+        return self.labels
 
     def save(self, filename=""):
         for i in range(self.n_networks):
@@ -105,7 +121,23 @@ class Discriminator(nn.Module):
         torch.save(self.value_net.state_dict(), fname)
         print(f'Saved discriminator param (reward, value -{filename})')
 
-    def load(self, pathes, ac_path, reward_path, value_path, use_eval=False):
+    def load(self, path, filename, use_eval=False):
+        for i in range(self.n_networks):
+            fname = osp.join(path, "disc_"+f"{self.labels[i]}"+filename+".pth")
+            self.networks[i].load_state_dict(torch.load(fname))
+
+        fname = osp.join(path, "disc_reward"+filename+".pth")
+        self.reward_net.load_state_dict(torch.load(fname))
+        fname = osp.join(path, "disc_value"+filename+".pth")
+        self.value_net.load_state_dict(torch.load(fname))
+        if use_eval:
+            # if you want to erase noise of output, you should do use_eval=True
+            for i in range(self.n_networks):
+                self.networks[i].eval()
+            self.reward_net.eval()
+            self.value_net.eval()
+
+    def load_with_path(self, pathes, reward_path, value_path, use_eval=False):
         for i in range(self.n_networks):
             self.networks[i].load_state_dict(torch.load(pathes[i]))
         self.reward_net.load_state_dict(torch.load(reward_path))
@@ -129,6 +161,43 @@ class Discriminator(nn.Module):
                 print(name, param.size())
                 print(param)
 
+    def create_inputs(self, ob_shape, nacs, horizon, mu_dists):
+        from games.predator_prey import goal_distance
+        num_agents = len(mu_dists)
+        inputs = [{} for _ in range(num_agents)]
+
+        for idx in range(num_agents):
+            for x in range(ob_shape[1]):
+                for y in range(ob_shape[0]):
+                    for t in range(horizon):
+                        mu = [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
+                        for a in range(nacs):
+                            x_onehot = onehot(x, ob_shape[0]).tolist()
+                            y_onehot = onehot(y, ob_shape[1]).tolist()
+                            a_onehot = onehot(a, nacs).tolist()
+                            state = x_onehot + y_onehot
+                            dx, dy = goal_distance(x, y, idx)
+                            dxy = [dx, dy]
+                            input = []
+                            for n in range(self.n_networks):
+                                input_str = self.labels[n]
+                                if input_str == 'state':
+                                    input.append(torch.Tensor(state))
+                                elif input_str == 'state_a':
+                                    input.append(torch.Tensor(state+a_onehot))
+                                elif input_str == 'mu':
+                                    input.append(mu)
+                                elif input_str == 'mu_a':
+                                    input.append(torch.Tensor(mu+a_onehot))
+                                elif input_str == 'dxy':
+                                    input.append(dxy)
+                                elif input_str == 'dxy_a':
+                                    input.append(torch.Tensor(dxy+a_onehot))
+                                elif input_str == 'act':
+                                    input.append(torch.Tensor(a_onehot))
+                            inputs[idx][f'{x}-{y}-{t}-{a}-m'] = input
+        return inputs
+
 
 
 if __name__ == "__main__":
@@ -138,46 +207,3 @@ if __name__ == "__main__":
     discount = 0.9
     batch_size = 32
     total_steps = 100
-
-    # モデルのインスタンス化
-    ob_shape =  2 # obsの形状を設定
-    ac_shape =  2 # acsの形状を設定
-    state_only =  True# state_onlyを設定
-    discriminator = Discriminator(ob_shape, ac_shape, state_only, discount, hidden_size, l2_loss_ratio)
-
-    # オプティマイザの設定
-    optimizer = Adam(discriminator.parameters(), lr=learning_rate)
-
-    # サンプルデータを生成
-    num_samples = 1000
-    obs = np.random.rand(100, 2)
-    obs[50:, :] = 1
-    acs = np.random.rand(100, 2)
-    obs[50:, :] = 1
-    obs_next = np.random.rand(100, 2)
-    obs_next[50:, :] = 1
-    path_probs = np.ones((100, 1))
-    labels = np.zeros((100, 1))
-    labels[50:, :] = 1
-
-    # NumPyデータをPyTorchテンソルに変換
-    obs_tensor = torch.FloatTensor(obs)
-    acs_tensor = torch.FloatTensor(acs)
-    obs_next_tensor = torch.FloatTensor(obs_next)
-    path_probs_tensor = torch.FloatTensor(path_probs)
-    labels_tensor = torch.FloatTensor(labels)
-
-    # データローダーを作成
-    dataset = TensorDataset(obs_tensor, acs_tensor, obs_next_tensor, path_probs_tensor, labels_tensor)
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-    # 学習ループ
-    for step in range(total_steps):
-        for batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels in data_loader:
-            loss = discriminator.train(optimizer, batch_obs, batch_acs, batch_obs_next, batch_path_probs, batch_labels)
-
-    if step % 10 == 0:
-        print(f"Step {step}: Loss {loss:.4f}")
-
-    # モデルの保存
-    # torch.save(discriminator.state_dict(), 'discriminator.pth')

@@ -43,11 +43,34 @@ from gif_maker import *
 plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, save=False, filename="agent_dist"):
-    if basicfuncs_time:
-        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_time import Discriminator, divide_obs
-    elif basicfuncs:
-        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
+def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
+    from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
+
+    # this functions is used to generate an animated video of the distribuiton propagating throught the game 
+    rewards = np.zeros((horizon, size, size, nacs))
+    dist_rewards = np.zeros((horizon, size, size, nacs))
+    mu_rewards = np.zeros((horizon, size, size, nacs))
+
+    for t in range(horizon):
+        for x in range(size):
+            for y in range(size):
+                for a in range(nacs):
+                    obs_input = inputs[f"{x}-{y}-{t}-{a}-m"]
+                
+                    reward, outputs = discriminator.get_reward(
+                        obs_input,
+                        None, None, None,
+                        discrim_score=False,
+                        only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                    rewards[t, y, x, a] = reward[a]
+                    if basicfuncs:
+                        dist_rewards[t, y, x, a] = dist_rew[a]
+                        mu_rewards[t, y, x, a] = mu_rew[a]
+
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, is_nets=False, net_input=None, save=False, filename="agent_dist"):
+    if is_nets:
+        from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
     else:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -69,8 +92,8 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                     from games.predator_prey import goal_distance
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
                     obs2 = obs_input.T
-                    x2 = np.argmax(obs[:size].T, axis=1)
-                    y2 = np.argmax(obs[size:2*size].T, axis=1)
+                    x2 = np.argmax(obs2[:size].T, axis=1)
+                    y2 = np.argmax(obs2[size:2*size].T, axis=1)
                     dx, dy = goal_distance(x2, y2, pop)
                     dxy = np.concatenate([dx, dy], axis=1)
                     dxy = np.array([dxy[0] for _ in range(nacs)])

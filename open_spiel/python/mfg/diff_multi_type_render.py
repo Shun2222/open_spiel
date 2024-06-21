@@ -10,6 +10,7 @@ import argparse
 from distutils.util import strtobool
 import time
 import logging
+import os.path as osp
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -109,9 +110,8 @@ pathes = [
              "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mu_a",
              "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mua.py",
-             "/mnt/shunsuke/result/0627/multi_maze2_dxdya_mu",
-             "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a",
+             "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
          ] 
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
@@ -123,9 +123,8 @@ pathnames = [
                 "MF-AITL_s_mu_a",
                 "MF-AITL_sa_mu",
                 "MF-AITL_s_mua",
-                "MF-AITL_dxdya_mu",
-                "MF-AITL_dxya_mu",
                 "MF-AITL_dxy_mu_a",
+                "MF-AITL_dxya_mu",
                 "MF-AITL_dxy_mua",
             ] 
 
@@ -154,6 +153,8 @@ if __name__ == "__main__":
             fname = fname + f'-{i}.pth' 
             fpath = osp.join(target_path, fname)
             assert osp.isfile(fpath), f'isFileError: {fpath}'
+    print(f'Checked pathed: OK')
+
 
     for ip, target_path in enumerate(pathes):
 

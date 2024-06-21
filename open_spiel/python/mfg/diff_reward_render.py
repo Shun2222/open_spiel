@@ -101,9 +101,8 @@ pathes = [
              "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mu_a",
              "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mua.py",
-             "/mnt/shunsuke/result/0627/multi_maze2_dxdya_mu",
-             "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a",
+             "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
          ] 
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
@@ -120,9 +119,8 @@ pathnames = [
                 "MF-AITL_s_mu_a",
                 "MF-AITL_sa_mu",
                 "MF-AITL_s_mua",
-                "MF-AITL_dxdya_mu",
-                "MF-AITL_dxya_mu",
                 "MF-AITL_dxy_mu_a",
+                "MF-AITL_dxya_mu",
                 "MF-AITL_dxy_mua",
             ] 
 update_infos = [
@@ -150,6 +148,14 @@ value_filename = 'disc_value'
 distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
+nets_dict = { 
+                's_mu_a': ['state', 'mu', 'act'],
+                'sa_mu': ['state_a', 'mu'],
+                's_mua': ['state', 'mu_a'],
+                'dxy_mu_a': ['dxy', 'mu', 'act'],
+                'dxya_mu': ['dxy_a', 'mu'],
+                'dxy_mua': ['dxy', 'mu_a'],
+            }
 
 if __name__ == "__main__":
     args = parse_args()
@@ -172,34 +178,36 @@ if __name__ == "__main__":
             fpath = osp.join(target_path, fname)
             assert osp.isfile(fpath), f'isFileError: {fpath}'
 
-            if is_basicfuncs[ip]:
-                fname = distance_filename
-                fname = fname + f'{update_infos[ip]}-{i}.pth' 
-                fpath = osp.join(target_path, fname)
-                assert osp.isfile(fpath), f'isFileError: {fpath}'
-
-                fname = mu_filename
-                fname = fname + f'{update_infos[ip]}-{i}.pth' 
-                fpath = osp.join(target_path, fname)
-                assert osp.isfile(fpath), f'isFileError: {fpath}'
+            for key in nets_dict.keys():
+                if key in pathnames[ip]:
+                    for label in nets_dict[key]:
+                        fname = f'disc_{label}'
+                        fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                        fpath = osp.join(target_path, fname)
+                        print(f'checked {fpath}')
+                        assert osp.isfile(fpath), f'isFileError: {fpath}'
+    print(f'Checked path: OK')
 
 
     res = []
-    dist_res = []
-    mu_res = []
+    outputs = []
     for p in range(len(pathes)):
         single = is_single[p]
         notmu = is_notmu[p]
-        basicfuncs = is_basicfuncs[p]
-        basicfuncs_time = is_basicfuncs_time[p]
         is_1hidden = is_1hiddens[p]
 
-        if basicfuncs_time:
-            from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_time import Discriminator, divide_obs
-        elif basicfuncs:
-            from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
-        elif is_1hidden:
+        is_nets = False
+        net_input = None
+        for key in nets_dict.keys():
+            if key in pathnames[p]:
+                is_nets = True
+                net_input = key
+
+
+        if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
+        elif is_nets:
+            from open_spiel.python.mfg.algorithms.discriminator import Discriminator
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -238,7 +246,11 @@ if __name__ == "__main__":
         nacs = env.action_spec()['num_actions']
         nobs = env.observation_spec()['info_state'][0]
         horizon = env.game.get_parameters()['horizon']
+
+        nmu = num_agent
         size = env.game.get_parameters()['size']
+        state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
 
         agents = []
         actor_models = []
@@ -267,23 +279,36 @@ if __name__ == "__main__":
                 discriminator = Discriminator(nobs+1, nacs, False, device)
             elif notmu:
                 discriminator = Discriminator(nobs, nacs, False, device)
-            elif basicfuncs_time:
-                discriminator = Discriminator(num_agent, horizon, 2, nobs+num_agent, nacs, False, device)
-            elif basicfuncs:
-                discriminator = Discriminator(num_agent, 2, nobs+num_agent, nacs, False, device)
+            elif is_nets:
+                if net_input=='s_mu_a':
+                    inputs = [state_size, nmu, nacs]
+                    labels = ['state', 'mu', 'act']
+                elif net_input=='sa_mu':
+                    inputs = [state_size+nacs, nmu]
+                    labels = ['state_a', 'mu']
+                elif net_input=='s_mua':
+                    inputs = [state_size, nmu+nacs]
+                    labels = ['state', 'mu_a']
+                elif net_input=='dxy_mu_a':
+                    inputs = [2, nmu, nacs]
+                    labels = ['dxy', 'mu', 'act']
+                elif net_input=='dxya_mu':
+                    inputs = [2+nacs, nmu]
+                    labels = ['dxy_a', 'mu']
+                elif net_input=='dxy_mua':
+                    inputs = [2, nmu+nacs]
+                    labels = ['dxy', 'mu_a']
+                else:
+                    assert False, f'not matched disc type: {net_input}'
+                discriminator = Discriminator(inputs, obs_xym_size, labels, device)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
-            if basicfuncs:
-                distance_path = osp.join(pathes[p], distance_filename+update_eps_info + f'-{i}.pth')
-                mu_path = osp.join(pathes[p], mu_filename+update_info + f'-{i}.pth')
-                discriminator.load(distance_path, mu_path, reward_path, value_path, use_eval=True)
+
+            if is_nets:
+                discriminator.load(pathes[p], f'{update_eps_info}', use_eval=True)
                 discriminator.print_weights()
-            else:
-                distance_path = osp.join(pathes[p], distance_filename+update_info + f'-{i}.pth')
-                mu_path = osp.join(pathes[p], mu_filename+update_eps_info + f'-{i}.pth')
-                discriminator.load(reward_path, value_path, use_eval=True)
             discriminators.append(discriminator)
 
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
@@ -304,34 +329,37 @@ if __name__ == "__main__":
                 mu_dists[pop][t,y,x] = v
 
 
-        inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
+        if is_nets:
+            inputs = discriminators[0]([size, size], nacs, horizon, mu_dists)
+        else:
+            inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
         save_path = os.path.join(pathes[p], filename+str(update_info))
         datas = []
-        dist_datas = []
-        mu_datas = []
+        outs = []
+        if is_nets:
+            n_nets = discriminators[0].get_num_nets()
+            outs = [[] for _ in range(n_nets)]
         for i in range(num_agent):
-            if basicfuncs:
-                rewards, dist_rew, mu_rew = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, basicfuncs_time, save=True, filename=save_path+f"-{i}")
-                dist_datas.append(np.mean(dist_rew, axis=3))
-                mu_datas.append(np.mean(mu_rew, axis=3))
+            if is_nets:
+                rewards, output = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, is_nets=is_nets, net_input=net_input, save=True, filename=save_path+f"-{i}")
+                for j in range(n_nets):
+                    outs[j].append(np.mean(output[j], axis=3))
             else:
-                rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, basicfuncs, basicfuncs_time, save=True, filename=save_path+f"-{i}")
+                rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
             datas.append(np.mean(rewards, axis=3))
 
         res.append(datas)
-        dist_res.append(dist_datas)
-        mu_res.append(mu_datas)
+        outputs.append(outs)
         path = osp.join(save_path + f'-mean.gif')
         labels = [f'Group {i}' for i in range(num_agent)]
         print(np.array(datas).shape)
         multi_render(datas, path, labels)
-        if basicfuncs:
+        if is_nets:
             labels = [f'Group {i}' for i in range(num_agent)]
-            path = osp.join(save_path + f'-mean-dist.gif')
-            multi_render(dist_datas, path, labels)
-
-            path = osp.join(save_path + f'-mean-mu.gif')
-            multi_render(mu_datas, path, labels)
+            net_labels = discriminators[0].get_net_labels()
+            for i in range(n_nets):
+                path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
+                multi_render(outputs[i], path, labels)
 
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 
@@ -348,36 +376,23 @@ if __name__ == "__main__":
             plt.savefig(save_path)
             plt.close()
             print(f'saved {save_path} ')
-            if basicfuncs:
-                fig = plt.figure(figsize=(16, 12))
-                ax = fig.add_subplot(1, 1, 1)
-                points = dist_datas[i]
-                col = 1
-                for s in range(len(points[0].shape)):
-                    col *= points[0].shape[s]
-                points = points.reshape(len(points), col).T
-                bp = ax.boxplot(points)
-                plt.xlabel(r"$\mu_{time}$")
-                plt.ylabel(r"Distance Reward")
-                save_path = os.path.join(pathes[p], filename+f'-mutime-box-dist-{i}.png')
-                plt.savefig(save_path)
-                plt.close()
-                print(f'saved {save_path} ')
+            if is_nets:
+                for j in range(n_nets):
+                    fig = plt.figure(figsize=(16, 12))
+                    ax = fig.add_subplot(1, 1, 1)
+                    points = outputs[j][i]
+                    col = 1
+                    for s in range(len(points[0].shape)):
+                        col *= points[0].shape[s]
+                    points = points.reshape(len(points), col).T
+                    bp = ax.boxplot(points)
+                    plt.xlabel(r"$\mu_{time}$")
+                    plt.ylabel(fr"{net_labels[j]} value")
+                    save_path = os.path.join(pathes[p], filename+f'-mutime-box-{net_labels[j]}-{i}.png')
+                    plt.savefig(save_path)
+                    plt.close()
+                    print(f'saved {save_path} ')
 
-                fig = plt.figure(figsize=(16, 12))
-                ax = fig.add_subplot(1, 1, 1)
-                points = mu_datas[i]
-                col = 1
-                for s in range(len(points[0].shape)):
-                    col *= points[0].shape[s]
-                points = points.reshape(len(points), col).T
-                bp = ax.boxplot(points)
-                plt.xlabel(r"$\mu_{time}$")
-                plt.ylabel(r"Mu Reward")
-                save_path = os.path.join(pathes[p], filename+f'-mutime-box-mu-{i}.png')
-                plt.savefig(save_path)
-                plt.close()
-                print(f'saved {save_path} ')
 
             figsizes = [(16, 12), (64, 12)]
             fontsizes = [8, 24]
@@ -396,43 +411,28 @@ if __name__ == "__main__":
                 plt.savefig(save_path)
                 plt.close()
                 print(f'saved {save_path} ')
-                if basicfuncs:
-                    fig = plt.figure(figsize=figsizes[j])
-                    ax = fig.add_subplot(1, 1, 1)
-                    points = dist_datas[i]
-                    col = 1
-                    for s in range(len(points[0].shape)):
-                        col *= points[0].shape[s]
-                    points = points.reshape(len(points), col)
-                    bp = ax.boxplot(points)
-                    plt.xlabel(r"State")
-                    plt.ylabel(r"Distance Reward")
-                    save_path = os.path.join(pathes[p], filename+f'-box-dist-{j}-{i}.png')
-                    plt.savefig(save_path)
-                    plt.close()
-                    print(f'saved {save_path} ')
-
-                    fig = plt.figure(figsize=figsizes[j])
-                    ax = fig.add_subplot(1, 1, 1)
-                    points = mu_datas[i]
-                    col = 1
-                    for s in range(len(points[0].shape)):
-                        col *= points[0].shape[s]
-                    points = points.reshape(len(points), col)
-                    bp = ax.boxplot(points)
-                    plt.xlabel(r"State")
-                    plt.ylabel(r"Mu Reward")
-                    path = os.path.join(pathes[p], filename+f'-box-mu-{j}-{i}.png')
-                    plt.savefig(save_path)
-                    plt.close()
-                    print(f'saved {save_path} ')
+                if is_nets:
+                    for k in range(n_nets):
+                        fig = plt.figure(figsize=figsizes[j])
+                        ax = fig.add_subplot(1, 1, 1)
+                        points = outputs[k][i]
+                        col = 1
+                        for s in range(len(points[0].shape)):
+                            col *= points[0].shape[s]
+                        points = points.reshape(len(points), col)
+                        bp = ax.boxplot(points)
+                        plt.xlabel(r"State")
+                        plt.ylabel(fr"{net_labels[k]} value")
+                        save_path = os.path.join(pathes[p], filename+f'-box-{net_labels[k]}-{i}.png')
+                        plt.savefig(save_path)
+                        plt.close()
+                        print(f'saved {save_path} ')
 
     labels = [f"Group {n}" for n in range(num_agent)] 
     diff_render_distance_plot(np.array(res), pathes, pathnames, labels)
     if np.sum(is_basicfuncs)==len(is_basicfuncs):
-        dist_pathnames = ['dist-'+p for p in pathnames] 
-        mu_pathnames = ['mu-'+p for p in pathnames] 
-        diff_render_distance_plot(np.array(dist_res), pathes, dist_pathnames, labels)
-        diff_render_distance_plot(np.array(mu_res), pathes, mu_pathnames, labels)
+        for j in range(n_nets):
+            output_pathnames = [f'{net_labels[j]}-'+p for p in pathnames] 
+            diff_render_distance_plot(np.array(outputs[j]), pathes, output_pathnames, labels)
 
 

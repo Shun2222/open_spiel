@@ -194,8 +194,8 @@ def diff_render_distance_plot(datas, pathes, filenames, labels):
                         all_euclid.append(euclid)
 
                     ax = fig1.add_subplot(2, num_agent+1, i+1)
-                    im = ax.plot(np.arange(len(all_cos_sim)), all_cos_sim, label=f'cos sim:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1])
-                    im = ax.plot(np.arange(len(all_spearmanr)), all_spearmanr, label='spearmanrm:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1], marker='o')
+                    im = ax.plot(np.arange(len(all_cos_sim)), all_cos_sim, label=f'cos sim:{filenames[p1]}-{filenames[p2]}')
+                    im = ax.plot(np.arange(len(all_spearmanr)), all_spearmanr, label='spearmanrm:{filenames[p1]}-{filenames[p2]}', marker='o')
                     if p2==len(datas)-1:
                         plt.rcParams["font.size"] = 16 
                         ax.set_xlabel('State')
@@ -206,8 +206,8 @@ def diff_render_distance_plot(datas, pathes, filenames, labels):
                         plt.close()
 
                     ax = fig2.add_subplot(2, num_agent+1, i+1)
-                    im = ax.plot(np.arange(len(all_kl_div)), all_kl_div, label='kl divergence:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1])
-                    im = ax.plot(np.arange(len(all_euclid)), all_euclid, label='euclid:{filenames[p1]}-{filenames[p2]}', color=colors[p2-1], marker='o')
+                    im = ax.plot(np.arange(len(all_kl_div)), all_kl_div, label='kl divergence:{filenames[p1]}-{filenames[p2]}')
+                    im = ax.plot(np.arange(len(all_euclid)), all_euclid, label='euclid:{filenames[p1]}-{filenames[p2]}', marker='o')
                     if p2==len(datas)-1:
                         plt.rcParams["font.size"] = 16 
                         ax.set_xlabel(r"Time")
