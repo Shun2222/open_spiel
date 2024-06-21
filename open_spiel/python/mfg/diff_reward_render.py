@@ -202,7 +202,7 @@ if __name__ == "__main__":
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
         elif is_nets:
-            from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+            from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
