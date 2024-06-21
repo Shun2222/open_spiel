@@ -159,7 +159,6 @@ nets_dict = {
 
 if __name__ == "__main__":
     args = parse_args()
-    assert len(pathes)<9, 'corlo num Error'
 
     for ip, target_path in enumerate(pathes):
         for i in range(3):

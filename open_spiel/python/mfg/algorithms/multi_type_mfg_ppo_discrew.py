@@ -36,7 +36,7 @@ from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
-from games.predator_prey import goal_distance
+from games.predator_prey import goal_distance, divide_obs
 
 def convert_distrib(envs, distrib):
     env = envs[0]
@@ -150,7 +150,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, basicfuncs=True):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None):
         self._device = device
 
         info_state_size = env.observation_spec()["info_state"][0]
@@ -164,7 +164,8 @@ class MultiTypeMFGPPO(object):
         self._optimizer_actor = optim.Adam(self._eps_agent.actor.parameters(), lr=1e-3,eps=1e-5)
         self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
         self._discriminator = discriminator
-        self._basicfuncs = basicfuncs
+        self._is_nets = is_nets
+        self._net_input = net_input
 
         self._size = env.game.get_parameters()['size']
 
@@ -211,16 +212,68 @@ class MultiTypeMFGPPO(object):
                 mu.append(mus[self._player_id])
                 obs_mu = np.array(obs_list+mus)
 
-                x2, y2, t2, mu2 = divide_obs(np.array(obs), size, one_vec=True)
-                dx, dy = goal_distance(x2, y2, self._player_id)
-                dxy = np.concatenate([dx, dy], axis=1)
+                idx = self._player_id
+                if self._net_input=='s_mu_a':
+                    acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    state = np.concatenate([x, y], axis=1)
 
-                if self._basicfuncs:
+                    inputs = [torch.from_numpy(state), 
+                                torch.from_numpy(mu), 
+                                torch.from_numpy(acs)]
+                elif self._net_input=='sa_mu':
+                    acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    state_a = np.concatenate([x, y, acs], axis=1)
+
+                    inputs = [torch.from_numpy(state_a), 
+                                torch.from_numpy(mu)]
+                elif self._net_input=='s_mua':
+                    acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    state = np.concatenate([x, y], axis=1)
+                    mua = np.concatenate([mu, acs], axis=1)
+
+                    inputs = [torch.from_numpy(state), 
+                                torch.from_numpy(mua)]
+                elif self._net_input=='dxy_mu_a':
+                    acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
+                    dx, dy = goal_distance(x, y, idx)
+                    dxy = np.concatenate([dx, dy], axis=1)
+
+                    inputs = [torch.from_numpy(dxy), 
+                                torch.from_numpy(mu),
+                                torch.from_numpy(acs),]
+                elif self._net_input=='dxya_mu':
+                    acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
+                    dx, dy = goal_distance(x, y, idx)
+                    dxy_a = np.concatenate([dx, dy, acs], axis=1)
+
+                    inputs = [torch.from_numpy(dxy_a),
+                                torch.from_numpy(mu),]
+                elif self._net_input=='dxy_mua':
+                    acs = multionehot(actions, self._nacs)
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
+                    dx, dy = goal_distance(x, y, idx)
+                    dxy = np.concatenate([dx, dy], axis=1)
+                    mua = np.concatenate([mu, acs], axis=1)
+
+                    inputs = [torch.from_numpy(dxy),
+                                torch.from_numpy(mua),]
+
+                if self._is_nets:
+                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
+                    obs_xym = np.concatenate([x, y, mu], axis=1)
+                    nobs = obs_xym.copy()
+                    nobs[:-1] = obs_xym[1:]
+                    nobs[-1] = obs_xym[0]
+                    obs_next_xym = nobs
                     reward, dist_rew, mu_rew = discriminator.get_reward(
-                        torch.from_numpy(dxy),
-                        torch.from_numpy(mu2),
-                        torch.from_numpy(obs_mu).to(torch.float32),
-                        torch.from_numpy(onehot(action, nacs)).to(torch.int64),
+                        inputs,
+                        torch.from_numpy(obs_xym).to(self._device),
+                        torch.from_numpy(obs_next_xym).to(self._device),
                         None, None,
                         discrim_score=False,
                         only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
@@ -426,15 +479,15 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/multi_maze2_ppo_distrew", help="logdir")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_dxy_mua", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mua", help="logdir")
+    parser.add_argument("--is_nets", action='store_true')
+    parser.add_argument("--net_input", type=str, default="dxy_mua", help="file path")
+    parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
+
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
-    parser.add_argument("--basicfuncs", action='store_true')
-    parser.add_argument("--update_eps", type=str, default=r"134_134", help="file path")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_episode1", help="file path")
 
-    parser.add_argument("--distance_filename", type=str, default="disc_distance", help="file path")
-    parser.add_argument("--mu_filename", type=str, default="disc_mu", help="file path")
     parser.add_argument("--reward_filename", type=str, default="disc_reward", help="file path")
     parser.add_argument("--value_filename", type=str, default="disc_value", help="file path")
     parser.add_argument("--actor_filename", type=str, default="actor", help="file path")
@@ -447,12 +500,13 @@ if __name__ == "__main__":
 
     single = args.single
     notmu = args.notmu
-    basicfuncs = args.basicfuncs
+    is_nets = args.is_nets
+    net_input = args.net_input
 
     update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
-    if basicfuncs:
-        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
+    if is_nets:
+        from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
     else:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -494,22 +548,46 @@ if __name__ == "__main__":
     env = envs[0]
     nacs = env.action_spec()['num_actions']
     nobs = env.observation_spec()['info_state'][0]
+    horizon = env.game.get_parameters()['horizon']
+
+    nmu = num_agent
+    size = env.game.get_parameters()['size']
+    state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+    obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
     discriminators = []
     for i in range(num_agent):
         if single:
             discriminator = Discriminator(nobs+1, nacs, False, device)
         elif notmu:
             discriminator = Discriminator(nobs, nacs, False, device)
-        elif basicfuncs:
-            discriminator = Discriminator(num_agent, 2, nobs+num_agent, nacs, False, device)
+        elif is_nets:
+            if net_input=='s_mu_a':
+                inputs = [state_size, nmu, nacs]
+                labels = ['state', 'mu', 'act']
+            elif net_input=='sa_mu':
+                inputs = [state_size+nacs, nmu]
+                labels = ['state_a', 'mu']
+            elif net_input=='s_mua':
+                inputs = [state_size, nmu+nacs]
+                labels = ['state', 'mu_a']
+            elif net_input=='dxy_mu_a':
+                inputs = [2, nmu, nacs]
+                labels = ['dxy', 'mu', 'act']
+            elif net_input=='dxya_mu':
+                inputs = [2+nacs, nmu]
+                labels = ['dxy_a', 'mu']
+            elif net_input=='dxy_mua':
+                inputs = [2, nmu+nacs]
+                labels = ['dxy', 'mu_a']
+            else:
+                assert False, f'not matched disc type: {net_input}'
+            discriminator = Discriminator(inputs, obs_xym_size, labels, device)
         else:
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
         reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
         value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
-        if basicfuncs:
-            distance_path = osp.join(args.path, args.distance_filename+update_eps_info + f'-{i}.pth')
-            mu_path = osp.join(args.path, args.mu_filename+update_eps_info + f'-{i}.pth')
-            discriminator.load(distance_path, mu_path, reward_path, value_path, use_eval=True)
+        if is_nets:
+            discriminator.load(args.path, f'{update_eps_info}', use_eval=True)
             discriminator.print_weights()
         else:
             distance_path = osp.join(args.path, args.distance_filename+update_eps_info + f'-{i}.pth')
@@ -518,7 +596,7 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
