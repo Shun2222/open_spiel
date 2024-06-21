@@ -97,6 +97,14 @@ filename = "actor"
 pathes = [
             "/mnt/shunsuke/result/0627/multi_maze2_airl",
             "/mnt/shunsuke/result/0627/multi_maze2_1hidden_mfairl",
+            "/mnt/shunsuke/result/0627/multi_maze2_2hidden_mfairl",
+             "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mu_a",
+             "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
+             "/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_s_mua.py",
+             "/mnt/shunsuke/result/0627/multi_maze2_dxdya_mu",
+             "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
+             "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a",
+             "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
          ] 
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
             #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
@@ -106,14 +114,28 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AIRL", 
-                "MF-AIRL_1hidden", 
-                "MF-AIRL_time", 
+                "MF-AITL",
+                "MF-AITL_2hidden",
+                "MF-AITL_3hidden",
+                "MF-AITL_s_mu_a",
+                "MF-AITL_sa_mu",
+                "MF-AITL_s_mua",
+                "MF-AITL_dxdya_mu",
+                "MF-AITL_dxya_mu",
+                "MF-AITL_dxy_mu_a",
+                "MF-AITL_dxy_mua",
             ] 
 update_infos = [
-                "200_2",
-                "200_2",
-                "200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
+                "actor200_2",
               ]
 
 is_single = [False, False, False, False, False]
