@@ -306,7 +306,7 @@ if __name__ == "__main__":
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
 
             if is_nets:
-                discriminator.load(pathes[p], f'{update_eps_info}', use_eval=True)
+                discriminator.load(pathes[p], f'{update_eps_info}-{i}', use_eval=True)
                 discriminator.print_weights()
             discriminators.append(discriminator)
 

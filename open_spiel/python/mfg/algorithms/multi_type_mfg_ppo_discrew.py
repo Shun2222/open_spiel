@@ -587,7 +587,7 @@ if __name__ == "__main__":
         reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
         value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
         if is_nets:
-            discriminator.load(args.path, f'{update_eps_info}', use_eval=True)
+            discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)
             discriminator.print_weights()
         else:
             distance_path = osp.join(args.path, args.distance_filename+update_eps_info + f'-{i}.pth')
