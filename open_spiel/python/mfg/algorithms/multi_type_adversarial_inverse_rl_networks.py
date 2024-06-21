@@ -267,7 +267,7 @@ class MultiTypeAIRL(object):
                                   torch.from_numpy(d_mua)]
                     elif self._disc_type=='dxy_mu_a':
                         d_dxy = np.concatenate([g_dxy, e_dxy], axis=0)
-                        d_mua = np.concatenate([g_mu, e_mu], axis=0)
+                        d_mu = np.concatenate([g_mu, e_mu], axis=0)
                         d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
 
                         inputs = [torch.from_numpy(d_dxy), 
