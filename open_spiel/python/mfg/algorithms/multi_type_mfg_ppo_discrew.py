@@ -213,7 +213,7 @@ class MultiTypeMFGPPO(object):
                 obs_mu = np.array(obs_list+mus)
 
                 idx = self._player_id
-                acs = multionehot(actions), self._nacs)
+                acs = multionehot(actions, self._nacs)
                 if self._net_input=='s_mu_a':
                     x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
                     state = np.concatenate([x, y], axis=1)
