@@ -124,16 +124,16 @@ pathnames = [
                 "MF-AITL_dxy_mua",
             ] 
 update_infos = [
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
-                "actor200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
+                "200_2",
               ]
 
 is_single = [False, False, False, False, False]
