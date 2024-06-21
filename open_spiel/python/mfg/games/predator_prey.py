@@ -107,6 +107,8 @@ def obs_xytm_to_obs_xym(obs, size, one_vec=False):
 
 def divide_obs(obs, size, one_vec=False, use_argmax=True):
     obs = np.array(obs)
+    if len(obs.shape)==1:
+      one_vec = True
     if one_vec:
       if use_argmax:
         obs_x = np.argmax(obs[:size])
