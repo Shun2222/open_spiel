@@ -228,13 +228,15 @@ class MultiTypeAIRL(object):
                     g_x, g_y, g_t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
                     g_state = np.concatenate([g_x, g_y], axis=1)
                     g_nx, g_ny, g_nt, g_nmu = divide_obs(g_nobs[0], self._size, use_argmax=False)
-                    g_dx, g_dy = goal_distance(g_x, g_y, idx)
+                    g_mx, g_my, _, _ = divide_obs(g_obs_mu[0], self._size, use_argmax=True)
+                    g_dx, g_dy = goal_distance(g_mx, g_my, idx)
                     g_dxy = np.concatenate([g_dx, g_dy], axis=1)
 
                     e_x, e_y, e_t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
                     e_state = np.concatenate([e_x, e_y], axis=1)
                     e_nx, e_ny, e_nt, e_nmu = divide_obs(e_nobs[0], self._size, use_argmax=False)
-                    e_dx, e_dy = goal_distance(e_x, e_y, idx)
+                    e_mx, e_my, _, _ = divide_obs(e_obs_mu[0], self._size, use_argmax=True)
+                    e_dx, e_dy = goal_distance(e_mx, e_my, idx)
                     e_dxy = np.concatenate([e_dx, e_dy], axis=1)
 
                     if self._disc_type=='s_mu_a':
