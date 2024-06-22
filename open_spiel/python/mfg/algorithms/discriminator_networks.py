@@ -90,7 +90,7 @@ class Discriminator(nn.Module):
         optimizer.step()
         return loss.item()
 
-    def get_reward(self, inputs, obs, obs_next, path_probs, discrim_score=False, only_rew=True):
+    def get_reward(self, inputs, obs, obs_next, path_probs, discrim_score=False, only_rew=True, weighted_rew=False):
         with torch.no_grad():
             if discrim_score:
                 log_q_tau, log_p_tau, log_pq, discrim_output = self(inputs, obs, obs_next, path_probs)
@@ -99,13 +99,18 @@ class Discriminator(nn.Module):
                 outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] 
                 rew_inputs = torch.cat(outputs, dim=1)
                 score = self.reward_net(rew_inputs.to(torch.float32))
-        if only_rew:
+        if weighted_rew:
+            weights = self.reward_net.state_dict()['0.weight'][0].numpy()
+            outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
+            return score, outputs 
+        elif only_rew:
             return score
         else:
             return score, outputs 
 
     def get_num_nets(self):
         return self.n_networks
+
     def get_nets_labels(self):
         return self.labels
 

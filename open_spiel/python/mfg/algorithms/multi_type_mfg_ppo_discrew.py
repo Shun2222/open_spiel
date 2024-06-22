@@ -271,7 +271,7 @@ class MultiTypeMFGPPO(object):
                         torch.from_numpy(obs_next_xym).to(self._device),
                         None,
                         discrim_score=False,
-                        only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
