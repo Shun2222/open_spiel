@@ -476,7 +476,6 @@ def parse_args():
     
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_sa_mu", help="file path")
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_sarew", help="logdir")
-    parser.add_argument("--is_nets", action='store_true')
     parser.add_argument("--net_input", type=str, default="sa_mu", help="file path")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 

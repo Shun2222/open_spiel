@@ -47,6 +47,8 @@ def get_net_inputs():
 def is_networks(filename):
     labels = get_net_inputs()
     for label in labels:
+        print(f'filename:{filename}')
+        print(f'is in label:{label}, {label in filename}')
         if label in filename:
             return True
     return False
