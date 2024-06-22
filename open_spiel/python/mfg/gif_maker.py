@@ -5,6 +5,7 @@ import numpy as np
 from gif_maker import *
 from sklearn.neighbors import KernelDensity
 import pickle as pkl
+import seaborn as sns
 
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"
 
@@ -22,6 +23,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     fig.colorbar(im, ax=axes[n_datas])
     imgs = []
     contours = []
+    avail_contours = []
     for n in range(n_datas):
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
         im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
@@ -31,6 +33,9 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
             Y = -Y + 9 
             cs = axes[n].contour(Y, X, Z, 10)
             contours.append(cs)
+            avail_contours.append(True)
+        else:
+            avail_contours.append(False)
 
     def animate(i, imgs, contours, datas):
         for n in range(n_datas):

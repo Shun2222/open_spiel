@@ -35,7 +35,7 @@ from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.algorithms.mfg_ppo import *
-from open_spiel.python.mfg.multi_render_reward import multi_render_reward 
+from open_spiel.python.mfg.multi_render_reward import multi_render_reward, multi_render_reward_nets 
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
         elif is_nets:
-            from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+            from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -336,7 +336,7 @@ if __name__ == "__main__":
             outs = [[] for _ in range(n_nets)]
         for i in range(num_agent):
             if is_nets:
-                rewards, output = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, is_nets=is_nets, net_input=net_input, save=True, filename=save_path+f"-{i}")
+                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, is_nets=is_nets, net_input=net_input, save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
@@ -348,13 +348,13 @@ if __name__ == "__main__":
         path = osp.join(save_path + f'-mean.gif')
         labels = [f'Group {i}' for i in range(num_agent)]
         print(np.array(datas).shape)
-        multi_render(datas, path, labels)
+        multi_render(datas, path, labels, use_kde=False)
         if is_nets:
             labels = [f'Group {i}' for i in range(num_agent)]
             net_labels = discriminators[0].get_net_labels()
             for i in range(n_nets):
                 path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
-                multi_render(outputs[i], path, labels)
+                multi_render(outputs[i], path, labels, False)
 
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 
