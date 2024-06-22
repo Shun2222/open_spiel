@@ -42,8 +42,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a", help="log path")
-    parser.add_argument("--net_input", type=str, default="dxy_mu_a", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_s_mu_a", help="log path")
+    parser.add_argument("--net_input", type=str, default="s_mu_a", help="log path")
 
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")

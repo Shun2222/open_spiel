@@ -97,8 +97,8 @@ class Discriminator(nn.Module):
                 score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
             else:
                 outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] 
-                outputs = torch.cat(outputs, dim=1)
-                score = self.reward_net(outputs.to(torch.float32))
+                rew_inputs = torch.cat(outputs, dim=1)
+                score = self.reward_net(rew_inputs.to(torch.float32))
         if only_rew:
             return score
         else:
