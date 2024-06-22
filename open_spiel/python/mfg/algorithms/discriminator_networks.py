@@ -18,6 +18,38 @@ def multionehot(values, depth):
         a[i, int(values[i])] = 1
     return a
 
+def net_labels(net_input):
+    if net_input=='s_mu_a':
+        labels = ['state', 'mu', 'act']
+    elif net_input=='sa_mu':
+        labels = ['state_a', 'mu']
+    elif net_input=='s_mua':
+        labels = ['state', 'mu_a']
+    elif net_input=='dxy_mu_a':
+        labels = ['dxy', 'mu', 'act']
+    elif net_input=='dxya_mu':
+        labels = ['dxy_a', 'mu']
+    elif net_input=='dxy_mua':
+        labels = ['dxy', 'mu_a']
+    else:
+        assert False, f'not matched disc type: {net_input}'
+    return labels
+
+def get_net_inputs():
+    net_inputs = ['s_mu_a'
+                  'sa_mu',
+                  's_mua',
+                  'dxy_mu_a',
+                  'dxya_mu',
+                  'dxy_mua',]
+    return net_inputs
+
+def is_networks(filename):
+    labels = get_net_inputs()
+    for label in labels:
+        if label in filename:
+            return True
+    return False
 
 class Discriminator(nn.Module):
     def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):

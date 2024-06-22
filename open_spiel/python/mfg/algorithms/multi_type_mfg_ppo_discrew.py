@@ -500,9 +500,11 @@ if __name__ == "__main__":
 
     update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
-    if is_nets:
-        from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
-    else:
+
+    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+    is_nets = is_networks(args.path)
+    print(f'Is networks: {is_nets}')
+    if not is_nets:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # Set the seed 
