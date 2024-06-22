@@ -36,7 +36,7 @@ def net_labels(net_input):
     return labels
 
 def get_net_inputs():
-    net_inputs = ['s_mu_a'
+    net_inputs = ['s_mu_a',
                   'sa_mu',
                   's_mua',
                   'dxy_mu_a',

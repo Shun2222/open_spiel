@@ -494,7 +494,6 @@ if __name__ == "__main__":
 
     single = args.single
     notmu = args.notmu
-    is_nets = args.is_nets
     net_input = args.net_input
 
     update_eps_info = f'{args.update_eps}'
