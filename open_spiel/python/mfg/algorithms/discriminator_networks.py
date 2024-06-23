@@ -197,7 +197,10 @@ class Discriminator(nn.Module):
             value_fn_next = self.value_next_net(obs_next.to(torch.float32)).numpy()
 
             log_p_tau = reward + self.gamma * value_fn_next - value_fn
+            log_p_tau = log_p_tau.flatten()
             log_p_tau2 = reward2 + self.gamma * value_fn_next - value_fn
+            log_p_tau2 = log_p_tau2.flatten()
+
             cos_sim = 1-distance.cosine(log_p_tau, log_p_tau2)
             corr, p_value = spearmanr(log_p_tau, log_p_tau2)
             kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(log_p_tau, log_p_tau2)]) 
