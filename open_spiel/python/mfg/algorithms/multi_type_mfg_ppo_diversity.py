@@ -349,7 +349,7 @@ class MultiTypeMFGPPO(object):
         cos_sims_rews = {} 
         spearmanrs_rews = {}
         kl_divs_rews = {}
-        rew = np.array(all_rew)
+        rew = np.array(all_rew).flatten()
         for rate_str in all_p_tau.keys():
             p_tau = np.array(all_p_tau[rate_str])
             p_tau2 = np.array(all_p_tau2[rate_str])
@@ -397,7 +397,8 @@ class MultiTypeMFGPPO(object):
         all_p_tau2 = {}
         all_rew = []
         all_rew2 = {}
-        inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)[self._player_id]
+        inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)
+        inputs = list(inputs[self._player_id].values)
         for rate in combinations:
             rew, rew2, _, _ = self._discriminator.get_reward_weighted(
                 inputs,
@@ -415,7 +416,7 @@ class MultiTypeMFGPPO(object):
         spearmanrs_rews = {}
         kl_divs_rews = {}
         #euclids = {}
-        rew = np.array(all_rew)
+        rew = np.array(all_rew).flatten()
         for rate_str in all_p_tau.keys():
             rew2 = np.array(all_rew2[rate_str])
 
