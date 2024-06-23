@@ -192,6 +192,7 @@ class MultiTypeMFGPPO(object):
         all_rew2 = {}
         inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)
         for rate in combinations:
+            rate_str = f'{rate}'
             all_rew2[rate_str] = []
         for key, v in inputs[self._player_id].items():
             v = [vi.reshape(1, len(vi)) for vi in v]
