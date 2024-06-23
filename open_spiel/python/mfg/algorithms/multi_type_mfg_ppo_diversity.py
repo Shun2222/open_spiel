@@ -38,6 +38,10 @@ from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 from games.predator_prey import goal_distance, divide_obs
 
+from scipy.spatial import distance
+from scipy.stats import spearmanr
+from scipy.special import kl_div
+
 def convert_distrib(envs, distrib):
     env = envs[0]
     num_agent = len(envs)
@@ -178,8 +182,6 @@ class MultiTypeMFGPPO(object):
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
         info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
-        obs_xyms = torch.zeros((nsteps,self._size*2+self._num_agent), device=self._device)
-        nobs_xyms = torch.zeros((nsteps,self._size*2+self._num_agent), device=self._device)
         actions = torch.zeros((nsteps,), device=self._device)
         logprobs = torch.zeros((nsteps,), device=self._device)
         rewards = torch.zeros((nsteps,), device=self._device)
@@ -190,8 +192,18 @@ class MultiTypeMFGPPO(object):
         t_actions = torch.zeros((nsteps,), device=self._device)
         t_logprobs = torch.zeros((nsteps,), device=self._device)
         all_mu = [] 
-        all_inputs = [] 
+        all_p_tau = {}
+        all_p_tau2 = {}
+        all_rew2 = {} 
         ret = []
+        if self._is_nets:
+            n_nets = self._discriminator.get_num_nets()
+            values = np.arange(-0.3, 0.31, 0.01)
+            grids = np.meshgrid(*[values] * n_nets)
+            combinations = np.vstack([grid.ravel() for grid in grids]).T
+            for rate in combinations:
+                rate_str = f'{rate}'
+                all_p_tau[rate_str] = []
 
         size = self._size
         step = 0
@@ -269,9 +281,6 @@ class MultiTypeMFGPPO(object):
                     nobs[:-1] = obs_xym[1:]
                     nobs[-1] = obs_xym[0]
                     obs_next_xym = nobs
-                    obs_xyms[step] = obs_xym
-                    nobs_xyms[step] = obs_next_xym
-                    all_inputs.append(inputs)
                     reward, outputs = self._discriminator.get_reward(
                         inputs,
                         torch.from_numpy(obs_xym).to(self._device),
@@ -279,7 +288,17 @@ class MultiTypeMFGPPO(object):
                         None,
                         discrim_score=False,
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-
+                    for rate in combinations:
+                        rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                            inputs,
+                            torch.from_numpy(obs_xym).to(self._device),
+                            torch.from_numpy(obs_next_xym).to(self._device),
+                            None,
+                            rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        rate_str = f'{rate}'
+                        all_p_tau[rate_str].append(p_tau)
+                        all_p_tau2[rate_str].append(p_tau2)
+                        all_rew2[rate_str].append(rew2)
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
@@ -317,17 +336,27 @@ class MultiTypeMFGPPO(object):
         ret = np.array(ret)
         assert step==nsteps
 
-        n_nets = self._discriminator.get_num_nets()
-        values = np.arange(-0.3, 0.31, 0.01)
-        grids = np.meshgrid(*[values] * n_nets)
-        combinations = np.vstack([grid.ravel() for grid in grids]).T
-        for rate in combinations:
-            self._discriminator.get_reward_weighted(
-                all_inputs,
-                torch.from_numpy(obs_xyms).to(self._device),
-                torch.from_numpy(nobs_xyms).to(self._device),
-                None,
-                rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+        for rate_str in all_p_tau.keys():
+            p_tau = all_p_tau[rate_str],
+            p_tau2 = all_p_tau2[rate_str],
+
+            cos_sim = 1-distance.cosine( p_tau2)
+            corr, p_value = spearmanr(p_tau, p_tau2)
+            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
+            euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
+
+            print(f'----------------------')
+            print(f'rate: {rate_str}')
+            print(f'log p tau: {np.mean(p_tau)}')
+            print(f'log p tau2: {np.mean(p_tau2)}')
+            print(f'cos_sim(p,p2): {np.mean(cos_sim)}')
+            print(f'corr(p,p2): {np.mean(corr)}')
+            print(f'kl_div(p,p2): {np.mean(kl_div)}')
+            print(f'euclid(p,p2): {np.mean(euclid)}')
+            input()
+            print(f'p tau {p_tau}')
+            print(f'p tau2 {p_tau2}')
+
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
 
