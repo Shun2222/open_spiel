@@ -77,10 +77,10 @@ def is_networks(filename):
             return True
     return False 
 
-def get_net_label(filename):
+def get_net_label(net_input):
     net_inputs = get_net_inputs()
-    for net_input in net_inputs:
-        if net_input in filename:
+    for ni in net_inputs:
+        if ni in net_input:
             return net_labels(net_input)
     return None
 
@@ -88,7 +88,7 @@ def get_net_input(filename):
     net_inputs = get_net_inputs()
     for net_input in net_inputs:
         if net_input in filename:
-            return net_inputs
+            return net_input
     return None
 
 class Discriminator(nn.Module):
