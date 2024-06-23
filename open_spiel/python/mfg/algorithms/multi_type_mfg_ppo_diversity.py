@@ -178,6 +178,8 @@ class MultiTypeMFGPPO(object):
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
         info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
+        obs_xyms = torch.zeros((nsteps,self._size*2+self._num_agent), device=self._device)
+        nobs_xyms = torch.zeros((nsteps,self._size*2+self._num_agent), device=self._device)
         actions = torch.zeros((nsteps,), device=self._device)
         logprobs = torch.zeros((nsteps,), device=self._device)
         rewards = torch.zeros((nsteps,), device=self._device)
@@ -188,6 +190,7 @@ class MultiTypeMFGPPO(object):
         t_actions = torch.zeros((nsteps,), device=self._device)
         t_logprobs = torch.zeros((nsteps,), device=self._device)
         all_mu = [] 
+        all_inputs = [] 
         ret = []
 
         size = self._size
@@ -266,6 +269,9 @@ class MultiTypeMFGPPO(object):
                     nobs[:-1] = obs_xym[1:]
                     nobs[-1] = obs_xym[0]
                     obs_next_xym = nobs
+                    obs_xyms[step] = obs_xym
+                    nobs_xyms[step] = obs_next_xym
+                    all_inputs.append(inputs)
                     reward, outputs = self._discriminator.get_reward(
                         inputs,
                         torch.from_numpy(obs_xym).to(self._device),
@@ -274,17 +280,6 @@ class MultiTypeMFGPPO(object):
                         discrim_score=False,
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                    n_nets = self._discriminator.get_num_nets()
-                    values = np.arange(-0.3, 0.31, 0.01)
-                    grids = np.meshgrid(*[values] * n_nets)
-                    combinations = np.vstack([grid.ravel() for grid in grids]).T
-                    for rate in combinations:
-                        self._discriminator.get_reward_weighted(
-                            inputs,
-                            torch.from_numpy(obs_xym).to(self._device),
-                            torch.from_numpy(obs_next_xym).to(self._device),
-                            None,
-                            rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
@@ -321,6 +316,18 @@ class MultiTypeMFGPPO(object):
             ret.append(rew)
         ret = np.array(ret)
         assert step==nsteps
+
+        n_nets = self._discriminator.get_num_nets()
+        values = np.arange(-0.3, 0.31, 0.01)
+        grids = np.meshgrid(*[values] * n_nets)
+        combinations = np.vstack([grid.ravel() for grid in grids]).T
+        for rate in combinations:
+            self._discriminator.get_reward_weighted(
+                all_inputs,
+                torch.from_numpy(obs_xyms).to(self._device),
+                torch.from_numpy(nobs_xyms).to(self._device),
+                None,
+                rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
 
