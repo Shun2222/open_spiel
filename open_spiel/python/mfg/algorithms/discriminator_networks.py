@@ -214,6 +214,11 @@ class Discriminator(nn.Module):
             print(f'corr(p,p2): {np.mean(corr)}')
             print(f'kl_div(p,p2): {np.mean(kl_div)}')
             print(f'euclid(p,p2): {np.mean(euclid)}')
+            input()
+            print(obs)
+            print(obs_next)
+            print(outputs)
+            input()
         return reward2, log_p_tau, log_p_tau2, cos_sim, corr, kl_div, euclid 
 
     def get_num_nets(self):
