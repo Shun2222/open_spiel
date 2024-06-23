@@ -398,7 +398,7 @@ class MultiTypeMFGPPO(object):
         all_rew = []
         all_rew2 = {}
         inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)
-        inputs = [v for v in inputs[self._player_id].values()]
+        inputs = [torch.Tensor(v) for v in inputs[self._player_id].values()]
         for rate in combinations:
             rew, rew2, _, _ = self._discriminator.get_reward_weighted(
                 inputs,
