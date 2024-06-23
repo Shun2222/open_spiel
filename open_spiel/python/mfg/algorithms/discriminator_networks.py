@@ -290,11 +290,11 @@ class Discriminator(nn.Module):
                                 elif input_str == 'state_a':
                                     input.append(torch.Tensor(state+a_onehot))
                                 elif input_str == 'mu':
-                                    input.append(mu)
+                                    input.append(torch.Tensor(mu))
                                 elif input_str == 'mu_a':
                                     input.append(torch.Tensor(mu+a_onehot))
                                 elif input_str == 'dxy':
-                                    input.append(dxy)
+                                    input.append(torch.Tensor(dxy))
                                 elif input_str == 'dxy_a':
                                     input.append(torch.Tensor(dxy+a_onehot))
                                 elif input_str == 'act':
