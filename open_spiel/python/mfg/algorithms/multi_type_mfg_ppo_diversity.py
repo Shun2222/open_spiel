@@ -492,8 +492,8 @@ def parse_args():
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
     
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_sa_mu", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_sarew", help="logdir")
-    parser.add_argument("--rew_index", type=int, default=1, help="-1 is reward, 0 or more are output")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_diversity", help="logdir")
+    parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
