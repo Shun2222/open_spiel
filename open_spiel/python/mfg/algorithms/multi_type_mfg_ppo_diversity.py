@@ -182,6 +182,10 @@ class MultiTypeMFGPPO(object):
         self._expert_policy = expert_policy
 
     def rollout(self, env, nsteps):
+        n_nets = self._discriminator.get_num_nets()
+        vs = np.arange(-0.3, 0.31, 0.01)
+        grids = np.meshgrid(*[vs] * n_nets)
+        combinations = np.vstack([grid.ravel() for grid in grids]).T
         all_p_tau = {}
         all_p_tau2 = {}
         all_rew = []
