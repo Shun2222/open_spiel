@@ -68,6 +68,7 @@ def get_input_shape(net_input, env, num_agent):
         inputs = [2, nmu+nacs]
     else:
         assert False, f'not matched disc type: {net_input}'
+    return inputs
 
 def is_networks(filename):
     labels = get_net_inputs()
@@ -78,11 +79,7 @@ def is_networks(filename):
     return False 
 
 def get_net_label(net_input):
-    net_inputs = get_net_inputs()
-    for ni in net_inputs:
-        if ni in net_input:
-            return net_labels(net_input)
-    return None
+    return net_labels(net_input)
 
 def get_net_input(filename):
     net_inputs = get_net_inputs()
