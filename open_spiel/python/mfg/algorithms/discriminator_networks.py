@@ -217,6 +217,8 @@ class Discriminator(nn.Module):
             input()
             print(obs)
             print(obs_next)
+            print(log_p_tau)
+            print(log_p_tau2)
             print(outputs)
             input()
         return reward2, log_p_tau, log_p_tau2, cos_sim, corr, kl_div, euclid 
