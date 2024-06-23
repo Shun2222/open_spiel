@@ -193,8 +193,8 @@ class Discriminator(nn.Module):
             reward2 = outputs @ weights.T + bias
 
             #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-            value_fn = self.value_net(obs).numpy()
-            value_fn_next = self.value_next_net(obs_next).numpy()
+            value_fn = self.value_net(obs.to(torch.float32)).numpy()
+            value_fn_next = self.value_next_net(obs_next.to(torch.float32)).numpy()
 
             log_p_tau = reward + self.gamma * value_fn_next - value_fn
             log_p_tau2 = reward2 + self.gamma * value_fn_next - value_fn
