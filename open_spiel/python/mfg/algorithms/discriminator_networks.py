@@ -184,7 +184,7 @@ class Discriminator(nn.Module):
         with torch.no_grad():
             outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] 
             rew_inputs = torch.cat(outputs, dim=1)
-            reward = self.reward_net(rew_inputs.to(torch.float32))
+            reward = self.reward_net(rew_inputs.to(torch.float32)).numpy()
 
             outputs = rew_inputs.numpy()
             weights = self.reward_net.state_dict()['0.weight'][0].numpy()
