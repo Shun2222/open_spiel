@@ -342,7 +342,7 @@ class MultiTypeMFGPPO(object):
             p_tau = all_p_tau[rate_str],
             p_tau2 = all_p_tau2[rate_str],
 
-            cos_sim = 1-distance.cosine( p_tau2)
+            cos_sim = 1-distance.cosine(p_tau, p_tau2)
             corr, p_value = spearmanr(p_tau, p_tau2)
             kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
             euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
