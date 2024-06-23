@@ -204,6 +204,8 @@ class MultiTypeMFGPPO(object):
             for rate in combinations:
                 rate_str = f'{rate}'
                 all_p_tau[rate_str] = []
+                all_p_tau2[rate_str] = []
+                all_rew2[rate_str] = []
 
         size = self._size
         step = 0
