@@ -400,13 +400,15 @@ class MultiTypeMFGPPO(object):
         inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)
         inputs = [torch.Tensor(v) for v in inputs[self._player_id].values()]
         for rate in combinations:
-            rew, rew2, _, _ = self._discriminator.get_reward_weighted(
-                inputs,
-                None, None, None, 
-                rate=rate,
-                expert_prob=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-            rate_str = f'{rate}'
-            all_rew2[rate_str].append(rew2)
+            for key, v in inputs[self._player_id].items():
+                print(f'key:{key}, value:{v}')
+                rew, rew2, _, _ = self._discriminator.get_reward_weighted(
+                    v,
+                    None, None, None, 
+                    rate=rate,
+                    expert_prob=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                rate_str = f'{rate}'
+                all_rew2[rate_str].append(rew2)
         all_rew.append(rew)
 
         cos_sims = {} 
