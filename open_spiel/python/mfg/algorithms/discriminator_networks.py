@@ -47,11 +47,19 @@ def get_net_inputs():
 def is_networks(filename):
     labels = get_net_inputs()
     for label in labels:
-        print(f'filename:{filename}')
-        print(f'is in label:{label}, {label in filename}')
         if label in filename:
+            print(f'filename is detected as {label} model.')
             return True
     return False
+
+def get_net_label(filename):
+    assert is_networks(filename), 'This is not network filename or net_input is False.'
+    labels = get_net_inputs()
+    for label in labels:
+        if label in filename:
+            print(f'filename is detected as {label} model.')
+            return net_labels(label)
+    return None
 
 class Discriminator(nn.Module):
     def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):

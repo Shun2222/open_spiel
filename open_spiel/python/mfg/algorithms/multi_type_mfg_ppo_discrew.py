@@ -150,8 +150,9 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_index=-1):
         self._device = device
+        self._rew_index = rew_index
 
         info_state_size = env.observation_spec()["info_state"][0]
         self._nacs = num_actions = env.action_spec()["num_actions"]
@@ -292,7 +293,11 @@ class MultiTypeMFGPPO(object):
                 values[step] = value
                 actions[step] = action
                 #rewards[step] = reward
-                rewards[step] = outputs[0] 
+                if self._rew_index>=0:
+                    rewards[step] = outputs[self.rew_index] 
+                else:
+                    rewards[step] = reward
+                    
                 rew += time_step.rewards[self._player_id]
 
                 #print(f'xyt: {obs_x},{obs_y},{obs_t}')
@@ -477,6 +482,7 @@ def parse_args():
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_sa_mu", help="file path")
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_sarew", help="logdir")
     parser.add_argument("--net_input", type=str, default="sa_mu", help="file path")
+    parser.add_argument("--rew_index", type=int, default=1, help="file path")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
@@ -504,6 +510,9 @@ if __name__ == "__main__":
     print(f'Is networks: {is_nets}')
     if not is_nets:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+    else:
+        label = get_net_label(args.path)
+        assert len(label)>=args.rew_index, 'rew_index is wrong'
 
     # Set the seed 
     seed = args.seed
@@ -591,7 +600,7 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=args.rew_index) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
