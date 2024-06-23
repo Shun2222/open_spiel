@@ -196,20 +196,20 @@ class Discriminator(nn.Module):
             value_fn = self.value_net(obs.to(torch.float32)).numpy()
             value_fn_next = self.value_next_net(obs_next.to(torch.float32)).numpy()
 
-            log_p_tau = reward + self.gamma * value_fn_next - value_fn
-            log_p_tau = log_p_tau.flatten()
-            log_p_tau2 = reward2 + self.gamma * value_fn_next - value_fn
-            log_p_tau2 = log_p_tau2.flatten()
+            p_tau = np.exp(reward + self.gamma * value_fn_next - value_fn)
+            p_tau = p_tau.flatten()
+            p_tau2 = np.exp(reward2 + self.gamma * value_fn_next - value_fn)
+            p_tau2 = p_tau2.flatten()
 
-            cos_sim = 1-distance.cosine(log_p_tau, log_p_tau2)
-            corr, p_value = spearmanr(log_p_tau, log_p_tau2)
-            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(log_p_tau, log_p_tau2)]) 
-            euclid = np.sqrt(np.sum((log_p_tau-log_p_tau2)**2))
+            cos_sim = 1-distance.cosine(p_tau, p_tau2)
+            corr, p_value = spearmanr(p_tau, p_tau2)
+            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
+            euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
 
             print(f'----------------------')
             print(f'rate: {rate}')
-            print(f'log p tau: {np.mean(log_p_tau)}')
-            print(f'log p tau2: {np.mean(log_p_tau2)}')
+            print(f'log p tau: {np.mean(p_tau)}')
+            print(f'log p tau2: {np.mean(p_tau2)}')
             print(f'cos_sim(p,p2): {np.mean(cos_sim)}')
             print(f'corr(p,p2): {np.mean(corr)}')
             print(f'kl_div(p,p2): {np.mean(kl_div)}')
@@ -217,11 +217,9 @@ class Discriminator(nn.Module):
             input()
             print(obs)
             print(obs_next)
-            print(log_p_tau)
-            print(log_p_tau2)
             print(outputs)
             input()
-        return reward2, log_p_tau, log_p_tau2, cos_sim, corr, kl_div, euclid 
+        return reward2, p_tau, p_tau2, cos_sim, corr, kl_div, euclid 
 
     def get_num_nets(self):
         return self.n_networks
