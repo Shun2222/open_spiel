@@ -325,7 +325,7 @@ if __name__ == "__main__":
 
 
         if is_nets:
-            inputs = discriminators[0]([size, size], nacs, horizon, mu_dists)
+            inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
         else:
             inputs = create_rew_input([size, size], nacs, horizon, mu_dists, single, notmu, state_only=False)
         save_path = os.path.join(pathes[p], filename+str(update_info))

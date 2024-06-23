@@ -10,13 +10,15 @@ os.environ["VECLIB_MAXIMUM_THREADS"] = "4" # export VECLIB_MAXIMUM_THREADS=4
 os.environ["NUMEXPR_NUM_THREADS"] = "4" # export NUMEXPR_NUM_THREADS=6
 
 import argparse
-from tqdm import tqdm
-from distutils.util import strtobool
 import time
+import logger
 import logging
-import seaborn as sns
+import pickle as pkl
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib import animation
+import seaborn as sns
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -24,9 +26,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
-import numpy as np
 
-import logger
+from distutils.util import strtobool
 from open_spiel.python.mfg import utils
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
@@ -172,6 +173,7 @@ class MultiTypeMFGPPO(object):
         self._is_nets = is_nets
         self._net_input = net_input
 
+        self._horizon = env.game.get_parameters()['horizon']
         self._size = env.game.get_parameters()['size']
 
         env.update_mfg_distribution(merge_dist)
@@ -194,6 +196,7 @@ class MultiTypeMFGPPO(object):
         all_mu = [] 
         all_p_tau = {}
         all_p_tau2 = {}
+        all_rew = [] 
         all_rew2 = {} 
         ret = []
         if self._is_nets:
@@ -291,17 +294,17 @@ class MultiTypeMFGPPO(object):
                         discrim_score=False,
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     for rate in combinations:
-                        rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                        rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
                             inputs,
                             torch.from_numpy(obs_xym).to(self._device),
                             torch.from_numpy(obs_next_xym).to(self._device),
                             None,
                             rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         rate_str = f'{rate}'
-                        print(p_tau)
                         all_p_tau[rate_str].append(p_tau[0])
                         all_p_tau2[rate_str].append(p_tau2[0])
                         all_rew2[rate_str].append(rew2[0])
+                    all_rew.append(rew)
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
@@ -339,26 +342,96 @@ class MultiTypeMFGPPO(object):
         ret = np.array(ret)
         assert step==nsteps
 
+        cos_sims = {} 
+        spearmanrs = {}
+        kl_divs = {}
+        #euclids = {}
+        cos_sims_rews = {} 
+        spearmanrs_rews = {}
+        kl_divs_rews = {}
+        rew = np.array(all_rew)
         for rate_str in all_p_tau.keys():
-            p_tau = all_p_tau[rate_str],
-            p_tau2 = all_p_tau2[rate_str],
+            p_tau = np.array(all_p_tau[rate_str])
+            p_tau2 = np.array(all_p_tau2[rate_str])
+            rew2 = np.array(all_rew2[rate_str])
 
             cos_sim = 1-distance.cosine(p_tau, p_tau2)
-            corr, p_value = spearmanr(p_tau, p_tau2)
+            sp, p_value = spearmanr(p_tau, p_tau2)
             kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
-            euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
+
+            cos_sim_rew = 1-distance.cosine(rew, rew2)
+            sp_rew, p_value = spearmanr(rew, rew2)
+            kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
+            #euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
+
+            cos_sims[rate_str] = cos_sim
+            spearmanrs[rate_str] = sp 
+            kl_divs[rate_str] = kl_div 
+
+            cos_sims_rews[rate_str] = cos_sim_rew
+            spearmanrs_rews[rate_str] = sp_rew
+            kl_divs_rews[rate_str] = kl_div_rew
 
             print(f'----------------------')
             print(f'rate: {rate_str}')
             print(f'log p tau: {np.mean(p_tau)}')
             print(f'log p tau2: {np.mean(p_tau2)}')
             print(f'cos_sim(p,p2): {np.mean(cos_sim)}')
-            print(f'corr(p,p2): {np.mean(corr)}')
+            print(f'spearmanr(p,p2): {np.mean(sp)}')
             print(f'kl_div(p,p2): {np.mean(kl_div)}')
-            print(f'euclid(p,p2): {np.mean(euclid)}')
-            input()
-            print(f'p tau {p_tau}')
-            print(f'p tau2 {p_tau2}')
+            #print(f'euclid(p,p2): {np.mean(euclid)}')
+        pkl.dump(p_tau, open('p_tau_sampled.pkl', 'wb'))
+        pkl.dump(p_tau2, open('p_tau2_sampled.pkl', 'wb'))
+        pkl.dump(cos_sims, open('cos_sims_sampled.pkl', 'wb'))
+        pkl.dump(spearmanrs, open('spearmanrs_sampled.pkl', 'wb'))
+        pkl.dump(kl_divs, open('kl_div_sampled.pkl', 'wb'))
+
+        pkl.dump(rew, open('rew_sampled.pkl', 'wb'))
+        pkl.dump(rew2, open('rew2_sampled.pkl', 'wb'))
+        pkl.dump(cos_sims_rews, open('rew_cos_sims_sampled.pkl', 'wb'))
+        pkl.dump(spearmanrs_rews, open('rew_spearmanrs_sampled.pkl', 'wb'))
+        pkl.dump(kl_divs_rews, open('rew_kl_div_sampled.pkl', 'wb'))
+
+        all_p_tau = {}
+        all_p_tau2 = {}
+        all_rew = []
+        all_rew2 = {}
+        inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)[self._player_id]
+        for rate in combinations:
+            rew, rew2, _, _ = self._discriminator.get_reward_weighted(
+                inputs,
+                None, None, None, 
+                rate=rate,
+                expert_prob=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+            rate_str = f'{rate}'
+            all_rew2[rate_str].append(rew2)
+        all_rew.append(rew)
+
+        cos_sims = {} 
+        spearmanrs = {}
+        kl_divs = {}
+        cos_sims_rews = {} 
+        spearmanrs_rews = {}
+        kl_divs_rews = {}
+        #euclids = {}
+        rew = np.array(all_rew)
+        for rate_str in all_p_tau.keys():
+            rew2 = np.array(all_rew2[rate_str])
+
+            cos_sim_rew = 1-distance.cosine(rew, rew2)
+            sp_rew, p_value = spearmanr(rew, rew2)
+            kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
+            #euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
+
+            cos_sims_rews[rate_str] = cos_sim_rew
+            spearmanrs_rews[rate_str] = sp_rew
+            kl_divs_rews[rate_str] = kl_div_rew
+
+        pkl.dump(rew, open('rew_all_state.pkl', 'wb'))
+        pkl.dump(rew2, open('rew2_all_state.pkl', 'wb'))
+        pkl.dump(cos_sims_rews, open('rew_cos_sims_all_state.pkl', 'wb'))
+        pkl.dump(spearmanrs_rews, open('rew_spearmanrs_all_state.pkl', 'wb'))
+        pkl.dump(kl_divs_rews, open('rew_kl_div_all_state.pkl', 'wb'))
 
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 

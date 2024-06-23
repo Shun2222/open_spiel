@@ -47,9 +47,9 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
     from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
+    num_nets = discriminator.get_num_nets()
     rewards = np.zeros((horizon, size, size, nacs))
-    dist_rewards = np.zeros((horizon, size, size, nacs))
-    mu_rewards = np.zeros((horizon, size, size, nacs))
+    output_rewards = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
 
     for t in range(horizon):
         for x in range(size):
@@ -63,10 +63,10 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
                         discrim_score=False,
                         only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                    rewards[t, y, x, a] = reward[a]
-                    if basicfuncs:
-                        dist_rewards[t, y, x, a] = dist_rew[a]
-                        mu_rewards[t, y, x, a] = mu_rew[a]
+                    rewards[t, y, x, a] = reward
+                    for i in range(num_nets):
+                        output_rewards[i][t, y, x, a] = outputs[i]
+    return rewards, output_rewards
 
 def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
     from open_spiel.python.mfg.algorithms.discriminator import Discriminator

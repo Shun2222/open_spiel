@@ -177,7 +177,9 @@ class Discriminator(nn.Module):
         else:
             return score, outputs 
 
-    def get_reward_weighted(self, inputs, obs, obs_next, path_probs, rate=[0.1, 0.1]):
+        return reward2, p_tau, p_tau2 
+
+    def get_reward_weighted(self, inputs, obs, obs_next, path_probs, rate=[0.1, 0.1], expert_prob=True):
         with torch.no_grad():
             outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] 
             rew_inputs = torch.cat(outputs, dim=1)
@@ -189,16 +191,21 @@ class Discriminator(nn.Module):
             bias = self.reward_net.state_dict()['0.bias'][0].numpy()
             reward2 = outputs @ weights.T + bias
 
-            #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-            value_fn = self.value_net(obs.to(torch.float32)).numpy()
-            value_fn_next = self.value_next_net(obs_next.to(torch.float32)).numpy()
+            p_tau = None
+            p_tau2 = None
+            if expert_prob:
+                #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
+                value_fn = self.value_net(obs.to(torch.float32)).numpy()
+                value_fn_next = self.value_next_net(obs_next.to(torch.float32)).numpy()
 
-            p_tau = np.exp(reward + self.gamma * value_fn_next - value_fn)
-            p_tau = p_tau.flatten()
-            p_tau2 = np.exp(reward2 + self.gamma * value_fn_next - value_fn)
-            p_tau2 = p_tau2.flatten()
 
-        return reward2, p_tau, p_tau2 
+                p_tau = np.exp(reward + self.gamma * value_fn_next - value_fn)
+                p_tau = p_tau.flatten()
+                p_tau2 = np.exp(reward2 + self.gamma * value_fn_next - value_fn)
+                p_tau2 = p_tau2.flatten()
+
+
+        return reward, reward2, p_tau, p_tau2 
 
     def get_num_nets(self):
         return self.n_networks
