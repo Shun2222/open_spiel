@@ -391,6 +391,7 @@ class MultiTypeMFGPPO(object):
         pkl.dump(cos_sims_rews, open('rew_cos_sims_sampled.pkl', 'wb'))
         pkl.dump(spearmanrs_rews, open('rew_spearmanrs_sampled.pkl', 'wb'))
         pkl.dump(kl_divs_rews, open('rew_kl_div_sampled.pkl', 'wb'))
+        print(f'dumped sampled state pkl')
 
         all_p_tau = {}
         all_p_tau2 = {}
@@ -432,6 +433,7 @@ class MultiTypeMFGPPO(object):
         pkl.dump(cos_sims_rews, open('rew_cos_sims_all_state.pkl', 'wb'))
         pkl.dump(spearmanrs_rews, open('rew_spearmanrs_all_state.pkl', 'wb'))
         pkl.dump(kl_divs_rews, open('rew_kl_div_all_state.pkl', 'wb'))
+        print(f'dumped all state pkl')
 
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
@@ -603,8 +605,8 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_sa_mu", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_diversity", help="logdir")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_dxy_mua", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mua_diversity", help="logdir")
     parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
