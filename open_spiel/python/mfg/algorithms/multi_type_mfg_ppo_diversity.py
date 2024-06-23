@@ -298,9 +298,9 @@ class MultiTypeMFGPPO(object):
                             None,
                             rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         rate_str = f'{rate}'
-                        all_p_tau[rate_str].append(p_tau)
-                        all_p_tau2[rate_str].append(p_tau2)
-                        all_rew2[rate_str].append(rew2)
+                        all_p_tau[rate_str].append(p_tau[0])
+                        all_p_tau2[rate_str].append(p_tau2[0])
+                        all_rew2[rate_str].append(rew2[0])
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
