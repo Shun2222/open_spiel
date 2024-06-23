@@ -294,7 +294,7 @@ class MultiTypeMFGPPO(object):
                 actions[step] = action
                 #rewards[step] = reward
                 if self._rew_index>=0:
-                    rewards[step] = outputs[self.rew_index] 
+                    rewards[step] = outputs[self._rew_index] 
                 else:
                     rewards[step] = reward
                     
@@ -510,9 +510,11 @@ if __name__ == "__main__":
     print(f'Is networks: {is_nets}')
     if not is_nets:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+        rew_index = -1
     else:
         label = get_net_label(args.path)
         assert len(label)>=args.rew_index, 'rew_index is wrong'
+        rew_index = args.rew_index
 
     # Set the seed 
     seed = args.seed
@@ -600,7 +602,7 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=args.rew_index) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
