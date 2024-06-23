@@ -298,6 +298,7 @@ class MultiTypeMFGPPO(object):
                             None,
                             rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         rate_str = f'{rate}'
+                        print(p_tau)
                         all_p_tau[rate_str].append(p_tau[0])
                         all_p_tau2[rate_str].append(p_tau2[0])
                         all_rew2[rate_str].append(rew2[0])
