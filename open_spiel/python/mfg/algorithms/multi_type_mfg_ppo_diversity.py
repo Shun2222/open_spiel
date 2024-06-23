@@ -197,7 +197,6 @@ class MultiTypeMFGPPO(object):
         for key, v in inputs[self._player_id].items():
             v = [vi.reshape(1, len(vi)) for vi in v]
             for rate in combinations:
-                print(f'key:{key}, value:{v}')
                 rew, rew2, _, _ = self._discriminator.get_reward_weighted(
                     v,
                     None, None, None, 
