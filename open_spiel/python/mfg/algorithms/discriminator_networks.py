@@ -5,6 +5,9 @@ import numpy as np
 import logger
 import os
 import os.path as osp
+from scipy.spatial import distance
+from scipy.stats import spearmanr
+from scipy.special import kl_div
 
 def onehot(value, depth):
     a = np.zeros([depth])
@@ -176,6 +179,39 @@ class Discriminator(nn.Module):
             return score
         else:
             return score, outputs 
+
+    def get_reward_weighted(self, inputs, obs, obs_next, path_probs, rate=[0.1, 0.1]):
+        with torch.no_grad():
+            outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] 
+            rew_inputs = torch.cat(outputs, dim=1)
+            reward = self.reward_net(rew_inputs.to(torch.float32))
+
+            outputs = rew_inputs.numpy()
+            weights = self.reward_net.state_dict()['0.weight'][0].numpy()
+            weights += weights*np.array(rate)
+            bias = self.reward_net.state_dict()['0.bias'][0].numpy()
+            reward2 = outputs @ weights.T + bias
+
+            #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
+            value_fn = self.value_net(obs).numpy()
+            value_fn_next = self.value_next_net(obs_next).numpy()
+
+            log_p_tau = reward + self.gamma * value_fn_next - value_fn
+            log_p_tau2 = reward2 + self.gamma * value_fn_next - value_fn
+            cos_sim = 1-distance.cosine(log_p_tau, log_p_tau2)
+            corr, p_value = spearmanr(log_p_tau, log_p_tau2)
+            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(log_p_tau, log_p_tau2)]) 
+            euclid = np.sqrt(np.sum((log_p_tau-log_p_tau2)**2))
+
+            print(f'----------------------')
+            print(f'rate: {rate}')
+            print(f'log p tau: {np.mean(log_p_tau)}')
+            print(f'log p tau2: {np.mean(log_p_tau2)}')
+            print(f'cos_sim(p,p2): {np.mean(cos_sim)}')
+            print(f'corr(p,p2): {np.mean(corr)}')
+            print(f'kl_div(p,p2): {np.mean(kl_div)}')
+            print(f'euclid(p,p2): {np.mean(euclid)}')
+        return reward2, log_p_tau, log_p_tau2, cos_sim, corr, kl_div, euclid 
 
     def get_num_nets(self):
         return self.n_networks
