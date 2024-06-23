@@ -13,7 +13,7 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
+from open_spiel.python.mfg.algorithms.discriminator_networks import * 
 from games.predator_prey import goal_distance, divide_obs
 
 
@@ -36,27 +36,8 @@ class MultiTypeAIRL(object):
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         obs_xym_size = self._nobs -1 - self._horizon + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        if disc_type=='s_mu_a':
-            inputs = [state_size, self._nmu, self._nacs]
-            labels = ['state', 'mu', 'act']
-        elif disc_type=='sa_mu':
-            inputs = [state_size+self._nacs, self._nmu]
-            labels = ['state_a', 'mu']
-        elif disc_type=='s_mua':
-            inputs = [state_size, self._nmu+self._nacs]
-            labels = ['state', 'mu_a']
-        elif disc_type=='dxy_mu_a':
-            inputs = [2, self._nmu, self._nacs]
-            labels = ['dxy', 'mu', 'act']
-        elif disc_type=='dxya_mu':
-            inputs = [2+self._nacs, self._nmu]
-            labels = ['dxy_a', 'mu']
-        elif disc_type=='dxy_mua':
-            inputs = [2, self._nmu+self._nacs]
-            labels = ['dxy', 'mu_a']
-        else:
-            assert False, f'not matched disc type: {disc_type}'
-
+        labels = get_net_labels(disc_type)
+        inputs = get_net_input_shape(disc_type, env, self._num_agent)
         self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 

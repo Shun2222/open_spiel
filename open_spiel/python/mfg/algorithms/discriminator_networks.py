@@ -44,21 +44,51 @@ def get_net_inputs():
                   'dxy_mua',]
     return net_inputs
 
+def get_input_shape(net_input, env, num_agent):
+    nacs = env.action_spec()['num_actions']
+    nobs = env.observation_spec()['info_state'][0]
+    horizon = env.game.get_parameters()['horizon']
+
+    nmu = num_agent
+    size = env.game.get_parameters()['size']
+    state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+    obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+    discriminators = []
+    if net_input=='s_mu_a':
+        inputs = [state_size, nmu, nacs]
+    elif net_input=='sa_mu':
+        inputs = [state_size+nacs, nmu]
+    elif net_input=='s_mua':
+        inputs = [state_size, nmu+nacs]
+    elif net_input=='dxy_mu_a':
+        inputs = [2, nmu, nacs]
+    elif net_input=='dxya_mu':
+        inputs = [2+nacs, nmu]
+    elif net_input=='dxy_mua':
+        inputs = [2, nmu+nacs]
+    else:
+        assert False, f'not matched disc type: {net_input}'
+
 def is_networks(filename):
     labels = get_net_inputs()
     for label in labels:
         if label in filename:
             print(f'filename is detected as {label} model.')
             return True
-    return False
+    return False 
 
 def get_net_label(filename):
-    assert is_networks(filename), 'This is not network filename or net_input is False.'
-    labels = get_net_inputs()
-    for label in labels:
-        if label in filename:
-            print(f'filename is detected as {label} model.')
-            return net_labels(label)
+    net_inputs = get_net_inputs()
+    for net_input in net_inputs:
+        if net_input in filename:
+            return net_labels(net_input)
+    return None
+
+def get_net_input(filename):
+    net_inputs = get_net_inputs()
+    for net_input in net_inputs:
+        if net_input in filename:
+            return net_inputs
     return None
 
 class Discriminator(nn.Module):
