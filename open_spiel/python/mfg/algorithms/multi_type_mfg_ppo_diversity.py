@@ -188,7 +188,7 @@ class MultiTypeMFGPPO(object):
         all_rew2 = {}
         inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)
         for key, v in inputs[self._player_id].items():
-            v = [vi.reshape(1, len(v)) for vi in v]
+            v = [vi.reshape(1, len(vi)) for vi in v]
             for rate in combinations:
                 print(f'key:{key}, value:{v}')
                 rew, rew2, _, _ = self._discriminator.get_reward_weighted(
