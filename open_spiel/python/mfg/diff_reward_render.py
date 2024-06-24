@@ -184,12 +184,12 @@ if __name__ == "__main__":
 
     res = []
     outputs = []
-    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
     for p in range(len(pathes)):
         single = is_single[p]
         notmu = is_notmu[p]
         is_1hidden = is_1hiddens[p]
 
+        from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         is_nets = is_networks(pathnames[p]) 
         if is_nets:
             net_input = get_net_input(pathnames[p])
