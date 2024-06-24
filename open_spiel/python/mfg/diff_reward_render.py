@@ -271,7 +271,7 @@ if __name__ == "__main__":
                 discriminator = Discriminator(nobs, nacs, False, device)
             elif is_nets:
                 inputs = get_input_shape(net_input, env, num_agent)
-                labels = get_net_label(net_input)
+                labels = get_net_labels(net_input)
                 discriminator = Discriminator(inputs, obs_xym_size, labels, device)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
