@@ -96,7 +96,6 @@ def parse_args():
 filename = "actor"
 pathes = [
             "/mnt/shunsuke/result/0627/multi_maze2_airl",
-            "/mnt/shunsuke/result/0627/multi_maze2_1hidden_mfairl",
              "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
              "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
              "/mnt/shunsuke/result/0627/multi_maze2_s_mua",
@@ -113,7 +112,6 @@ pathes = [
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
                 "MF-AITL",
-                "MF-AITL_2hidden",
                 "MF-AITL_s_mu_a",
                 "MF-AITL_sa_mu",
                 "MF-AITL_s_mua",
@@ -186,18 +184,15 @@ if __name__ == "__main__":
 
     res = []
     outputs = []
+    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
     for p in range(len(pathes)):
         single = is_single[p]
         notmu = is_notmu[p]
         is_1hidden = is_1hiddens[p]
 
-        is_nets = False
-        net_input = None
-        for key in nets_dict.keys():
-            if key in pathnames[p]:
-                is_nets = True
-                net_input = key
-
+        is_nets = is_networks(pathnames[p]) 
+        if is_nets:
+            net_input = get_net_input(pathnames[p])
 
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
@@ -275,26 +270,8 @@ if __name__ == "__main__":
             elif notmu:
                 discriminator = Discriminator(nobs, nacs, False, device)
             elif is_nets:
-                if net_input=='s_mu_a':
-                    inputs = [state_size, nmu, nacs]
-                    labels = ['state', 'mu', 'act']
-                elif net_input=='sa_mu':
-                    inputs = [state_size+nacs, nmu]
-                    labels = ['state_a', 'mu']
-                elif net_input=='s_mua':
-                    inputs = [state_size, nmu+nacs]
-                    labels = ['state', 'mu_a']
-                elif net_input=='dxy_mu_a':
-                    inputs = [2, nmu, nacs]
-                    labels = ['dxy', 'mu', 'act']
-                elif net_input=='dxya_mu':
-                    inputs = [2+nacs, nmu]
-                    labels = ['dxy_a', 'mu']
-                elif net_input=='dxy_mua':
-                    inputs = [2, nmu+nacs]
-                    labels = ['dxy', 'mu_a']
-                else:
-                    assert False, f'not matched disc type: {net_input}'
+                inputs = get_input_shape(net_input, env, num_agent)
+                labels = get_net_label(net_input)
                 discriminator = Discriminator(inputs, obs_xym_size, labels, device)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
