@@ -182,57 +182,6 @@ class MultiTypeMFGPPO(object):
         self._expert_policy = expert_policy
 
     def rollout(self, env, nsteps):
-        n_nets = self._discriminator.get_num_nets()
-        vs = np.arange(-0.3, 0.31, 0.01)
-        grids = np.meshgrid(*[vs] * n_nets)
-        combinations = np.vstack([grid.ravel() for grid in grids]).T
-        all_p_tau = {}
-        all_p_tau2 = {}
-        all_rew = []
-        all_rew2 = {}
-        inputs = self._discriminator.create_inputs([self._size, self._size], self._nacs, self._horizon, self._mu_dist)
-        for rate in combinations:
-            rate_str = f'{rate}'
-            all_rew2[rate_str] = []
-        for key, v in inputs[self._player_id].items():
-            v = [vi.reshape(1, len(vi)) for vi in v]
-            for rate in combinations:
-                rew, rew2, _, _ = self._discriminator.get_reward_weighted(
-                    v,
-                    None, None, None, 
-                    rate=rate,
-                    expert_prob=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                rate_str = f'{rate}'
-                all_rew2[rate_str].append(rew2)
-            all_rew.append(rew)
-
-        cos_sims = {} 
-        spearmanrs = {}
-        kl_divs = {}
-        cos_sims_rews = {} 
-        spearmanrs_rews = {}
-        kl_divs_rews = {}
-        #euclids = {}
-        rew = np.array(all_rew).flatten()
-        for rate_str in all_p_tau.keys():
-            rew2 = np.array(all_rew2[rate_str])
-
-            cos_sim_rew = 1-distance.cosine(rew, rew2)
-            sp_rew, p_value = spearmanr(rew, rew2)
-            kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
-            #euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
-
-            cos_sims_rews[rate_str] = cos_sim_rew
-            spearmanrs_rews[rate_str] = sp_rew
-            kl_divs_rews[rate_str] = kl_div_rew
-
-        pkl.dump(rew, open('rew_all_state.pkl', 'wb'))
-        pkl.dump(rew2, open('rew2_all_state.pkl', 'wb'))
-        pkl.dump(cos_sims_rews, open('rew_cos_sims_all_state.pkl', 'wb'))
-        pkl.dump(spearmanrs_rews, open('rew_spearmanrs_all_state.pkl', 'wb'))
-        pkl.dump(kl_divs_rews, open('rew_kl_div_all_state.pkl', 'wb'))
-        print(f'dumped all state pkl')
-
         num_agent = self._num_agent
         info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
         actions = torch.zeros((nsteps,), device=self._device)
@@ -256,7 +205,9 @@ class MultiTypeMFGPPO(object):
             grids = np.meshgrid(*[vs] * n_nets)
             combinations = np.vstack([grid.ravel() for grid in grids]).T
             for rate in combinations:
-                rate_str = f'{rate}'
+                rate_str = ''
+                for n in range(n_nets):
+                    rate_str += f'{rate[n]} '
                 all_p_tau[rate_str] = []
                 all_p_tau2[rate_str] = []
                 all_rew2[rate_str] = []
@@ -351,7 +302,9 @@ class MultiTypeMFGPPO(object):
                             torch.from_numpy(obs_next_xym).to(self._device),
                             None,
                             rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                        rate_str = f'{rate}'
+                        rate_str = ''
+                        for n in range(n_nets):
+                            rate_str += f'{rate[n]} '
                         all_p_tau[rate_str].append(p_tau[0])
                         all_p_tau2[rate_str].append(p_tau2[0])
                         all_rew2[rate_str].append(rew2[0])
