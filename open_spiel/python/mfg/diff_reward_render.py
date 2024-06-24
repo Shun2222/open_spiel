@@ -93,7 +93,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-filename = "actor"
+filename = "disc_actor"
 pathes = [
             "/mnt/shunsuke/result/0627/multi_maze2_airl",
              "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
@@ -313,7 +313,7 @@ if __name__ == "__main__":
             outs = [[] for _ in range(n_nets)]
         for i in range(num_agent):
             if is_nets:
-                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=False, filename=save_path+f"-{i}")
+                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:

@@ -48,6 +48,7 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_nets = discriminator.get_num_nets()
+    net_labels = discriminator.get_net_labels()
     rewards = np.zeros((horizon, size, size, nacs))
     output_rewards = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
 
@@ -66,7 +67,22 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
                     rewards[t, y, x, a] = reward
                     for i in range(num_nets):
+                        print(f'output{i} shape: {outputs[i].shape}')
                         output_rewards[i][t, y, x, a] = outputs[i]
+    if save:
+        datas = [rewards[:, :, :, a] for a in range(nacs)]
+        action_str = ["stop", "right", "down", "up", "left"]
+        path = filename + f'-all-action.gif' 
+        print(np.array(datas).shape)
+        multi_render(datas, path, action_str, use_kde=False)
+
+        for i in range(num_nets):
+            datas = [output_rewards[i][:, :, :, a] for a in range(nacs)]
+            action_str = ["stop", "right", "down", "up", "left"]
+            path = filename + f'-all-action-{net_labels[i]}.gif' 
+            print(np.array(datas).shape)
+            multi_render(datas, path, action_str, use_kde=False)
+
     return rewards, output_rewards
 
 def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
