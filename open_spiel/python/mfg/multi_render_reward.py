@@ -57,6 +57,8 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
                 for a in range(nacs):
                     obs_input = inputs[f"{x}-{y}-{t}-{a}-m"]
                 
+                    print(len(obs_input))
+                    print(len(obs_input[0]))
                     reward, outputs = discriminator.get_reward(
                         obs_input,
                         None, None, None,
