@@ -5,6 +5,7 @@ import numpy as np
 import logger
 import os
 import os.path as osp
+import copy
 
 def onehot(value, depth):
     a = np.zeros([depth])
@@ -186,7 +187,7 @@ class Discriminator(nn.Module):
             reward = self.reward_net(rew_inputs.to(torch.float32)).numpy()
 
             outputs = rew_inputs.numpy()
-            weights = self.reward_net.state_dict()['0.weight'][0].numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
             weights += weights*np.array(rate)
             bias = self.reward_net.state_dict()['0.bias'][0].numpy()
             reward2 = outputs @ weights.T + bias

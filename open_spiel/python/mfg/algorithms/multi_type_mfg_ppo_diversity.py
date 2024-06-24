@@ -201,7 +201,7 @@ class MultiTypeMFGPPO(object):
         ret = []
         if self._is_nets:
             n_nets = self._discriminator.get_num_nets()
-            vs = np.arange(-10, 10.1, 0.1)
+            vs = np.arange(-10, 11, 1)
             grids = np.meshgrid(*[vs] * n_nets)
             combinations = np.vstack([grid.ravel() for grid in grids]).T
             for rate in combinations:
