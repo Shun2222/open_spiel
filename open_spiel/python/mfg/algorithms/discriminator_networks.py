@@ -79,7 +79,7 @@ def is_networks(filename):
             return True
     return False 
 
-def get_net_label(net_input):
+def get_net_labels(net_input):
     return net_labels(net_input)
 
 def get_net_input(filename):
