@@ -71,16 +71,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     imgs = []
     contours = []
     for n in range(n_datas):
-        vmin = np.nanmin(datas[n][i])
-        vmax = np.nanmax(datas[n][i])
-        if np.abs(vmin)>np.abs(vmax):
-            vmax = np.abs(vmin)
-        else:
-            vmin = -np.abs(vmax)
-        vmin = -0.5
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-        im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
-        imgs.append(im)
         if use_kde and np.min(datas[n][0])>=0.0:
             X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
             Y = -Y + 9 
@@ -89,18 +80,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
 
     def animate(i, imgs, contours, datas):
         for n in range(n_datas):
-            vmin = np.nanmin(datas[n][i])
-            vmax = np.nanmax(datas[n][i])
-            if np.abs(vmin)>np.abs(vmax):
-                vmax = np.abs(vmin)
-            else:
-                vmin = -np.abs(vmax)
-            vmin = -0.5
             axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            imgs[n].set_array(datas[n][i])
-            norm = Normalize(vmin=vmin, vmax=vmax)
-            imgs[n].set_norm(norm)
-            imgs[n].autoscale()
             #cbar.update_normal(imgs)
 
             if use_kde and np.min(datas[n][i])>=0.0:
@@ -150,11 +130,6 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
         im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
         imgs.append(im)
-        if use_kde and np.min(datas[n][0])>=0.0:
-            X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
-            Y = -Y + 9 
-            cs = axes[n].contour(Y, X, Z, 10)
-            contours.append(cs)
 
     def animate(i, imgs, contours, datas):
         for n in range(n_datas):
