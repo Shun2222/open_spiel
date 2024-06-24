@@ -384,18 +384,18 @@ class MultiTypeMFGPPO(object):
             print(f'spearmanr(p,p2): {np.mean(sp)}')
             print(f'kl_div(p,p2): {np.mean(kl_div)}')
             #print(f'euclid(p,p2): {np.mean(euclid)}')
-        pkl.dump(p_tau, open('p_tau_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(p_tau2, open('p_tau2_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(cos_sims, open('cos_sims_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(spearmanrs, open('spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(kl_divs, open('kl_div_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(p_tau, open(f'p_tau_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(p_tau2, open(f'p_tau2_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(cos_sims, open(f'cos_sims_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(spearmanrs, open(f'spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(kl_divs, open(f'kl_div_sampled-{self._player_id}.pkl', 'wb'))
 
-        pkl.dump(rew, open('rew_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(rew2, open('rew2_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(cos_sims_rews, open('rew_cos_sims_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(spearmanrs_rews, open('rew_spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(kl_divs_rews, open('rew_kl_div_sampled-{self._player_id}.pkl', 'wb'))
-        print(f'dumped sampled state pkl')
+        pkl.dump(rew, open(f'rew_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(rew2, open(f'rew2_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(cos_sims_rews, open(f'rew_cos_sims_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(spearmanrs_rews, open(f'rew_spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(kl_divs_rews, open(f'rew_kl_div_sampled-{self._player_id}.pkl', 'wb'))
+        print(f'dumped sampled state pkl agent{self._player_id}')
 
 
 
@@ -689,6 +689,7 @@ if __name__ == "__main__":
                 logger.record_tabular(f"total_loss {i}", v_loss.item())
                 exp_ret[i].append(np.mean(ret))
                 #print(f'Exp. ret{i} {np.mean(ret)}')
+            input('input here')
 
         mfg_dists = []
         for i in range(num_agent):
