@@ -376,6 +376,29 @@ class MultiTypeMFGPPO(object):
             spearmanrs_rews[rate_str] = sp_rew
             kl_divs_rews[rate_str] = kl_div_rew
 
+            print(f'----------------------')
+            print(f'rate: {rate_str}')
+            print(f'log p tau: {np.mean(p_tau)}')
+            print(f'log p tau2: {np.mean(p_tau2)}')
+            print(f'cos_sim(p,p2): {np.mean(cos_sim)}')
+            print(f'spearmanr(p,p2): {np.mean(sp)}')
+            print(f'kl_div(p,p2): {np.mean(kl_div)}')
+            #print(f'euclid(p,p2): {np.mean(euclid)}')
+        pkl.dump(all_p_tau, open(f'p_tau_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(all_p_tau2, open(f'p_tau2_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(cos_sims, open(f'cos_sims_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(spearmanrs, open(f'spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(kl_divs, open(f'kl_div_sampled-{self._player_id}.pkl', 'wb'))
+
+        pkl.dump(rew, open(f'rew_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(rew2, open(f'rew2_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(cos_sims_rews, open(f'rew_cos_sims_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(spearmanrs_rews, open(f'rew_spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
+        pkl.dump(kl_divs_rews, open(f'rew_kl_div_sampled-{self._player_id}.pkl', 'wb'))
+        print(f'dumped sampled state pkl agent{self._player_id}')
+
+
+
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
 
