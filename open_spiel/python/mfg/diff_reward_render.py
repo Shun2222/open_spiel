@@ -133,7 +133,7 @@ update_infos = [
 
 is_single = [False, False, False, False, False, False, False, False, False]
 is_notmu = [False, False, False, False, False, False, False, False, False]
-is_1hiddens = [False, True, False, False, False, False, False, False, False]
+is_1hiddens = [False, False, False, False, False, False, False, False, False]
 all_nets = False
 
 
