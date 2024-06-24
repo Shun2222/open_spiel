@@ -221,7 +221,7 @@ class Discriminator(nn.Module):
     def get_num_nets(self):
         return self.n_networks
 
-    def get_nets_labels(self):
+    def get_net_labels(self):
         return self.labels
 
     def save(self, filename=""):
