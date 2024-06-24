@@ -77,6 +77,76 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
             vmax = np.abs(vmin)
         else:
             vmin = -np.abs(vmax)
+        vmin = -0.5
+        axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
+        imgs.append(im)
+        if use_kde and np.min(datas[n][0])>=0.0:
+            X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
+            Y = -Y + 9 
+            cs = axes[n].contour(Y, X, Z, 10)
+            contours.append(cs)
+
+    def animate(i, imgs, contours, datas):
+        for n in range(n_datas):
+            vmin = np.nanmin(datas[n][i])
+            vmax = np.nanmax(datas[n][i])
+            if np.abs(vmin)>np.abs(vmax):
+                vmax = np.abs(vmin)
+            else:
+                vmin = -np.abs(vmax)
+            vmin = -0.5
+            axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+            imgs[n].set_array(datas[n][i])
+            norm = Normalize(vmin=vmin, vmax=vmax)
+            imgs[n].set_norm(norm)
+            imgs[n].autoscale()
+            #cbar.update_normal(imgs)
+
+            if use_kde and np.min(datas[n][i])>=0.0:
+                for c in contours[n].collections:
+                    c.remove()
+                X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
+                Y = -Y + 9 
+                contours[n] = axes[n].contour(Y, X, Z, 10)
+        return imgs, contours 
+
+    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
+
+    for i in range(n_datas):
+        axes[i].set_title(labels[i])
+
+    path =filename[:-4] + 'vimin-max' + filename[-4:]
+    ani.save(path, writer="ffmpeg", fps=5)
+    plt.close()
+    print(f"Save {path}")
+
+    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
+
+    for i in range(n_datas):
+        axes[i].set_title(labels[i])
+
+    path = filename
+    ani.save(path, writer="ffmpeg", fps=5)
+    plt.close()
+    print(f"Save {path}")
+
+    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+    vmax = np.nanmax(datas)
+    vmin = np.nanmin(datas)
+
+    axes[n_datas].axis('off')
+    im = axes[n_datas-1].imshow(datas[n_datas-1][0], vmin=vmin, vmax=vmax, cmap=cmap) 
+    #cbar = fig.colorbar(im, ax=axes[n_datas])
+    imgs = []
+    contours = []
+    for n in range(n_datas):
+        vmin = np.nanmin(datas[n][i])
+        vmax = np.nanmax(datas[n][i])
+        if np.abs(vmin)>np.abs(vmax):
+            vmax = np.abs(vmin)
+        else:
+            vmin = -np.abs(vmax)
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
         im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
         imgs.append(im)
@@ -100,13 +170,6 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
             imgs[n].set_norm(norm)
             imgs[n].autoscale()
             #cbar.update_normal(imgs)
-
-            if use_kde and np.min(datas[n][i])>=0.0:
-                for c in contours[n].collections:
-                    c.remove()
-                X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
-                Y = -Y + 9 
-                contours[n] = axes[n].contour(Y, X, Z, 10)
         return imgs, contours 
 
     ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
@@ -114,7 +177,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     for i in range(n_datas):
         axes[i].set_title(labels[i])
 
-    path =filename[:-4] + 'vimin-max' + filename[-4:]
+    path =filename[:-4] + 'vimin-max2' + filename[-4:]
     ani.save(path, writer="ffmpeg", fps=5)
     plt.close()
     print(f"Save {path}")
