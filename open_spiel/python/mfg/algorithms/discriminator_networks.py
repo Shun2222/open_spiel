@@ -170,7 +170,7 @@ class Discriminator(nn.Module):
                 for i in range(self.n_networks):
                     if len(outputs[i].shape)==1:
                         print(f'outputs{i}: reshaped')
-                        outputs[i].reshape(1, 1)
+                        outputs[i] = outputs[i].reshape(1, 1)
                 rew_inputs = torch.cat(outputs, dim=1)
                 score = self.reward_net(rew_inputs.to(torch.float32))
         if weighted_rew:
