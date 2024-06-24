@@ -63,7 +63,8 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
                         obs_input,
                         None, None, None,
                         discrim_score=False,
-                        only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        only_rew=False,
+                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                     rewards[t, y, x, a] = reward
                     for i in range(num_nets):

@@ -166,11 +166,12 @@ class Discriminator(nn.Module):
                 log_q_tau, log_p_tau, log_pq, discrim_output = self(inputs, obs, obs_next, path_probs)
                 score = torch.log(discrim_output + 1e-20) - torch.log(1 - discrim_output + 1e-20)
             else:
-                outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] 
-                rew_inputs = torch.cat(outputs, dim=1)
+                outputs = [self.networks[i](inputs[i].to(torch.float32)) for i in range(self.n_networks)] rew_inputs = torch.cat(outputs, dim=1)
+                for i in range(self._n_networks):
+                    print(f'outputs{i}: {outputs[i].shape}')
                 score = self.reward_net(rew_inputs.to(torch.float32))
         if weighted_rew:
-            weights = self.reward_net.state_dict()['0.weight'][0].numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
             outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
             return score, outputs 
         elif only_rew:
