@@ -202,13 +202,13 @@ class Discriminator(nn.Module):
                 log_p_tau = reward + self.gamma * value_fn_next - value_fn
                 tf = np.abs(log_p_tau)<5
                 p_tau = np.zeros(log_p_tau.shape)
-                p_tau[tf] = np.exp(-np.abs(log_p_tau))
+                p_tau[tf] = np.exp(-np.abs(log_p_tau[tf]))
                 p_tau = p_tau.flatten()
 
                 log_p_tau2 = reward2 + self.gamma * value_fn_next - value_fn
-                tf = np.abs(log_p_tau2)>=5
+                tf = np.abs(log_p_tau2)<5
                 p_tau2 = np.zeros(log_p_tau2.shape)
-                p_tau2[~tf] = np.exp(-np.abs(log_p_tau2))
+                p_tau2[tf] = np.exp(-np.abs(log_p_tau2[tf]))
                 p_tau2 = p_tau2.flatten()
 
 
