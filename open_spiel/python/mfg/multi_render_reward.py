@@ -58,8 +58,6 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
                     obs_input = inputs[f"{x}-{y}-{t}-{a}-m"]
                     obs_input = [torch.Tensor([obs_input[i]]) for i in range(len(obs_input))]
                 
-                    print(len(obs_input))
-                    print(len(obs_input[0]))
                     reward, outputs = discriminator.get_reward(
                         obs_input,
                         None, None, None,
