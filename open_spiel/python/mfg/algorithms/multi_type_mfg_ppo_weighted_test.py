@@ -601,7 +601,7 @@ if __name__ == "__main__":
         rew_index = -1
     else:
         net_input = get_net_input(args.path)
-        label = get_net_label(net_input)
+        label = get_net_labels(net_input)
         assert len(label)>=args.rew_index, 'rew_index is wrong'
         rew_index = args.rew_index
 
@@ -657,7 +657,7 @@ if __name__ == "__main__":
             discriminator = Discriminator(nobs, nacs, False, device)
         elif is_nets:
             inputs = get_input_shape(net_input, env, num_agent)
-            labels = get_net_label(net_input)
+            labels = get_net_labels(net_input)
             discriminator = Discriminator(inputs, obs_xym_size, labels, device)
         else:
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
