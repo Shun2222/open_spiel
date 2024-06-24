@@ -66,12 +66,12 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     vmin = np.nanmin(datas)
 
     axes[n_datas].axis('off')
-    im = axes[n_datas-1].imshow(datas[n_datas-1][0], vmin=vmin, vmax=vmax, cmap=cmap) 
     #cbar = fig.colorbar(im, ax=axes[n_datas])
     imgs = []
     contours = []
     for n in range(n_datas):
         axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        im = axes[n].imshow(np.zeros(datas[n][0].shape), cmap=cmap) 
         if use_kde and np.min(datas[n][0])>=0.0:
             X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
             Y = -Y + 9 
