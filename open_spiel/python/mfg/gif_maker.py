@@ -13,103 +13,96 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
 
     n_datas = len(datas)
 
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
-    if not vmin or not vmax:
+    if use_kde:
+        fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+        if not vmin or not vmax:
+            vmax = np.nanmax(datas)
+            vmin = np.nanmin(datas)
+
+        axes[n_datas].axis('off')
+        im = axes[n_datas-1].imshow(datas[n_datas-1][0], vmin=vmin, vmax=vmax, cmap=cmap) 
+        fig.colorbar(im, ax=axes[n_datas])
+        imgs = []
+        contours = []
+        avail_contours = []
+        for n in range(n_datas):
+            axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+            im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
+            imgs.append(im)
+            if use_kde and np.min(datas[n][0])>=0.0:
+                X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
+                Y = -Y + 9 
+                cs = axes[n].contour(Y, X, Z, 10)
+                contours.append(cs)
+                avail_contours.append(True)
+            else:
+                avail_contours.append(False)
+
+        def animate(i, imgs, contours, datas):
+            for n in range(n_datas):
+                axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+                #axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
+                imgs[n].set_array(datas[n][i])
+
+                if use_kde and np.min(datas[n][i])>=0.0:
+                    for c in contours[n].collections:
+                        c.remove()
+                    X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
+                    Y = -Y + 9 
+                    contours[n] = axes[n].contour(Y, X, Z, 10)
+            return imgs, contours 
+
+        ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
+
+        for i in range(n_datas):
+            axes[i].set_title(labels[i])
+
+        path = filename
+        ani.save(path, writer="ffmpeg", fps=5)
+        plt.close()
+        print(f"Save {path}")
+
+        fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
         vmax = np.nanmax(datas)
         vmin = np.nanmin(datas)
 
-    axes[n_datas].axis('off')
-    im = axes[n_datas-1].imshow(datas[n_datas-1][0], vmin=vmin, vmax=vmax, cmap=cmap) 
-    fig.colorbar(im, ax=axes[n_datas])
-    imgs = []
-    contours = []
-    avail_contours = []
-    for n in range(n_datas):
-        axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-        im = axes[n].imshow(datas[n][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
-        imgs.append(im)
-        if use_kde and np.min(datas[n][0])>=0.0:
-            X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
-            Y = -Y + 9 
-            cs = axes[n].contour(Y, X, Z, 10)
-            contours.append(cs)
-            avail_contours.append(True)
-        else:
-            avail_contours.append(False)
-
-    def animate(i, imgs, contours, datas):
+        axes[n_datas].axis('off')
+        #cbar = fig.colorbar(im, ax=axes[n_datas])
+        imgs = []
+        contours = []
         for n in range(n_datas):
             axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            #axes[n].imshow(datas[n][i], vmin=vmin, vmax=vmax, cmap=cmap) 
-            imgs[n].set_array(datas[n][i])
-
-            if use_kde and np.min(datas[n][i])>=0.0:
-                for c in contours[n].collections:
-                    c.remove()
-                X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
+            im = axes[n].imshow(np.zeros(datas[n][0].shape), cmap=cmap) 
+            if use_kde and np.min(datas[n][0])>=0.0:
+                X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
                 Y = -Y + 9 
-                contours[n] = axes[n].contour(Y, X, Z, 10)
-        return imgs, contours 
+                cs = axes[n].contour(Y, X, Z, 10)
+                contours.append(cs)
 
-    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
+        def animate(i, imgs, contours, datas):
+            for n in range(n_datas):
+                axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+                #cbar.update_normal(imgs)
 
-    for i in range(n_datas):
-        axes[i].set_title(labels[i])
+                if use_kde and np.min(datas[n][i])>=0.0:
+                    for c in contours[n].collections:
+                        c.remove()
+                    X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
+                    Y = -Y + 9 
+                    contours[n] = axes[n].contour(Y, X, Z, 10)
+            return imgs, contours 
 
-    path = filename
-    ani.save(path, writer="ffmpeg", fps=5)
-    plt.close()
-    print(f"Save {path}")
+        ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
 
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
-    vmax = np.nanmax(datas)
-    vmin = np.nanmin(datas)
+        for i in range(n_datas):
+            axes[i].set_title(labels[i])
 
-    axes[n_datas].axis('off')
-    #cbar = fig.colorbar(im, ax=axes[n_datas])
-    imgs = []
-    contours = []
-    for n in range(n_datas):
-        axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-        im = axes[n].imshow(np.zeros(datas[n][0].shape), cmap=cmap) 
-        if use_kde and np.min(datas[n][0])>=0.0:
-            X, Y, Z, _ = calc_kde(datas[n][0], num_agent=kde_agents)
-            Y = -Y + 9 
-            cs = axes[n].contour(Y, X, Z, 10)
-            contours.append(cs)
+        path =filename[:-4] + 'vimin-max' + filename[-4:]
+        ani.save(path, writer="ffmpeg", fps=5)
+        plt.close()
+        print(f"Save {path}")
 
-    def animate(i, imgs, contours, datas):
-        for n in range(n_datas):
-            axes[n].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            #cbar.update_normal(imgs)
 
-            if use_kde and np.min(datas[n][i])>=0.0:
-                for c in contours[n].collections:
-                    c.remove()
-                X, Y, Z, _ = calc_kde(datas[n][i], num_agent=kde_agents)
-                Y = -Y + 9 
-                contours[n] = axes[n].contour(Y, X, Z, 10)
-        return imgs, contours 
-
-    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
-
-    for i in range(n_datas):
-        axes[i].set_title(labels[i])
-
-    path =filename[:-4] + 'vimin-max' + filename[-4:]
-    ani.save(path, writer="ffmpeg", fps=5)
-    plt.close()
-    print(f"Save {path}")
-
-    ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
-
-    for i in range(n_datas):
-        axes[i].set_title(labels[i])
-
-    path = filename
-    ani.save(path, writer="ffmpeg", fps=5)
-    plt.close()
-    print(f"Save {path}")
 
     fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
     vmax = np.nanmax(datas)
@@ -121,8 +114,8 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     imgs = []
     contours = []
     for n in range(n_datas):
-        vmin = np.nanmin(datas[n][i])
-        vmax = np.nanmax(datas[n][i])
+        vmin = np.nanmin(datas[n][0])
+        vmax = np.nanmax(datas[n][0])
         if np.abs(vmin)>np.abs(vmax):
             vmax = np.abs(vmin)
         else:

@@ -93,7 +93,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-filename = "actor"
+filename = "disc_actor"
 pathes = [
             "/mnt/shunsuke/result/0627/multi_maze2_airl",
              "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
@@ -280,6 +280,8 @@ if __name__ == "__main__":
 
             if is_nets:
                 discriminator.load(pathes[p], f'{update_eps_info}-{i}', use_eval=True)
+                save_path = os.path.join(pathes[p], filename+str(update_info)+f'weights-{i}.png')
+                discriminator.savefig_weights(save_path)
                 discriminator.print_weights()
             discriminators.append(discriminator)
 
@@ -313,7 +315,7 @@ if __name__ == "__main__":
             outs = [[] for _ in range(n_nets)]
         for i in range(num_agent):
             if is_nets:
-                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=False, filename=save_path+f"-{i}")
+                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
@@ -331,7 +333,9 @@ if __name__ == "__main__":
             net_labels = get_net_labels(net_input)
             for i in range(n_nets):
                 path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
-                multi_render(outputs[i], path, labels, False)
+                output = np.array(outs[i])
+                print(output.shape)
+                multi_render(output, path, labels, use_kde=False)
 
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 
@@ -352,7 +356,7 @@ if __name__ == "__main__":
                 for j in range(n_nets):
                     fig = plt.figure(figsize=(16, 12))
                     ax = fig.add_subplot(1, 1, 1)
-                    points = outputs[j][i]
+                    points = np.array(outs[j][i])
                     col = 1
                     for s in range(len(points[0].shape)):
                         col *= points[0].shape[s]
@@ -387,7 +391,7 @@ if __name__ == "__main__":
                     for k in range(n_nets):
                         fig = plt.figure(figsize=figsizes[j])
                         ax = fig.add_subplot(1, 1, 1)
-                        points = outputs[k][i]
+                        points = np.array(outs[k][i])
                         col = 1
                         for s in range(len(points[0].shape)):
                             col *= points[0].shape[s]

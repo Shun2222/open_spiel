@@ -6,6 +6,7 @@ import logger
 import os
 import os.path as osp
 import copy
+import matplotlib.pyplot as plt
 
 def onehot(value, depth):
     a = np.zeros([depth])
@@ -263,6 +264,17 @@ class Discriminator(nn.Module):
                 self.networks[i].eval()
             self.reward_net.eval()
             self.value_net.eval()
+
+    def savefig_weights(self, path):
+        net = self.reward_net
+        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy()).reshape(1, self.n_networks)[0]
+        bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].numpy()).reshape(1, 1)[0]
+        data = list(weights)+list(bias)
+        label = self.labels + ['bias']
+        plt.figure()
+        plt.bar(label, data)
+        plt.savefig(path)
+        print(f'Saved as {path}')
 
     def print_weights(self, only_rew=True):
         if only_rew:
