@@ -37,7 +37,7 @@ class MultiTypeAIRL(object):
         state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         obs_xym_size = self._nobs -1 - self._horizon + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
-        inputs = get_net_input_shape(disc_type, env, self._num_agent)
+        inputs = get_input_shape(disc_type, env, self._num_agent)
         self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 

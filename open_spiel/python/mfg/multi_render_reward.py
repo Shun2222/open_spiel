@@ -86,9 +86,11 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
             else:
                 datas = np.array([output_rewards[i][0, 0, 0, a] for a in range(nacs)])
                 datas = datas.reshape(1, nacs)
+                plt.figure(figsize=(24, 18))
                 plt.bar(action_str, datas[0])
                 path = filename + f'-all-action-{labels[i]}.png' 
                 plt.savefig(path)
+                plt.close()
                 print(f'Saved as {path}')
 
 

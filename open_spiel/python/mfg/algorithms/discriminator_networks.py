@@ -272,8 +272,10 @@ class Discriminator(nn.Module):
         data = list(weights)+list(bias)
         label = self.labels + ['bias']
         plt.figure()
+        plt.title('Weights')
         plt.bar(label, data)
         plt.savefig(path)
+        plt.close()
         print(f'Saved as {path}')
 
     def print_weights(self, only_rew=True):
