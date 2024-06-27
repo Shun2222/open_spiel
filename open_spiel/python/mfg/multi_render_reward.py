@@ -67,8 +67,8 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
                     rewards[t, y, x, a] = reward
                     for i in range(num_nets):
+                        print(f'output{i} shape: {outputs[i].shape}')
                         output_rewards[i][t, y, x, a] = outputs[i]
-
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
