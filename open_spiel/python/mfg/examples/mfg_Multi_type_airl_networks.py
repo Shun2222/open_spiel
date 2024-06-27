@@ -36,12 +36,13 @@ from open_spiel.python.mfg.algorithms import best_response_value
 
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
 from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_networks import MultiTypeAIRL
+from open_spiel.python.mfg.algorithms.discriminator_networks import * 
 
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/actor99_19", help="expert actor path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0719/multi_maze2_expert/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0719/multi_maze2_expert/actor99_19", help="expert actor path")
     parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0719/multi_maze2_s_mu", help="log path")
     parser.add_argument("--net_input", type=str, default="s_mu", help="log path")
 
@@ -85,6 +86,8 @@ if __name__ == "__main__":
     traj_limitation = args.traj_limitation
 
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
+    assert get_net_input(args.logdir)==args.net_input
+    print(f'Checked net input: OK')
 
     # Create the game instance 
     game = pyspiel.load_game('python_mfg_predator_prey')
