@@ -237,57 +237,9 @@ class MultiTypeMFGPPO(object):
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
-                if self._net_input=='s_mu_a':
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
-                    state = np.concatenate([x, y], axis=1)
-
-                    inputs = [torch.from_numpy(state), 
-                                torch.from_numpy(mu), 
-                                torch.from_numpy(acs)]
-                elif self._net_input=='sa_mu':
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
-                    state_a = np.concatenate([x, y, acs], axis=1)
-
-                    inputs = [torch.from_numpy(state_a), 
-                                torch.from_numpy(mu)]
-                elif self._net_input=='s_mua':
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
-                    state = np.concatenate([x, y], axis=1)
-                    mua = np.concatenate([mu, acs], axis=1)
-
-                    inputs = [torch.from_numpy(state), 
-                                torch.from_numpy(mua)]
-                elif self._net_input=='dxy_mu_a':
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
-                    dx, dy = goal_distance(x, y, idx)
-                    dxy = np.concatenate([dx, dy], axis=1)
-
-                    inputs = [torch.from_numpy(dxy), 
-                                torch.from_numpy(mu),
-                                torch.from_numpy(acs),]
-                elif self._net_input=='dxya_mu':
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
-                    dx, dy = goal_distance(x, y, idx)
-                    dxy_a = np.concatenate([dx, dy, acs], axis=1)
-
-                    inputs = [torch.from_numpy(dxy_a),
-                                torch.from_numpy(mu),]
-                elif self._net_input=='dxy_mua':
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=True)
-                    dx, dy = goal_distance(x, y, idx)
-                    dxy = np.concatenate([dx, dy], axis=1)
-                    mua = np.concatenate([mu, acs], axis=1)
-
-                    inputs = [torch.from_numpy(dxy),
-                                torch.from_numpy(mua),]
+                inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
 
                 if self._is_nets:
-                    x, y, t, mu = divide_obs([obs_mu], self._size, use_argmax=False)
-                    obs_xym = np.concatenate([x, y, mu], axis=1)
-                    nobs = obs_xym.copy()
-                    nobs[:-1] = obs_xym[1:]
-                    nobs[-1] = obs_xym[0]
-                    obs_next_xym = nobs
                     reward, outputs = self._discriminator.get_reward(
                         inputs,
                         torch.from_numpy(obs_xym).to(self._device),

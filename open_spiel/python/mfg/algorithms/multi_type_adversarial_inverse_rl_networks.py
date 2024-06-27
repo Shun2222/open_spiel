@@ -100,64 +100,8 @@ class MultiTypeAIRL(object):
                     obs_next_mu = nobs
                     obs_next_mu_pth = torch.from_numpy(obs_next_mu).to(self._device)
 
-                    if self._disc_type=='s_mu_a':
-                        acs = multionehot(actions, self._nacs)
-                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
-                        state = np.concatenate([x, y], axis=1)
-
-                        inputs = [torch.from_numpy(state), 
-                                  torch.from_numpy(mu), 
-                                  torch.from_numpy(acs)]
-                    elif self._disc_type=='sa_mu':
-                        acs = multionehot(actions, self._nacs)
-                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
-                        state_a = np.concatenate([x, y, acs], axis=1)
-
-                        inputs = [torch.from_numpy(state_a), 
-                                  torch.from_numpy(mu)]
-                    elif self._disc_type=='s_mua':
-                        acs = multionehot(actions, self._nacs)
-                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
-                        state = np.concatenate([x, y], axis=1)
-                        mua = np.concatenate([mu, acs], axis=1)
-
-                        inputs = [torch.from_numpy(state), 
-                                  torch.from_numpy(mua)]
-                    elif self._disc_type=='dxy_mu_a':
-                        acs = multionehot(actions, self._nacs)
-                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
-                        dx, dy = goal_distance(x, y, idx)
-                        dxy = np.concatenate([dx, dy], axis=1)
-
-                        inputs = [torch.from_numpy(dxy), 
-                                  torch.from_numpy(mu),
-                                  torch.from_numpy(acs),]
-                    elif self._disc_type=='dxya_mu':
-                        acs = multionehot(actions, self._nacs)
-                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
-                        dx, dy = goal_distance(x, y, idx)
-                        dxy_a = np.concatenate([dx, dy, acs], axis=1)
-
-                        inputs = [torch.from_numpy(dxy_a),
-                                  torch.from_numpy(mu),]
-                    elif self._disc_type=='dxy_mua':
-                        acs = multionehot(actions, self._nacs)
-                        x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
-                        dx, dy = goal_distance(x, y, idx)
-                        dxy = np.concatenate([dx, dy], axis=1)
-                        mua = np.concatenate([mu, acs], axis=1)
-
-                        inputs = [torch.from_numpy(dxy),
-                                  torch.from_numpy(mua),]
-
-
-                    x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=False)
-                    obs_xym = np.concatenate([x, y, mu], axis=1)
-
-                    nobs = obs_xym.copy()
-                    nobs[:-1] = obs_xym[1:]
-                    nobs[-1] = obs_xym[0]
-                    obs_next_xym = nobs
+                    onehot_acs = np.array(multionehot(actions, self._nacs))
+                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._disc_type, obs_mu, onehot_acs, idx)
 
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         inputs, 

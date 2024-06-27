@@ -33,6 +33,10 @@ def net_labels(net_input):
         labels = ['dxy_a', 'mu']
     elif net_input=='dxy_mua':
         labels = ['dxy', 'mu_a']
+    elif net_input=='s_mu':
+        labels = ['state', 'mu']
+    elif net_input=='dxy_mu':
+        labels = ['dxy', 'mu']
     else:
         assert False, f'not matched disc type: {net_input}'
     return labels
@@ -43,7 +47,10 @@ def get_net_inputs():
                   's_mua',
                   'dxy_mu_a',
                   'dxya_mu',
-                  'dxy_mua',]
+                  'dxy_mua',
+                  's_mu',
+                  'dxy_mu',
+                  ]
     return net_inputs
 
 def get_input_shape(net_input, env, num_agent):
@@ -68,9 +75,87 @@ def get_input_shape(net_input, env, num_agent):
         inputs = [2+nacs, nmu]
     elif net_input=='dxy_mua':
         inputs = [2, nmu+nacs]
+    elif net_input=='s_mu':
+        inputs = [state_size, nmu]
+    elif net_input=='dxy_mu':
+        inputs = [2, nmu]
     else:
         assert False, f'not matched disc type: {net_input}'
     return inputs
+
+def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
+    # assert 
+
+    from games.predator_prey import divide_obs, goal_distance
+    acs = onehot_acs
+    idx = player_id
+
+    if net_input=='s_mu_a':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=False)
+        state = np.concatenate([x, y], axis=1)
+
+        inputs = [torch.from_numpy(state), 
+                    torch.from_numpy(mu), 
+                    torch.from_numpy(acs)]
+    elif net_input=='sa_mu':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=False)
+        state_a = np.concatenate([x, y, acs], axis=1)
+
+        inputs = [torch.from_numpy(state_a), 
+                    torch.from_numpy(mu)]
+    elif net_input=='s_mua':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=False)
+        state = np.concatenate([x, y], axis=1)
+        mua = np.concatenate([mu, acs], axis=1)
+
+        inputs = [torch.from_numpy(state), 
+                    torch.from_numpy(mua)]
+    elif net_input=='dxy_mu_a':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
+        dx, dy = goal_distance(x, y, idx)
+        dxy = np.concatenate([dx, dy], axis=1)
+
+        inputs = [torch.from_numpy(dxy), 
+                    torch.from_numpy(mu),
+                    torch.from_numpy(acs),]
+    elif net_input=='dxya_mu':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
+        dx, dy = goal_distance(x, y, idx)
+        dxy_a = np.concatenate([dx, dy, acs], axis=1)
+
+        inputs = [torch.from_numpy(dxy_a),
+                    torch.from_numpy(mu),]
+    elif net_input=='dxy_mua':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
+        dx, dy = goal_distance(x, y, idx)
+        dxy = np.concatenate([dx, dy], axis=1)
+        mua = np.concatenate([mu, acs], axis=1)
+
+        inputs = [torch.from_numpy(dxy),
+                    torch.from_numpy(mua),]
+    elif net_input=='s_mu':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=False)
+        state = np.concatenate([x, y], axis=1)
+
+        inputs = [torch.from_numpy(state), 
+                    torch.from_numpy(mu)]
+    elif net_input=='dxy_mu':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
+        dx, dy = goal_distance(x, y, idx)
+        dxy = np.concatenate([dx, dy], axis=1)
+
+        inputs = [torch.from_numpy(dxy),
+                    torch.from_numpy(mu),]
+
+
+    x, y, t, mu = divide_obs(obs_mu, size, use_argmax=False)
+    obs_xym = np.concatenate([x, y, mu], axis=1)
+
+    nobs = obs_xym.copy()
+    nobs[:-1] = obs_xym[1:]
+    nobs[-1] = obs_xym[0]
+    obs_next_xym = nobs
+    return inputs, obs_xym, obs_next_xym
 
 def is_networks(filename):
     labels = get_net_inputs()
