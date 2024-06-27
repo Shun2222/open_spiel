@@ -158,22 +158,28 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
     return inputs, obs_xym, obs_next_xym
 
 def is_networks(filename):
-    labels = get_net_inputs()
-    for label in labels:
-        if label in filename:
-            print(f'filename is detected as {label} model.')
-            return True
-    return False 
+    res = get_net_input(filename)
+    if res!=None:
+        return True
+    else:
+        return False
 
 def get_net_labels(net_input):
     return net_labels(net_input)
 
 def get_net_input(filename):
     net_inputs = get_net_inputs()
+    detected_input = []
     for net_input in net_inputs:
         if net_input in filename:
-            return net_input
-    return None
+            detected_input.append(net_input)
+    if len(detected_input)>0:
+        num = [len(d) for d in detected_input]
+        idx = np.argmax(num)
+        print(f'Detected model as {detected_input[idx]}')
+        return detected_input[idx]
+    else:
+        return None
 
 class Discriminator(nn.Module):
     def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
