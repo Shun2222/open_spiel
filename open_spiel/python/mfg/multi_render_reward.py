@@ -50,16 +50,21 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
     num_nets = discriminator.get_num_nets()
     labels = discriminator.get_net_labels()
     rewards = np.zeros((horizon, size, size, nacs))
+    values = np.zeros((horizon, size, size))
     output_rewards = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
 
     for t in range(horizon):
         for x in range(size):
             for y in range(size):
+                obs_input = inputs[f"obs-{x}-{y}-{t}-m"]
+                value = discriminator.get_value(obs_input)
+                values[t, y, x] = value 
                 for a in range(nacs):
-                    obs_input = inputs[f"{x}-{y}-{t}-{a}-m"]
+                    rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
+
                 
                     reward, outputs = discriminator.get_reward(
-                        obs_input,
+                        rew_input,
                         None, None, None,
                         discrim_score=False,
                         only_rew=False,
@@ -75,6 +80,10 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
         path = filename + f'-all-action.gif' 
         print(np.array(datas).shape)
         multi_render(datas, path, action_str, use_kde=False)
+        print(f'Saved in {path}')
+
+        path = filename + f'-values.gif' 
+        multi_render([values], path, ['value'], use_kde=False)
         print(f'Saved in {path}')
         for i in range(num_nets):
             action_str = ["stop", "right", "down", "up", "left"]

@@ -46,10 +46,10 @@ _DEFAULT_HORIZON = 40
 _NUM_ACTIONS = 5
 _DEFAULT_NUM_PLAYERS = 3
 
-_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
-_DEFAULT_GOAL_POSITION = np.array([[_DEFAULT_SIZE, _DEFAULT_SIZE], [0, 0], [_DEFAULT_SIZE//2, _DEFAULT_SIZE//2]])
-#_DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
-#_DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+#_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
+#_DEFAULT_GOAL_POSITION = np.array([[_DEFAULT_SIZE, _DEFAULT_SIZE], [0, 0], [_DEFAULT_SIZE//2, _DEFAULT_SIZE//2]])
+_DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+_DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
 _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
 
 _NUM_CHANCE = 5

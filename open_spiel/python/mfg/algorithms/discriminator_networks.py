@@ -86,6 +86,7 @@ def get_input_shape(net_input, env, num_agent):
     elif net_input=='s_mu':
         inputs = [state_size, nmu]
     elif net_input=='dxy_mu':
+        #inputs = [state_size*2-2, nmu]
         inputs = [2, nmu]
     else:
         assert False, f'not matched disc type: {net_input}'
@@ -151,6 +152,13 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
         x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
         dx, dy = goal_distance(x, y, idx)
         dxy = np.concatenate([dx, dy], axis=1)
+        dxy_abs = np.abs(dxy)
+
+        dx[dx<0] = np.abs(dx[dx<0])+size
+        dy[dy<0] = np.abs(dy[dy<0])+size
+        dx_onehot = multionehot(dx, size*2-1)
+        dy_onehot = multionehot(dy, size*2-1)
+        dxy_onehot = np.concatenate([dx_onehot, dy_onehot], axis=1)
 
         inputs = [torch.from_numpy(dxy),
                     torch.from_numpy(mu),]
@@ -190,7 +198,7 @@ def get_net_input(filename):
         return None
 
 class Discriminator(nn.Module):
-    def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1):
+    def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1, ppo_value_net=None):
         super(Discriminator, self).__init__()
         assert len(input_shapes)<=len(labels), f'not enough labels'
 
@@ -234,11 +242,16 @@ class Discriminator(nn.Module):
         ).to(self._device)
 
         # Define layers for value function network
-        self.value_net = nn.Sequential(
-            nn.Linear(obs_shape, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, 1)
-        ).to(self._device)
+        if ppo_value_net:
+            self.value_net = ppo_value_net
+            self._ppo_value = True
+        else:
+            self.value_net = nn.Sequential(
+                nn.Linear(obs_shape, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, 1)
+            ).to(self._device)
+            self._ppo_value = False
 
         self.value_next_net = self.value_net
 
@@ -251,8 +264,14 @@ class Discriminator(nn.Module):
         outputs = torch.cat(outputs, dim=1)
         reward = self.reward_net(outputs.to(torch.float32))
 
-        value_fn = self.value_net(obs)
-        value_fn_next = self.value_next_net(obs_next)
+        if self._ppo_value:
+            with torch.no_grad():
+                value_fn = self.value_net(obs)
+                value_fn_next = self.value_next_net(obs_next)
+        else:
+            value_fn = self.value_net(obs)
+            value_fn_next = self.value_next_net(obs_next)
+
 
         log_q_tau = path_probs
         log_p_tau = reward + self.gamma * value_fn_next - value_fn
@@ -297,6 +316,13 @@ class Discriminator(nn.Module):
             return score
         else:
             return score, outputs 
+
+        return reward2, p_tau, p_tau2 
+
+    def get_value(self, obs):
+        with torch.no_grad():
+            value = self.value_net(obs.to(torch.float32))
+            return value 
 
         return reward2, p_tau, p_tau2 
 
@@ -410,6 +436,7 @@ class Discriminator(nn.Module):
         from games.predator_prey import goal_distance
         num_agents = len(mu_dists)
         inputs = [{} for _ in range(num_agents)]
+        size = ob_shape[0]
 
         for idx in range(num_agents):
             for x in range(ob_shape[1]):
@@ -423,6 +450,13 @@ class Discriminator(nn.Module):
                             state = x_onehot + y_onehot
                             dx, dy = goal_distance(x, y, idx)
                             dxy = [dx, dy]
+                            dxy_abs = np.abs(dxy).tolist()
+
+                            dx = dx if dx<0 else np.abs(dx)+size
+                            dy = dy if dy<0 else np.abs(dy)+size
+                            dx_onehot = onehot(dx, size*2-1).tolist()
+                            dy_onehot = onehot(dy, size*2-1).tolist()
+                            dxy_onehot = dx_onehot+dy_onehot 
                             input = []
                             for n in range(self.n_networks):
                                 input_str = self.labels[n]
@@ -441,6 +475,9 @@ class Discriminator(nn.Module):
                                 elif input_str == 'act':
                                     input.append(torch.Tensor(a_onehot))
                             inputs[idx][f'{x}-{y}-{t}-{a}-m'] = input
+                            t_onehot = onehot(t, horizon)
+                            obs = torch.Tensor(state+[mu[idx]])
+                            inputs[idx][f'obs-{x}-{y}-{t}-m'] = obs 
         return inputs
 
 

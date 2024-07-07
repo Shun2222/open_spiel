@@ -31,7 +31,7 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
-from open_spiel.python.mfg.algorithms.mfg_ppo import *
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 import copy
@@ -43,6 +43,18 @@ from diff_utils import *
 
 plt.rcParams["animation.ffmpeg_path"] = r"/usr/bin/ffmpeg"
 plt.rcParams["font.size"] = 20
+
+def onehot(value, depth):
+    a = np.zeros([depth])
+    a[value] = 1
+    return a
+
+
+def multionehot(values, depth):
+    a = np.zeros([values.shape[0], depth])
+    for i in range(values.shape[0]):
+        a[i, int(values[i])] = 1
+    return a
 
 def calc_distribution(envs, merge_dist, info_states, save=False, filename="agent_distk.mp4"):
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
@@ -103,9 +115,7 @@ def parse_args():
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/0708/multi_maze2_expert",
-            "/mnt/shunsuke/result/0708/multi_maze2_s_mu_hidden2",
-            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_hidden2",
+            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu-ppo_value",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -138,9 +148,7 @@ pathes = [
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "expert",
-                "s_mu_a_hidden2",
-                "dxy_mu_a_hidden2",
+                "dxy_mu-ppo_value",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -172,11 +180,10 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 
-actor_filenames = [
-                    "actor99_19",
-                    "actor200_1",
-                    "actor200_1",
-                  ]
+filenames = [
+                "200_1",
+            ]
+                    #"actor99_19",
                     #"actor200_2",
 
 if __name__ == "__main__":
@@ -186,7 +193,7 @@ if __name__ == "__main__":
     gifMaker = GifMaker()
     for ip, target_path in enumerate(pathes):
         for i in range(3):
-            fname = copy.deepcopy(actor_filenames[ip])
+            fname = copy.deepcopy('actor'+filenames[ip])
             fname = fname + f'-{i}.pth' 
             fpath = osp.join(target_path, fname)
             assert osp.isfile(fpath), f'isFileError: {fpath}'
@@ -238,12 +245,19 @@ if __name__ == "__main__":
         for i in range(num_agent):
             agent = Agent(nobs, nacs).to(device)
             actor_model = agent.actor
+            critic_model = agent.critic
 
-            fname = copy.deepcopy(actor_filenames[ip])
+            fname = copy.deepcopy('actor'+filenames[ip])
             fname = fname + f'-{i}.pth' 
             actor_path = os.path.join(target_path, fname)
             actor_model.load_state_dict(torch.load(actor_path))
             actor_model.eval()
+
+            fname = copy.deepcopy('critic'+filenames[ip])
+            fname = fname + f'-{i}.pth' 
+            critic_path = os.path.join(target_path, fname)
+            critic_model.load_state_dict(torch.load(critic_path))
+            critic_model.eval()
             print("load actor model from", actor_path)
 
             agents.append(agent)
@@ -256,19 +270,57 @@ if __name__ == "__main__":
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
         for env in envs:
           env.update_mfg_distribution(merge_dist)
+        size = envs[0].game.get_parameters()['size']
 
-        # output = model(input_data)
-        def get_action(x, actor_model):
-            logits = actor_model(x)
-            probs = Categorical(logits=logits)
-            action = probs.sample()
-            return action
+        mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
+        for k,v in merge_dist.distribution.items():
+            if "mu" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                t = int(tt[1].split('=')[1].split('_')[0])
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                mu_dists[pop][t,y,x] = v
+
+        inputs = [{} for _ in range(num_agent)]
+        for idx in range(num_agent):
+            for t in range(horizon):
+                for x in range(size):
+                    for y in range(size):
+                        mu = [mu_dists[idx][t, y, x]]
+                        x_onehot = onehot(x, size).tolist()
+                        y_onehot = onehot(y, size).tolist()
+                        t_onehot = onehot(t, horizon).tolist()
+                        state = x_onehot + y_onehot
+                        obs = torch.Tensor(state+mu)
+                        inputs[idx][f"obs-{x}-{y}-{t}-m"] = obs 
+
+        values = np.zeros((horizon, size, size))
+        for idx in range(num_agent):
+            for t in range(horizon):
+                for x in range(size):
+                    for y in range(size):
+                        obs_input = inputs[idx][f"obs-{x}-{y}-{t}-m"]
+                        value = agents[idx].get_value(obs_input)
+                        values[t, y, x] = value 
+            
+            filename = f'ppo-values{idx}' 
+            save_path = os.path.join(target_path, f"{filename}.gif")
+            multi_render([values], save_path, ['value'], use_kde=False)
+
+            # output = model(input_data)
+            def get_action(x, actor_model):
+                logits = actor_model(x)
+                probs = Categorical(logits=logits)
+                action = probs.sample()
+                return action
             
         info_state = []
         ep_ret = 0.0
 
         steps = envs[0].max_game_length
-        info_state = [torch.zeros((steps,agents[i].info_state_size), device=device) for i in range(num_agent)]
+        info_state = [torch.zeros((steps,nobs), device=device) for i in range(num_agent)]
         actions = [torch.zeros((steps,), device=device) for _ in range(num_agent)]
         logprobs = [torch.zeros((steps,), device=device) for _ in range(num_agent)]
         rewards = [torch.zeros((steps,), device=device) for _ in range(num_agent)]
@@ -278,7 +330,6 @@ if __name__ == "__main__":
         t_actions = [torch.zeros((steps,), device=device) for _ in range(num_agent)]
         t_logprobs = [torch.zeros((steps,), device=device) for _ in range(num_agent)]
 
-        size = envs[0].game.get_parameters()['size']
         step = 0
 
         time_steps = [envs[i].reset() for i in range(num_agent)]
@@ -288,9 +339,12 @@ if __name__ == "__main__":
                 obs = time_steps[i].observations["info_state"][i]
                 obs = torch.Tensor(obs).to(device)
                 info_state[i][step] = obs
+                obs_list = list(obs)
+                obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
+                obs = torch.Tensor(obs).to(device)
                 with torch.no_grad():
-                    t_action, t_logprob, _, _ = agents[i].get_action_and_value(obs)
-                    action, logprob, entropy, value = agents[i].get_action_and_value(obs)
+                    t_action, t_logprob, _, _ = agents[i].get_action_and_value(obs_pth)
+                    action, logprob, entropy, value = agents[i].get_action_and_value(obs_pth)
 
                 # iteration policy data
                 t_logprobs[i][step] = t_logprob
@@ -335,6 +389,8 @@ if __name__ == "__main__":
 
 
         res_final_dists.append(final_dists)
+
+
 
 
     #save_path = os.path.join(pathes[0], f"test-diff-{filename}.gif")
