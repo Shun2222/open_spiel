@@ -182,7 +182,7 @@ def get_net_input(filename):
         return None
 
 class Discriminator(nn.Module):
-    def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01):
+    def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1):
         super(Discriminator, self).__init__()
         assert len(input_shapes)<=len(labels), f'not enough labels'
 
@@ -196,11 +196,28 @@ class Discriminator(nn.Module):
         self.networks = []
         for i in range(self.n_networks):
             # Define layers for reward network
-            net = nn.Sequential(
-                nn.Linear(input_shapes[i], hidden_size),
-                nn.ReLU(),
-                nn.Linear(hidden_size, 1)
-            ).to(self._device)
+            if num_hidden==1:
+                net = nn.Sequential(
+                    nn.Linear(input_shapes[i], hidden_size),
+                    nn.ReLU(),
+                    nn.Linear(hidden_size, 1)
+                ).to(self._device)
+            else if num_hidden==2:
+                net = nn.Sequential(
+                    nn.Linear(input_shapes[i], hidden_size),
+                    nn.ReLU(),
+                    nn.Linear(hidden_size, hidden_size),
+                    nn.ReLU(),
+                    nn.Linear(hidden_size, 1)
+                ).to(self._device)
+            else if num_hidden==3:
+                net = nn.Sequential(
+                    nn.Linear(input_shapes[i], hidden_size),
+                    nn.ReLU(),
+                    nn.Linear(hidden_size, hidden_size),
+                    nn.ReLU(),
+                    nn.Linear(hidden_size, 1)
+                ).to(self._device)
             self.networks.append(net)
 
 

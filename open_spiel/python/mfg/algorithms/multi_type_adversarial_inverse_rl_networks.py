@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a'):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1):
         self._game = game
         self._envs = envs
         self._device = device
@@ -38,7 +38,7 @@ class MultiTypeAIRL(object):
         obs_xym_size = self._nobs -1 - self._horizon + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
         inputs = get_input_shape(disc_type, env, self._num_agent)
-        self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for _ in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 

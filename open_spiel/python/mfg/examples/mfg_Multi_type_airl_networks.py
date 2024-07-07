@@ -41,10 +41,11 @@ from open_spiel.python.mfg.algorithms.discriminator_networks import *
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0719/multi_maze2_expert/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0719/multi_maze2_expert/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0719/multi_maze2_s_mu", help="log path")
-    parser.add_argument("--net_input", type=str, default="s_mu", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze2_expert/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze2_expert/actor99_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_hidden2", help="log path")
+    parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
+    parser.add_argument("--num_hidden", type=int, default=2, help="log path")
 
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
@@ -132,7 +133,7 @@ if __name__ == "__main__":
         expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
         experts.append(expert)
         print(f'expert load from {fname}')
-    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input)
+    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, dist_num_hidden=args.num_hidden)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 
