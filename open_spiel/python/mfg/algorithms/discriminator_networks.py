@@ -7,6 +7,7 @@ import os
 import os.path as osp
 import copy
 import matplotlib.pyplot as plt
+import re
 
 def onehot(value, depth):
     a = np.zeros([depth])
@@ -19,6 +20,13 @@ def multionehot(values, depth):
     for i in range(values.shape[0]):
         a[i, int(values[i])] = 1
     return a
+
+def get_num_hidden(pathname):
+    res = re.search(r'hidden(\d+)', pathname)
+    if res:
+        return int(res.group(1))
+    else:
+        return 1
 
 def net_labels(net_input):
     if net_input=='s_mu_a':
@@ -202,7 +210,7 @@ class Discriminator(nn.Module):
                     nn.ReLU(),
                     nn.Linear(hidden_size, 1)
                 ).to(self._device)
-            else if num_hidden==2:
+            elif num_hidden==2:
                 net = nn.Sequential(
                     nn.Linear(input_shapes[i], hidden_size),
                     nn.ReLU(),
@@ -210,7 +218,7 @@ class Discriminator(nn.Module):
                     nn.ReLU(),
                     nn.Linear(hidden_size, 1)
                 ).to(self._device)
-            else if num_hidden==3:
+            elif num_hidden==3:
                 net = nn.Sequential(
                     nn.Linear(input_shapes[i], hidden_size),
                     nn.ReLU(),

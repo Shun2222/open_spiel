@@ -95,8 +95,8 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a_4e5steps",
-            "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a_4e5steps",
+            "/mnt/shunsuke/result/0708/multi_maze2_s_mu_hidden2",
+            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_hidden2",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -112,9 +112,8 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_s_mu_a_4e5steps",
-                "MF-AITL_dxy_mu_a_4e5steps",
-                "MF-AITL",
+                "MF-AITL_s_mu_hidden2",
+                "MF-AITL_dxy_mu_hidden2",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -123,15 +122,8 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "400_4",
-                "400_4",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
+                "200_1",
+                "200_1",
               ]
 
 is_single = [False, False, False, False, False, False, False, False, False]
@@ -157,6 +149,7 @@ nets_dict = {
 if __name__ == "__main__":
     args = parse_args()
 
+    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename
@@ -174,14 +167,15 @@ if __name__ == "__main__":
             fpath = osp.join(target_path, fname)
             assert osp.isfile(fpath), f'isFileError: {fpath}'
 
-            for key in nets_dict.keys():
-                if key in pathnames[ip]:
-                    for label in nets_dict[key]:
-                        fname = f'disc_{label}'
-                        fname = fname + f'{update_infos[ip]}-{i}.pth' 
-                        fpath = osp.join(target_path, fname)
-                        print(f'checked {fpath}')
-                        assert osp.isfile(fpath), f'isFileError: {fpath}'
+            net_input = get_net_input(pathnames[ip])
+            if net_input:
+                net_labels = get_net_labels(net_input)
+                for label in net_labels:
+                    fname = f'disc_{label}'
+                    fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                    fpath = osp.join(target_path, fname)
+                    print(f'checked {fpath}')
+                    assert osp.isfile(fpath), f'isFileError: {fpath}'
     print(f'Checked path: OK')
 
 
@@ -196,11 +190,10 @@ if __name__ == "__main__":
         is_nets = is_networks(pathnames[p]) 
         if is_nets:
             net_input = get_net_input(pathnames[p])
-
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
         elif is_nets:
-            from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
+            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -275,7 +268,9 @@ if __name__ == "__main__":
             elif is_nets:
                 inputs = get_input_shape(net_input, env, num_agent)
                 labels = get_net_labels(net_input)
-                discriminator = Discriminator(inputs, obs_xym_size, labels, device)
+                num_hidden = get_num_hidden(pathnames[p])
+                print(num_hidden)
+                discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')

@@ -103,9 +103,9 @@ def parse_args():
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/0627/multi_maze2_expert",
-            "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a_4e5steps",
-            "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a_4e5steps",
+            "/mnt/shunsuke/result/0708/multi_maze2_expert",
+            "/mnt/shunsuke/result/0708/multi_maze2_s_mu_hidden2",
+            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_hidden2",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -139,8 +139,8 @@ pathes = [
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
                 "expert",
-                "s_mu_a_4e5",
-                "dxy_mu_a_4e5",
+                "s_mu_a_hidden2",
+                "dxy_mu_a_hidden2",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -174,8 +174,8 @@ pathnames = [
 
 actor_filenames = [
                     "actor99_19",
-                    "actor400_4",
-                    "actor400_4",
+                    "actor200_1",
+                    "actor200_1",
                   ]
                     #"actor200_2",
 
