@@ -86,7 +86,7 @@ def get_input_shape(net_input, env, num_agent):
     elif net_input=='s_mu':
         inputs = [state_size, nmu]
     elif net_input=='dxy_mu':
-        #inputs = [state_size*2-2, nmu]
+        #inputs = [state_size*2-1, nmu]
         inputs = [2, nmu]
     else:
         assert False, f'not matched disc type: {net_input}'
@@ -156,8 +156,8 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
 
         dx[dx<0] = np.abs(dx[dx<0])+size
         dy[dy<0] = np.abs(dy[dy<0])+size
-        dx_onehot = multionehot(dx, size*2-1)
-        dy_onehot = multionehot(dy, size*2-1)
+        dx_onehot = multionehot(dx, size*2)
+        dy_onehot = multionehot(dy, size*2)
         dxy_onehot = np.concatenate([dx_onehot, dy_onehot], axis=1)
 
         inputs = [torch.from_numpy(dxy),
@@ -454,8 +454,8 @@ class Discriminator(nn.Module):
 
                             dx = dx if dx<0 else np.abs(dx)+size
                             dy = dy if dy<0 else np.abs(dy)+size
-                            dx_onehot = onehot(dx, size*2-1).tolist()
-                            dy_onehot = onehot(dy, size*2-1).tolist()
+                            dx_onehot = onehot(dx, size*2).tolist()
+                            dy_onehot = onehot(dy, size*2).tolist()
                             dxy_onehot = dx_onehot+dy_onehot 
                             input = []
                             for n in range(self.n_networks):
@@ -476,7 +476,8 @@ class Discriminator(nn.Module):
                                     input.append(torch.Tensor(a_onehot))
                             inputs[idx][f'{x}-{y}-{t}-{a}-m'] = input
                             t_onehot = onehot(t, horizon)
-                            obs = torch.Tensor(state+[mu[idx]])
+                            #obs = torch.Tensor(state+[mu[idx]])
+                            obs = torch.Tensor(state+mu)
                             inputs[idx][f'obs-{x}-{y}-{t}-m'] = obs 
         return inputs
 

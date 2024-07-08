@@ -304,8 +304,8 @@ if __name__ == "__main__":
                 for x in range(size):
                     for y in range(size):
                         obs_input = inputs[idx][f"obs-{x}-{y}-{t}-m"]
-                        #value = agents[idx].get_value(obs_input)
-                        #values[t, y, x] = value 
+                        value = agents[idx].get_value(obs_input)
+                        values[t, y, x] = value 
             
             value_filename = f'ppo-values{idx}' 
             save_path = os.path.join(target_path, f"{value_filename}.gif")
@@ -341,10 +341,10 @@ if __name__ == "__main__":
                 obs = time_steps[i].observations["info_state"][i]
                 obs = torch.Tensor(obs).to(device)
                 info_state[i][step] = obs
-                #obs_list = list(obs)
-                #obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
-                obs_pth = torch.Tensor(obs).to(device)
-                obs = torch.Tensor(obs).to(device)
+                obs_list = list(obs)
+                obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
+                #obs_pth = torch.Tensor(obs).to(device)
+                #obs = torch.Tensor(obs).to(device)
                 with torch.no_grad():
                     t_action, t_logprob, _, _ = agents[i].get_action_and_value(obs_pth)
                     action, logprob, entropy, value = agents[i].get_action_and_value(obs_pth)

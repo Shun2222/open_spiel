@@ -276,7 +276,8 @@ if __name__ == "__main__":
                 labels = get_net_labels(net_input)
                 num_hidden = get_num_hidden(pathnames[p])
                 print(num_hidden)
-                discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden, ppo_value_net=critic_models[i])
+                #discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden, ppo_value_net=critic_models[i])
+                discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
