@@ -41,9 +41,9 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_airl", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze/actor99_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0708/multi_maze_airl", help="log path")
 
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
@@ -112,13 +112,13 @@ if __name__ == "__main__":
     ppo_policies = []
     for i in range(num_agent):
         agent =  Agent(num_obs, num_acs).to(device)
-        actor_model = agent.actor
+        #actor_model = agent.actor
         filepath = os.path.join(expert_actor_pathes[i])
-        print("load actor model from", filepath)
-        actor_model.load_state_dict(torch.load(filepath))
+        #print("load actor model from", filepath)
+        #actor_model.load_state_dict(torch.load(filepath))
 
         # Set the initial policy to uniform and generate the distribution 
-        ppo_policies.append(PPOpolicy(game, agent, None, device))
+        #ppo_policies.append(PPOpolicy(game, agent, None, device))
 
     conv_dist = convert_distrib(envs, merge_dist)
     device = torch.device("cpu")

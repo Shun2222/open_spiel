@@ -32,7 +32,8 @@ class MultiTypeAIRL(object):
         self._horizon = env.game.get_parameters()['horizon']
         self._nmu  = self._num_agent 
 
-        self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
+        #self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
+        self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i) for i in range(self._num_agent)]
         obs_input_size = self._nobs-1+self._nmu-self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         self._discriminator = [Discriminator(obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
 
@@ -143,12 +144,14 @@ class MultiTypeAIRL(object):
                     e_log_prob = [] 
                     g_log_prob = [] 
                     for i in range(len(e_obs_mu[0])):
+                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent-idx)]])
+                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent-idx)]])
                         e_log_prob.append(self._generator[idx].get_log_action_prob(
-                            torch.from_numpy(np.array([e_obs_mu[0][i][:self._nobs]])).to(torch.float32).to(self._device), 
+                            torch.from_numpy(np.array([e_obs_mu_input])).to(torch.float32).to(self._device), 
                             torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
                         g_log_prob.append(self._generator[idx].get_log_action_prob(
-                            torch.from_numpy(np.array([g_obs_mu[0][i][:self._nobs]])).to(torch.float32).to(self._device), 
+                            torch.from_numpy(np.array([g_obs_mu_input])).to(torch.float32).to(self._device), 
                             torch.from_numpy(np.array([g_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
                     e_log_prob = np.array([e_log_prob])
@@ -216,7 +219,7 @@ class MultiTypeAIRL(object):
             for i in range(self._num_agent):
                 nashc_ppo = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True, population=i)
                 logger.record_tabular(f"nashc_ppo{i}", nashc_ppo)
-                nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=True, population=i)
+                nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=False, population=i)
                 logger.record_tabular(f"nashc_expert{i}", nashc_expert)
             logger.dump_tabular()
             num_update_iter += 1

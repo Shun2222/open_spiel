@@ -31,6 +31,7 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
+#from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
@@ -115,7 +116,7 @@ def parse_args():
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu-ppo_value",
+            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_seed0",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -148,7 +149,7 @@ pathes = [
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "dxy_mu-ppo_value",
+                "dxy_mu_seed0",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -181,6 +182,7 @@ pathnames = [
                 #"MF-AITL_dxy_mua",
 
 filenames = [
+                "200_1",
                 "200_1",
             ]
                     #"actor99_19",
@@ -302,11 +304,11 @@ if __name__ == "__main__":
                 for x in range(size):
                     for y in range(size):
                         obs_input = inputs[idx][f"obs-{x}-{y}-{t}-m"]
-                        value = agents[idx].get_value(obs_input)
-                        values[t, y, x] = value 
+                        #value = agents[idx].get_value(obs_input)
+                        #values[t, y, x] = value 
             
-            filename = f'ppo-values{idx}' 
-            save_path = os.path.join(target_path, f"{filename}.gif")
+            value_filename = f'ppo-values{idx}' 
+            save_path = os.path.join(target_path, f"{value_filename}.gif")
             multi_render([values], save_path, ['value'], use_kde=False)
 
             # output = model(input_data)
@@ -339,8 +341,9 @@ if __name__ == "__main__":
                 obs = time_steps[i].observations["info_state"][i]
                 obs = torch.Tensor(obs).to(device)
                 info_state[i][step] = obs
-                obs_list = list(obs)
-                obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
+                #obs_list = list(obs)
+                #obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
+                obs_pth = torch.Tensor(obs).to(device)
                 obs = torch.Tensor(obs).to(device)
                 with torch.no_grad():
                     t_action, t_logprob, _, _ = agents[i].get_action_and_value(obs_pth)
