@@ -226,7 +226,7 @@ class MultiTypeAIRL(object):
                         d_dxy = np.concatenate([g_dxy, e_dxy], axis=0)
                         d_mu = np.concatenate([g_mu, e_mu], axis=0)
 
-                        inputs = [torch.from_numpy(d_state), 
+                        inputs = [torch.from_numpy(d_dxy), 
                                   torch.from_numpy(d_mu)]
                                   
                                   
