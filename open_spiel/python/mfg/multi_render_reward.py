@@ -34,10 +34,12 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
-from open_spiel.python.mfg.algorithms.mfg_ppo import *
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.games import factory
+from open_spiel.python.mfg.games.predator_prey import * 
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
+from open_spiel.python.mfg.algorithms.discriminator_networks import * 
 from gif_maker import *
 
 plt.rcParams["font.size"] = 20
@@ -169,8 +171,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_episode1", help="file path")
-    parser.add_argument("--update_eps", type=str, default=r"134_134", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_airl_basicfuncs_dxdy_mu", help="file path")
+    parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
     parser.add_argument("--distance_filename", type=str, default="disc_distance", help="file path")
     parser.add_argument("--mu_filename", type=str, default="disc_mu", help="file path")
     parser.add_argument("--reward_filename", type=str, default="disc_reward", help="file path")
@@ -192,7 +194,7 @@ if __name__ == "__main__":
     basicfuncs = args.basicfuncs
 
     if basicfuncs:
-        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs import Discriminator, divide_obs
+        from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_dxdy import Discriminator 
     else:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 

@@ -124,9 +124,14 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
         obs_y = obs[size:2*size]
         obs_t = obs[2*size:-3]
 
-        obs_x = obs_x.reshape(size, 1)
-        obs_y = obs_y.reshape(size, 1)
-        obs_t = obs_t.reshape(len(obs)-3-2*size, 1)
+        #obs_x = obs_x.reshape(size, 1)
+        #obs_y = obs_y.reshape(size, 1)
+        obs_x = obs_x.reshape(1, size)
+        obs_y = obs_y.reshape(1, size)
+        obs_t = obs_t.reshape(1, len(obs)-3-2*size)
+        #error forcely 
+        obs_x = obs_x.reshape(1, size+2)
+        
       obs_mu = obs[-3:]
 
       obs_mu = obs_mu.reshape(1, 3)

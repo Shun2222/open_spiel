@@ -11,8 +11,8 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python import rl_environment
 from torch.distributions.categorical import Categorical
 from open_spiel.python.mfg.algorithms import distribution
-from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
-from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
+#from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import  *
 from open_spiel.python import policy as policy_std
 from utils import onehot, multionehot
 #from render import render
@@ -142,11 +142,11 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0708/multi_maze")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0726/multi_maze2_expert")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
-@click.option('--distrib_filename', type=click.STRING, default="distrib99_19")
-@click.option('--actor_filename', type=click.STRING, default="actor99_19")
-@click.option('--critic_filename', type=click.STRING, default="critic99_19")
+@click.option('--distrib_filename', type=click.STRING, default="distrib50_19")
+@click.option('--actor_filename', type=click.STRING, default="actor50_19")
+@click.option('--critic_filename', type=click.STRING, default="critic50_19")
 @click.option('--num_trajs', type=click.INT, default=1000)
 @click.option('--seed', type=click.INT, default=0)
 @click.option('--num_acs', type=click.INT, default=5)
@@ -230,7 +230,9 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
             while not time_step.last():
                 obs = time_step.observations["info_state"][idx]
                 obs_pth = torch.Tensor(obs).to(device)
-                action = get_action(obs_pth, idx)
+                obs_list = list(obs)
+                obs_input_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
+                action = get_action(obs_input_pth, idx)
                 time_step = envs[idx].step([action.item()])
                 rewards = time_step.rewards[idx]
                 dist = envs[idx].mfg_distribution

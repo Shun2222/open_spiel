@@ -133,14 +133,6 @@ value_filename = 'disc_value'
 distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
-nets_dict = { 
-                's_mu_a': ['state', 'mu', 'act'],
-                'sa_mu': ['state_a', 'mu'],
-                's_mua': ['state', 'mu_a'],
-                'dxy_mu_a': ['dxy', 'mu', 'act'],
-                'dxya_mu': ['dxy_a', 'mu'],
-                'dxy_mua': ['dxy', 'mu_a'],
-            }
 
 if __name__ == "__main__":
     args = parse_args()

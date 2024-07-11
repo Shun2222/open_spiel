@@ -40,9 +40,9 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_expert/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_airl_basicfuncs_dxdy_mu_a", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_airl_basicfuncs_dxdy_mu", help="log path")
 
     parser.add_argument("--dxdy_mu_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--dxdya_mu_input", action='store_true', help="cpu or cuda")

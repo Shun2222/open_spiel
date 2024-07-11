@@ -116,7 +116,8 @@ def parse_args():
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "actor"
 pathes = [
-            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_seed0",
+            "/mnt/shunsuke/result/0726/multi_maze2_expert",
+            "/mnt/shunsuke/result/0726/multi_maze2_airl_basicfuncs_dxdy_mu",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -149,7 +150,8 @@ pathes = [
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "dxy_mu_seed0",
+                "expert",
+                "basicfuncs_dxdy_mu",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -182,8 +184,8 @@ pathnames = [
                 #"MF-AITL_dxy_mua",
 
 filenames = [
-                "200_1",
-                "200_1",
+                "50_19",
+                "200_2",
             ]
                     #"actor99_19",
                     #"actor200_2",

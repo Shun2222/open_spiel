@@ -41,9 +41,9 @@ from open_spiel.python.mfg.algorithms.discriminator_networks import *
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze2_expert/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze2_expert/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_seed0", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_test", help="log path")
     parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     expert_actor_pathes = [expert_actor_path + f'-{i}.pth' for i in range(num_agent)]
     ppo_policies = []
     for i in range(num_agent):
-        agent =  Agent(num_obs, num_acs, use_horizon=True).to(device)
+        agent =  Agent(num_obs, num_acs).to(device)
         actor_model = agent.actor
         filepath = os.path.join(expert_actor_pathes[i])
         print("load actor model from", filepath)

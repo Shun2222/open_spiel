@@ -32,10 +32,21 @@ class MultiTypeAIRL(object):
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
+        mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
+        for k,v in merge_dist.distribution.items():
+            if "mu" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                t = int(tt[1].split('=')[1].split('_')[0])
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                mu_dists[pop][t,y,x] = v
+        self._mu_dists = mu_dists
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        obs_xym_size = self._nobs -1 - self._horizon + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        self._state_size = state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_xym_size = state_size + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
         inputs = get_input_shape(disc_type, env, self._num_agent)
         if use_ppo_value:
@@ -68,9 +79,9 @@ class MultiTypeAIRL(object):
                         = self._generator[i].rollout(self._envs[i], batch_step)
                     rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
                     mus.append(mu_pth)
-                merge_mu = []
-                for step in range(len(mus[0])):
-                    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
+                #merge_mu = []
+                #for step in range(len(mus[0])):
+                #    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -93,8 +104,12 @@ class MultiTypeAIRL(object):
 
                     obs_mu = []
                     for step in range(batch_step):
-                        obs_list = list(obs[step][:-1])
-                        obs_mu.append(obs_list + list(merge_mu[step]))
+                        obs_list = list(obs[step])
+                        x = np.argmax(obs[step][:self._size])
+                        y = np.argmax(obs[step][self._size:2*self._size])
+                        t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
+                        mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
+                        obs_mu.append(obs_list + mu)
                     obs_mu = np.array(obs_mu)
 
                     nobs = obs_mu.copy()
@@ -314,6 +329,18 @@ class MultiTypeAIRL(object):
                 logger.record_tabular(f"nashc_ppo{i}", nashc_ppo)
                 nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=False, population=i)
                 logger.record_tabular(f"nashc_expert{i}", nashc_expert)
+
+            mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
+            for k,v in merge_dist.distribution.items():
+                if "mu" in k:
+                    tt = k.split(",")
+                    pop = int(tt[0][-1])
+                    t = int(tt[1].split('=')[1].split('_')[0])
+                    xy = tt[2].split(" ")
+                    x = int(xy[1].split("[")[-1])
+                    y = int(xy[2].split("]")[0])
+                    mu_dists[pop][t,y,x] = v
+            self._mu_dists = mu_dists
             logger.dump_tabular()
             num_update_iter += 1
 
