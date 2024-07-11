@@ -38,7 +38,6 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg.games.predator_prey import * 
 from open_spiel.python.mfg import value
-from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 from open_spiel.python.mfg.algorithms.discriminator_networks import * 
 from gif_maker import *
 
@@ -107,7 +106,7 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
     return rewards, output_rewards
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, save=False, filename="agent_dist"):
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, save=False, filename="agent_dist"):
     from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
@@ -124,27 +123,70 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                 elif notmu:
                     obs_input = inputs[f"{x}-{y}-{t}"]
                     obs_input = np.array([obs_input for _ in range(nacs)])
+                elif basicfuncs_time:
+                    from games.predator_prey import goal_distance
+                    obs_input = inputs[f"{x}-{y}-{t}-m"]
+                    x2, y2, t2, mu = divide_obs(np.array(obs_input), size, one_vec=True)
+                    obs_t = np.array([obs_input[2*size:-4]])
+                    dx, dy = goal_distance(x2, y2, pop)
+                    dxy = np.concatenate([dx, dy, obs_t], axis=1)
+                    mu = np.concatenate([mu, obs_t], axis=1)
+                    dxy = np.array([dxy[0] for _ in range(nacs)])
+                    mu = np.array([mu[0] for _ in range(nacs)])
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                elif basicfuncs:
+                    from games.predator_prey import goal_distance
+                    obs_input = inputs[f"{x}-{y}-{t}-m"]
+                    x2, y2, t2, mu = divide_obs(np.array(obs_input), size, one_vec=True)
+                    dx, dy = goal_distance(x2, y2, pop)
+                    dxy = np.concatenate([dx, dy], axis=1)
+                    dxy = np.array([dxy[0] for _ in range(nacs)])
+                    mu = np.array([mu[0] for _ in range(nacs)])
+                    obs_input = np.array([obs_input for _ in range(nacs)])
+                    
                 else:
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
                     obs_input = np.array([obs_input for _ in range(nacs)])
-                
-                reward = discriminator.get_reward(
-                    torch.from_numpy(obs_input).to(torch.float32),
-                    torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
-                    None, None,
-                    discrim_score=False,
-                    ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                if basicfuncs:
+                    reward, dist_rew, mu_rew = discriminator.get_reward(
+                        torch.from_numpy(dxy),
+                        torch.from_numpy(mu),
+                        torch.from_numpy(obs_input).to(torch.float32),
+                        torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
+                        None, None,
+                        discrim_score=False,
+                        only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                else:
+                    reward = discriminator.get_reward(
+                        torch.from_numpy(obs_input).to(torch.float32),
+                        torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
+                        None, None,
+                        discrim_score=False,
+                        ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                 for a in range(nacs):
                     rewards[t, y, x, a] = reward[a]
+                    if basicfuncs:
+                        dist_rewards[t, y, x, a] = dist_rew[a]
+                        mu_rewards[t, y, x, a] = mu_rew[a]
+
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
         path = filename + f'-all-action.gif' 
-        print(np.array(datas).shape)
         multi_render(datas, path, action_str, use_kde=False)
-        return rewards
+        if basicfuncs:
+            dist_datas = [dist_rewards[:, :, :, a] for a in range(nacs)]
+            mu_datas = [mu_rewards[:, :, :, a] for a in range(nacs)]
 
+            path = filename + f'-all-action-dist.gif' 
+            multi_render(dist_datas, path, action_str, use_kde=False)
+            path = filename + f'-all-action-mu.gif' 
+            multi_render(mu_datas, path, action_str, use_kde=False)
+    if basicfuncs:
+        return rewards, dist_rewards, mu_rewards
+    else:
+        return rewards
 
 def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
     inputs = {}
@@ -182,6 +224,7 @@ def parse_args():
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
     parser.add_argument("--basicfuncs", action='store_true')
+    parser.add_argument("--basicfuncs_time", action='store_true')
     
     args = parser.parse_args()
     return args
@@ -192,6 +235,7 @@ if __name__ == "__main__":
     single = args.single
     notmu = args.notmu
     basicfuncs = args.basicfuncs
+    basicfuncs_time = args.basicfuncs_time
 
     if basicfuncs:
         from open_spiel.python.mfg.algorithms.discriminator_basicfuncs_dxdy import Discriminator 
@@ -260,6 +304,8 @@ if __name__ == "__main__":
             discriminator = Discriminator(nobs+1, nacs, False, device)
         elif notmu:
             discriminator = Discriminator(nobs, nacs, False, device)
+        elif basicfuncs:
+            discriminator = Discriminator(2, num_agent, nobs-40-1+nacs, nacs, False, device)
         elif basicfuncs_time:
             discriminator = Discriminator(num_agent, 2, nobs+num_agent, nacs, False, device)
         else:
