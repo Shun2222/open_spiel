@@ -94,7 +94,7 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-networks_test2",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-test3",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -110,7 +110,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu-test2",
+                "MF-AITL_dxy_mu-test3",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -178,10 +178,10 @@ if __name__ == "__main__":
         is_nets = is_networks(pathnames[p]) 
         if is_nets:
             net_input = get_net_input(pathnames[p])
+            net_labels = net_labels(net_input)
+            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
-        elif is_nets:
-            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -269,7 +269,10 @@ if __name__ == "__main__":
                 num_hidden = get_num_hidden(pathnames[p])
                 print(num_hidden)
                 #discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden, ppo_value_net=critic_models[i])
-                discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                if len(labels)==2:
+                    discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                if len(labels)==3:
+                    discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')

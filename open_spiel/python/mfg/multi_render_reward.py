@@ -45,7 +45,6 @@ plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
-    from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_nets = discriminator.get_num_nets()
