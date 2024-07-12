@@ -94,7 +94,7 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0708/multi_maze2_dxy_mu_seed0",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-networks_test2",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -110,7 +110,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu_seed0",
+                "MF-AITL_dxy_mu-test2",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
