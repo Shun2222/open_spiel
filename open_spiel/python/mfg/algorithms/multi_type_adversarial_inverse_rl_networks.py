@@ -251,7 +251,7 @@ class MultiTypeAIRL(object):
                         inputs = [torch.from_numpy(d_dxy), 
                                   torch.from_numpy(d_mu),
                                   torch.from_numpy(d_acs),]
-                        input1 = torch.from_numpy(d_xy)
+                        input1 = torch.from_numpy(d_dxy)
                         input2 = torch.from_numpy(d_mu)
                         input3 = torch.from_numpy(d_acs)
                     elif self._disc_type=='dxya_mu':
@@ -263,7 +263,7 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_dxya), 
                                   torch.from_numpy(d_mu),]
-                        input1 = torch.from_numpy(d_xya)
+                        input1 = torch.from_numpy(d_dxya)
                         input2 = torch.from_numpy(d_mu)
                     elif self._disc_type=='dxy_mua':
                         g_mua = np.concatenate([g_mu, g_actions[0]], axis=1)
@@ -274,7 +274,7 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_dxy), 
                                   torch.from_numpy(d_mua),]
-                        input1 = torch.from_numpy(d_xy)
+                        input1 = torch.from_numpy(d_dxy)
                         input2 = torch.from_numpy(d_mua)
                     elif self._disc_type=='s_mu':
                         d_state = np.concatenate([g_state, e_state], axis=0)

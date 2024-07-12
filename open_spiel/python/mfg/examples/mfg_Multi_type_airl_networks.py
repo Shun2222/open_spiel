@@ -43,8 +43,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-test3", help="log path")
-    parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_a-test3", help="log path")
+    parser.add_argument("--net_input", type=str, default="dxy_mu_a", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
 
