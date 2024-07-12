@@ -533,8 +533,8 @@ class Discriminator_2nets(nn.Module):
         ).to(self._device)
 
         # Define layers for value function network
-        self.value_net1 = create_net(input_shape[0], num_hidden).to(self._device)
-        self.value_net2 = create_net(input_shape[1], num_hidden).to(self._device)
+        self.value_net1 = create_net(input_shapes[0], num_hidden).to(self._device)
+        self.value_net2 = create_net(input_shapes[1], num_hidden).to(self._device)
         self.value_next_net1 = self.value_net1
         self.value_next_net2 = self.value_net2
 
@@ -702,9 +702,9 @@ class Discriminator_2nets(nn.Module):
 
         fname = osp.join(path, "disc_reward"+filename+".pth")
         self.reward_net.load_state_dict(torch.load(fname))
-        fname = osp.join(path, "disc_value_"+f"{self.labels[0]}+filename+".pth")
+        fname = osp.join(path, "disc_value_"+f"{self.labels[0]}"+filename+".pth")
         self.value_net1.load_state_dict(torch.load(fname))
-        fname = osp.join(path, "disc_value_"+f"{self.labels[1]}+filename+".pth")
+        fname = osp.join(path, "disc_value_"+f"{self.labels[1]}"+filename+".pth")
         self.value_net2.load_state_dict(torch.load(fname))
         if use_eval:
             # if you want to erase noise of output, you should do use_eval=True
@@ -730,9 +730,11 @@ class Discriminator_2nets(nn.Module):
     def savefig_weights(self, path):
         net = self.reward_net
         weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy()).reshape(1, self.n_networks)[0]
-        bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].numpy()).reshape(1, 1)[0]
-        data = list(weights)+list(bias)
-        label = self.labels + ['bias']
+        #bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].numpy()).reshape(1, 1)[0]
+        #data = list(weights)+list(bias)
+        data = list(weights)
+        #label = self.labels + ['bias']
+        label = self.labels
         plt.figure()
         plt.title('Weights')
         plt.bar(label, data)

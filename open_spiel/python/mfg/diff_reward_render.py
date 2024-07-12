@@ -35,7 +35,7 @@ from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
-from open_spiel.python.mfg.multi_render_reward import multi_render_reward, multi_render_reward_nets 
+from open_spiel.python.mfg.multi_render_reward import * 
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from diff_utils import *
@@ -94,7 +94,7 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_a-test4",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -110,7 +110,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu_a-test4",
+                "MF-AITL_dxy_mu-divided_value",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -137,7 +137,7 @@ actor_filename = 'actor'
 if __name__ == "__main__":
     args = parse_args()
 
-    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+    from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename
@@ -145,10 +145,6 @@ if __name__ == "__main__":
             fpath = osp.join(target_path, fname)
             assert osp.isfile(fpath), f'isFileError: {fpath}'
 
-            fname = value_filename
-            fname = fname + f'{update_infos[ip]}-{i}.pth' 
-            fpath = osp.join(target_path, fname)
-            assert osp.isfile(fpath), f'isFileError: {fpath}'
 
             fname = actor_filename
             fname = fname + f'{update_infos[ip]}-{i}.pth' 
@@ -158,12 +154,29 @@ if __name__ == "__main__":
             net_input = get_net_input(pathnames[ip])
             if net_input:
                 net_labels = get_net_labels(net_input)
-                for label in net_labels:
-                    fname = f'disc_{label}'
+                if is_divided_value(pathnames[ip]):
+                    for label in net_labels:
+                        fname = f'disc_{label}'
+                        fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                        fpath = osp.join(target_path, fname)
+                        print(f'checked {fpath}')
+                        assert osp.isfile(fpath), f'isFileError: {fpath}'
+
+                        fname = value_filename
+                        fname = fname + f"_{label}" + f'{update_infos[ip]}-{i}.pth' 
+                        fpath = osp.join(target_path, fname)
+                        assert osp.isfile(fpath), f'isFileError: {fpath}'
+                else:
+                    fname = value_filename
                     fname = fname + f'{update_infos[ip]}-{i}.pth' 
                     fpath = osp.join(target_path, fname)
-                    print(f'checked {fpath}')
                     assert osp.isfile(fpath), f'isFileError: {fpath}'
+                    for label in net_labels:
+                        fname = f'disc_{label}'
+                        fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                        fpath = osp.join(target_path, fname)
+                        print(f'checked {fpath}')
+                        assert osp.isfile(fpath), f'isFileError: {fpath}'
     print(f'Checked path: OK')
 
 
@@ -179,7 +192,8 @@ if __name__ == "__main__":
         if is_nets:
             net_input = get_net_input(pathnames[p])
             net_labels = net_labels(net_input)
-            if is_divided_value(pathnames[p]):
+            is_divided = is_divided_value(pathnames[p])
+            if is_divided:
                 from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
             else:
                 from open_spiel.python.mfg.algorithms.discriminator_networks import * 
@@ -318,7 +332,10 @@ if __name__ == "__main__":
             outs = [[] for _ in range(n_nets)]
         for i in range(num_agent):
             if is_nets:
-                rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                if is_divided:
+                    rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                else:
+                    rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:

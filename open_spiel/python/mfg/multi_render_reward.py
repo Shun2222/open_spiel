@@ -44,6 +44,65 @@ from gif_maker import *
 plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
+def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
+
+    # this functions is used to generate an animated video of the distribuiton propagating throught the game 
+    num_nets = discriminator.get_num_nets()
+    labels = discriminator.get_net_labels()
+    rewards = np.zeros((horizon, size, size, nacs))
+    values = np.zeros((horizon, size, size))
+    output_rewards = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
+
+    for t in range(horizon):
+        for x in range(size):
+            for y in range(size):
+                #obs_input = inputs[f"{x}-{y}-{t}-{0}-m"]
+                #value = discriminator.get_value(obs_input)
+                #values[t, y, x] = value 
+                for a in range(nacs):
+                    rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
+
+                    reward, outputs = discriminator.get_reward(
+                        rew_input,
+                        discrim_score=False,
+                        only_rew=False,
+                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                    rewards[t, y, x, a] = reward
+                    for i in range(num_nets):
+                        print(f'output{i} shape: {outputs[i].shape}')
+                        output_rewards[i][t, y, x, a] = outputs[i]
+    if save:
+        datas = [rewards[:, :, :, a] for a in range(nacs)]
+        action_str = ["stop", "right", "down", "up", "left"]
+        path = filename + f'-all-action.gif' 
+        print(np.array(datas).shape)
+        multi_render(datas, path, action_str, use_kde=False)
+        print(f'Saved in {path}')
+
+        #path = filename + f'-values.gif' 
+        #multi_render([values], path, ['value'], use_kde=False)
+        print(f'Saved in {path}')
+        for i in range(num_nets):
+            action_str = ["stop", "right", "down", "up", "left"]
+            if labels[i]!='act':
+                datas = [output_rewards[i][:, :, :, a] for a in range(nacs)]
+                path = filename + f'-all-action-{labels[i]}.gif' 
+                print(np.array(datas).shape)
+                multi_render(np.array(datas), path, action_str, use_kde=False)
+            else:
+                datas = np.array([output_rewards[i][0, 0, 0, a] for a in range(nacs)])
+                datas = datas.reshape(1, nacs)
+                plt.figure(figsize=(24, 18))
+                plt.bar(action_str, datas[0])
+                path = filename + f'-all-action-{labels[i]}.png' 
+                plt.savefig(path)
+                plt.close()
+                print(f'Saved as {path}')
+
+
+    return rewards, output_rewards
+
 def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
