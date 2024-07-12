@@ -200,9 +200,12 @@ class MultiTypeMFGPPO(object):
         all_rew = [] 
         all_rew2 = {} 
         ret = []
+        weight_lower = -1  
+        weight_upper = 10
+        weight_step = 1.0
         if self._is_nets:
             n_nets = self._discriminator.get_num_nets()
-            vs = np.arange(-10, 11, 1)
+            vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
             combinations = np.vstack([grid.ravel() for grid in grids]).T
             for rate in combinations:
@@ -235,10 +238,15 @@ class MultiTypeMFGPPO(object):
                 mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
                 all_mu.append(mus[self._player_id])
                 obs_mu = np.array(obs_list+mus)
+                nobs = obs_mu.copy()
+                nobs[:-1] = obs_mu[1:]
+                nobs[-1] = obs_mu[0]
+                obs_next_mu = nobs
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
                 inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
+                inputs_next, _, _ = create_disc_input(self._size, self._net_input, [obs_next_mu], acs, self._player_id)
 
                 if self._is_nets:
                     if self._is_divided:
@@ -258,6 +266,7 @@ class MultiTypeMFGPPO(object):
                         if self._is_divided:
                             rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
                                 inputs,
+                                inputs_next,
                                 rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         else:
                             rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
@@ -373,19 +382,34 @@ class MultiTypeMFGPPO(object):
 
         save_dir = logger.get_dir()
         size = 1
-        plt.scatter(xs, ys, size, cos_sims)
+
         plt.title('cos sim')
-        plt.savefig(osp.join(save_dir, 'cos_sim_{weight_lower}-{weight_upper}.png'))
+        plt.scatter(xs, ys, size, cos_sims)
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
 
         plt.title('spearmanr')
         plt.scatter(xs, ys, size, spearmanrs)
-        plt.savefig(osp.join(save_dir, 'spearmanr_{weight_lower}-{weight_upper}.png'))
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
 
         plt.title('kl divergense')
-        plt.scatter(xs, ys, size, kl_divs)
-        plt.savefig(osp.join(save_dir, 'kl_div_{weight_lower}-{weight_upper}.png'))
+        plt.scatter(xs, ys, size, kl_divs, cmap='seismic')
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'kl_div_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
 
-        print(f'dumped sampled state pkl agent{self._player_id}')
+        pkl.dump(cos_sims_dic, open(osp.join(save_dir, f'cos_sim_dic_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        pkl.dump(spearmanrs_dic, open(osp.join(save_dir, f'spearmanr_dic_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        pkl.dump(kl_divs_dic, open(osp.join(save_dir, f'kl_div_dic_dic_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        pkl.dump(cos_sims, open(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        pkl.dump(spearmanrs, open(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        pkl.dump(kl_divs, open(osp.join(save_dir, f'kl_div_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        print(f'Saved sampled state pkl agent{self._player_id}')
+        input(f'program is completed. please close program with ctrl+c forcely')
+        
 
 
 
@@ -556,8 +580,8 @@ def parse_args():
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
-    parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
+    parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_weigted_test", help="logdir")
@@ -590,14 +614,13 @@ if __name__ == "__main__":
     if is_nets:
         if not is_divided:
             from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
-    else:
-        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-        rew_index = -1
-    else:
         net_input = get_net_input(args.path)
         label = get_net_labels(net_input)
         assert len(label)>=args.rew_index, 'rew_index is wrong'
         rew_index = args.rew_index
+    else:
+        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+        rew_index = -1
 
     # Set the seed 
     seed = args.seed
@@ -652,7 +675,10 @@ if __name__ == "__main__":
         elif is_nets:
             inputs = get_input_shape(net_input, env, num_agent)
             labels = get_net_labels(net_input)
-            discriminator = Discriminator(inputs, obs_xym_size, labels, device)
+            if len(labels)==2:
+                discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device)
+            elif len(labels)==3:
+                discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device)
         else:
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
         reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
@@ -684,7 +710,6 @@ if __name__ == "__main__":
                 logger.record_tabular(f"total_loss {i}", v_loss.item())
                 exp_ret[i].append(np.mean(ret))
                 #print(f'Exp. ret{i} {np.mean(ret)}')
-            input('input here')
 
         mfg_dists = []
         for i in range(num_agent):
