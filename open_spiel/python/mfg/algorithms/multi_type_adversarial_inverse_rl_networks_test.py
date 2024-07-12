@@ -13,7 +13,7 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+from open_spiel.python.mfg.algorithms.discriminator_networks_test import * 
 from games.predator_prey import goal_distance, divide_obs
 
 
@@ -32,6 +32,7 @@ class MultiTypeAIRL(object):
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
+
         mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
         for k,v in merge_dist.distribution.items():
             if "mu" in k:
@@ -49,21 +50,10 @@ class MultiTypeAIRL(object):
         obs_xym_size = state_size + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
         inputs = get_input_shape(disc_type, env, self._num_agent)
-        self._n_networks = len(inputs)
         if use_ppo_value:
-            if len(inputs)==2:
-                self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
-            elif len(inputs)==3:
-                self._discriminator = [Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
-            else:
-                assert False, 'Unknown number of nets'
+            self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
         else:
-            if len(inputs)==2:
-                self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
-            elif len(inputs)==3:
-                self._discriminator = [Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
-            else:
-                assert False, 'Unknown number of nets'
+            self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 
@@ -218,9 +208,6 @@ class MultiTypeAIRL(object):
                         inputs = [torch.from_numpy(d_state), 
                                   torch.from_numpy(d_mu), 
                                   torch.from_numpy(d_acs)]
-                        input1 = torch.from_numpy(d_state)
-                        input2 = torch.from_numpy(d_mu)
-                        input3 = torch.from_numpy(d_acs)
                     elif self._disc_type=='sa_mu':
                         g_state_a = np.concatenate([g_state, g_actions[0]], axis=1)
                         e_state_a = np.concatenate([e_state, e_actions[0]], axis=1)
@@ -230,8 +217,6 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_state_a), 
                                   torch.from_numpy(d_mu)]
-                        input1 = torch.from_numpy(d_state_a)
-                        input2 = torch.from_numpy(d_mu)
                     elif self._disc_type=='s_mua':
                         g_mua = np.concatenate([g_mu, g_actions[0]], axis=1)
                         e_mua = np.concatenate([e_mu, e_actions[0]], axis=1)
@@ -241,8 +226,6 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_state), 
                                   torch.from_numpy(d_mua)]
-                        input1 = torch.from_numpy(d_state)
-                        input2 = torch.from_numpy(d_mua)
                     elif self._disc_type=='dxy_mu_a':
                         d_dxy = np.concatenate([g_dxy, e_dxy], axis=0)
                         d_mu = np.concatenate([g_mu, e_mu], axis=0)
@@ -251,9 +234,6 @@ class MultiTypeAIRL(object):
                         inputs = [torch.from_numpy(d_dxy), 
                                   torch.from_numpy(d_mu),
                                   torch.from_numpy(d_acs),]
-                        input1 = torch.from_numpy(d_xy)
-                        input2 = torch.from_numpy(d_mu)
-                        input3 = torch.from_numpy(d_acs)
                     elif self._disc_type=='dxya_mu':
                         g_dxya = np.concatenate([g_dxy, g_actions[0]], axis=1)
                         e_dxya = np.concatenate([e_dxy, e_actions[0]], axis=1)
@@ -263,8 +243,6 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_dxya), 
                                   torch.from_numpy(d_mu),]
-                        input1 = torch.from_numpy(d_xya)
-                        input2 = torch.from_numpy(d_mu)
                     elif self._disc_type=='dxy_mua':
                         g_mua = np.concatenate([g_mu, g_actions[0]], axis=1)
                         e_mua = np.concatenate([e_mu, e_actions[0]], axis=1)
@@ -274,16 +252,12 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_dxy), 
                                   torch.from_numpy(d_mua),]
-                        input1 = torch.from_numpy(d_xy)
-                        input2 = torch.from_numpy(d_mua)
                     elif self._disc_type=='s_mu':
                         d_state = np.concatenate([g_state, e_state], axis=0)
                         d_mu = np.concatenate([g_mu, e_mu], axis=0)
 
                         inputs = [torch.from_numpy(d_state), 
                                   torch.from_numpy(d_mu)]
-                        input1 = torch.from_numpy(d_state)
-                        input2 = torch.from_numpy(d_mu)
                     elif self._disc_type=='dxy_mu':
                         d_dxy = np.concatenate([g_dxy, e_dxy], axis=0)
                         #d_dxy_onehot = np.concatenate([g_dxy_onehot, e_dxy_onehot], axis=0)
@@ -292,8 +266,8 @@ class MultiTypeAIRL(object):
 
                         inputs = [torch.from_numpy(d_dxy), 
                                   torch.from_numpy(d_mu)]
-                        input1 = torch.from_numpy(d_dxy)
-                        input2 = torch.from_numpy(d_mu)
+                        d_dxy = torch.from_numpy(d_dxy)
+                        d_mu = torch.from_numpy(d_mu)
                                   
                                   
 
@@ -311,29 +285,15 @@ class MultiTypeAIRL(object):
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
-                    if self._n_networks==2:
-                        total_loss = self._discriminator[idx].train(
-                            input1, 
-                            input2, 
-                            self._optimizers[idx],
-                            torch.from_numpy(d_obs_xym).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_nobs_xym).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                        )
-                    elif self._n_networks==3:
-                        total_loss = self._discriminator[idx].train(
-                            input1, 
-                            input2, 
-                            input3, 
-                            self._optimizers[idx],
-                            torch.from_numpy(d_obs_xym).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_nobs_xym).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                        )
-                    else:
-                        assert False, 'Unknown number of networks'
+                    total_loss = self._discriminator[idx].train(
+                        d_dxy, 
+                        d_mu,
+                        self._optimizers[idx],
+                        torch.from_numpy(d_obs_xym).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_nobs_xym).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                        torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                    )
 
                     pear = ""
                     spear = ""

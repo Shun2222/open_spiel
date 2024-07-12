@@ -34,11 +34,10 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
-from open_spiel.python.mfg.algorithms.mfg_ppo import *
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.multi_render_reward import multi_render_reward, multi_render_reward_nets 
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
-from open_spiel.python.mfg.algorithms.mfg_ppo import Agent, PPOpolicy
 from diff_utils import *
 from gif_maker import *
 
@@ -95,8 +94,7 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a_4e5steps",
-            "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a_4e5steps",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-networks_test2",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -112,9 +110,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_s_mu_a_4e5steps",
-                "MF-AITL_dxy_mu_a_4e5steps",
-                "MF-AITL",
+                "MF-AITL_dxy_mu-test2",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -123,15 +119,7 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "400_4",
-                "400_4",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
-                "200_2",
+                "200_1",
               ]
 
 is_single = [False, False, False, False, False, False, False, False, False]
@@ -145,18 +133,11 @@ value_filename = 'disc_value'
 distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
-nets_dict = { 
-                's_mu_a': ['state', 'mu', 'act'],
-                'sa_mu': ['state_a', 'mu'],
-                's_mua': ['state', 'mu_a'],
-                'dxy_mu_a': ['dxy', 'mu', 'act'],
-                'dxya_mu': ['dxy_a', 'mu'],
-                'dxy_mua': ['dxy', 'mu_a'],
-            }
 
 if __name__ == "__main__":
     args = parse_args()
 
+    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename
@@ -174,14 +155,15 @@ if __name__ == "__main__":
             fpath = osp.join(target_path, fname)
             assert osp.isfile(fpath), f'isFileError: {fpath}'
 
-            for key in nets_dict.keys():
-                if key in pathnames[ip]:
-                    for label in nets_dict[key]:
-                        fname = f'disc_{label}'
-                        fname = fname + f'{update_infos[ip]}-{i}.pth' 
-                        fpath = osp.join(target_path, fname)
-                        print(f'checked {fpath}')
-                        assert osp.isfile(fpath), f'isFileError: {fpath}'
+            net_input = get_net_input(pathnames[ip])
+            if net_input:
+                net_labels = get_net_labels(net_input)
+                for label in net_labels:
+                    fname = f'disc_{label}'
+                    fname = fname + f'{update_infos[ip]}-{i}.pth' 
+                    fpath = osp.join(target_path, fname)
+                    print(f'checked {fpath}')
+                    assert osp.isfile(fpath), f'isFileError: {fpath}'
     print(f'Checked path: OK')
 
 
@@ -196,11 +178,10 @@ if __name__ == "__main__":
         is_nets = is_networks(pathnames[p]) 
         if is_nets:
             net_input = get_net_input(pathnames[p])
-
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
         elif is_nets:
-            from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
+            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
@@ -247,12 +228,14 @@ if __name__ == "__main__":
 
         agents = []
         actor_models = []
+        critic_models = []
         ppo_policies = []
         mfg_dists = []
         discriminators = []
         for i in range(num_agent):
             agent = Agent(nobs, nacs).to(device)
             actor_model = agent.actor
+            critic_model = agent.critic
 
             fname = copy.deepcopy(actor_filename+update_eps_info)
             fname = fname + f'-{i}.pth' 
@@ -261,8 +244,16 @@ if __name__ == "__main__":
             actor_model.eval()
             print("load actor model from", actor_path)
 
+            fname = copy.deepcopy('critic'+update_eps_info)
+            fname = fname + f'-{i}.pth' 
+            critic_path = osp.join(pathes[p], fname)
+            critic_model.load_state_dict(torch.load(critic_path))
+            critic_model.eval()
+            print("load critic model from", critic_path)
+
             agents.append(agent)
             actor_models.append(actor_model)
+            critic_models.append(critic_model)
 
             ppo_policies.append(PPOpolicy(game, agent, None, device))
             mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
@@ -275,7 +266,10 @@ if __name__ == "__main__":
             elif is_nets:
                 inputs = get_input_shape(net_input, env, num_agent)
                 labels = get_net_labels(net_input)
-                discriminator = Discriminator(inputs, obs_xym_size, labels, device)
+                num_hidden = get_num_hidden(pathnames[p])
+                print(num_hidden)
+                #discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden, ppo_value_net=critic_models[i])
+                discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')

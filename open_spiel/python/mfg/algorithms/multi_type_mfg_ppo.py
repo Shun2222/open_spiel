@@ -74,10 +74,12 @@ class NashC(NashConv):
             root_state=root_state)
 
 class Agent(nn.Module):
-    def __init__(self, info_state_size, num_actions):
+    def __init__(self, info_state_size, num_actions, use_horizon=False):
         super(Agent, self).__init__()
         self.num_actions = num_actions
-        self.info_state_size = info_state_size
+        if not use_horizon:
+            info_state_size -= 40
+        self.info_state_size = info_state_size 
         self.critic = nn.Sequential(
             layer_init(nn.Linear(info_state_size, 128)), 
             nn.Tanh(),
@@ -138,8 +140,9 @@ class PPOpolicy(policy_std.Policy):
     def action_probabilities(self, state, player_id=None):
         # main method that is called to update the population states distribution
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
+        obs_input_pth = torch.Tensor(list(obs[0:20]) + [obs[-1]])
         legal_actions = state.legal_actions()
-        logits = self.agent.actor(obs).detach().cpu()
+        logits = self.agent.actor(obs_input_pth).detach().cpu()
         legat_logits = np.array([logits[action] for action in legal_actions])
         probs = np.exp(legat_logits -legat_logits.max())
         probs /= probs.sum(axis=0)
@@ -156,6 +159,8 @@ class MultiTypeMFGPPO(object):
         self._num_agent = game.num_players()
         self._player_id = player_id
 
+        self._info_state_size = info_state_size
+        self._horizon = env.game.get_parameters()['horizon']
         self._eps_agent = Agent(info_state_size,num_actions).to(self._device) 
         self._ppo_policy = PPOpolicy(game, self._eps_agent, None, self._device) 
         self._iter_agent = Agent(info_state_size,num_actions).to(self._device)
@@ -171,7 +176,7 @@ class MultiTypeMFGPPO(object):
 
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
-        info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
+        info_state = torch.zeros((nsteps,self._info_state_size), device=self._device)
         actions = torch.zeros((nsteps,), device=self._device)
         logprobs = torch.zeros((nsteps,), device=self._device)
         rewards = torch.zeros((nsteps,), device=self._device)
@@ -191,10 +196,11 @@ class MultiTypeMFGPPO(object):
             while not time_step.last():
                 obs = time_step.observations["info_state"][self._player_id]
                 obs_pth = torch.Tensor(obs).to(self._device)
+                obs_input_pth = torch.Tensor(obs[0:2*size] + [obs[-1]])
                 info_state[step] = obs_pth
                 with torch.no_grad():
-                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth)
-                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_pth)
+                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_input_pth)
+                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_input_pth)
 
                 time_step = env.step([action.item()])
 
@@ -263,6 +269,9 @@ class MultiTypeMFGPPO(object):
         mini_batch_size = batch_size // num_minibatch
         # get batch indices
         np.random.shuffle(b_inds)
+        obs = torch.Tensor(obs)
+
+        obs = torch.concat((obs[:, 0:20], obs[:, -1].reshape(len(obs), 1)), axis=1)
         for _ in range(update_epochs):
             for start in range(0, batch_size, mini_batch_size):
                 end = start + mini_batch_size
@@ -394,8 +403,8 @@ def parse_args():
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/multi_maze2", help="logdir")
+    parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert", help="logdir")
     
     args = parser.parse_args()
     return args

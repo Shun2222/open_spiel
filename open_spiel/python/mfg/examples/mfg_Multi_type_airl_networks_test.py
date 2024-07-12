@@ -35,22 +35,19 @@ from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
-
+from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_networks_test import MultiTypeAIRL
+from open_spiel.python.mfg.algorithms.discriminator_networks_test import * 
 
 def parse_args():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_airl_basicfuncs_dxdy_mu", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-networks_test2", help="log path")
+    parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
+    parser.add_argument("--num_hidden", type=int, default=1, help="log path")
+    parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
 
-    parser.add_argument("--dxdy_mu_input", action='store_true', help="cpu or cuda")
-    parser.add_argument("--dxdya_mu_input", action='store_true', help="cpu or cuda")
-    parser.add_argument("--dxdy_mua_input", action='store_true', help="cpu or cuda")
-    parser.add_argument("--dxdy_mu_a_input", action='store_true', help="cpu or cuda")
-    parser.add_argument("--s_mua_input", action='store_true', help="cpu or cuda")
-    parser.add_argument("--s_mu_a_input", action='store_true', help="cpu or cuda")
-    parser.add_argument("--time_input", action='store_true', help="cpu or cuda")
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument('--torch-deterministic', 
@@ -72,22 +69,6 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    if args.time_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_time import MultiTypeAIRL
-    elif args.dxdy_mu_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mu import MultiTypeAIRL
-    elif args.dxdya_mu_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdya_mu import MultiTypeAIRL
-    elif args.dxdy_mua_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mua import MultiTypeAIRL
-    elif args.dxdy_mu_a_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_dxdy_mu_a import MultiTypeAIRL
-    elif args.s_mua_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_s_mua import MultiTypeAIRL
-    elif args.s_mu_a_input:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs_s_mu_a import MultiTypeAIRL
-    else:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_basicfuncs import MultiTypeAIRL
 
     # Set the seed 
     seed = args.seed
@@ -107,6 +88,8 @@ if __name__ == "__main__":
     traj_limitation = args.traj_limitation
 
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
+    assert get_net_input(args.logdir)==args.net_input
+    print(f'Checked net input: OK')
 
     # Create the game instance 
     game = pyspiel.load_game('python_mfg_predator_prey')
@@ -151,7 +134,8 @@ if __name__ == "__main__":
         expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
         experts.append(expert)
         print(f'expert load from {fname}')
-    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies)
+    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
+
 
