@@ -610,16 +610,22 @@ class Discriminator_2nets(nn.Module):
 
         return reward2, p_tau, p_tau2 
 
-    def get_value(self, input1, input2):
+    def get_value(self, inputs, only_value=True, weighted_value=False):
         with torch.no_grad():
+            input1 = inputs[0]
+            input2 = inputs[1]
             value_fn1 = self.value_net1(input1)
             value_fn2 = self.value_net2(input2)
 
             ws = self.get_weights()
-            value = ws[0] * value_fn1 + ws[1] * value_fn2
-            return value 
+            value =  + ws[1] * value_fn2
+            if only_value:
+                return value 
+            elif weighted_value:
+                return value, [ws[0] * value_fn1, ws[1] * value_fn2]
+            else:
+                return value, [value_fn1, value_fn2]
 
-        return reward2, p_tau, p_tau2 
 
     def get_reward_weighted(self, inputs, rate=[0.1, 0.1], expert_prob=True):
         with torch.no_grad():
@@ -938,8 +944,11 @@ class Discriminator_3nets(nn.Module):
 
         return reward2, p_tau, p_tau2 
 
-    def get_value(self, input1, input2, input3):
+    def get_value(self, inputs):
         with torch.no_grad():
+            input1 = inputs[0]
+            input2 = inputs[1]
+            input3 = inputs[2]
             value_fn1 = self.value_net1(input1)
             value_fn2 = self.value_net2(input2)
             value_fn3 = self.value_net3(input3)

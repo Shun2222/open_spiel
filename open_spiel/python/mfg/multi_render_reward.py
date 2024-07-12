@@ -51,14 +51,17 @@ def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discrimi
     labels = discriminator.get_net_labels()
     rewards = np.zeros((horizon, size, size, nacs))
     values = np.zeros((horizon, size, size))
+    divided_values = [np.zeros((horizon, size, size)) for _ in range(num_nets)]
     output_rewards = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
 
     for t in range(horizon):
         for x in range(size):
             for y in range(size):
-                #obs_input = inputs[f"{x}-{y}-{t}-{0}-m"]
-                #value = discriminator.get_value(obs_input)
-                #values[t, y, x] = value 
+                obs_input = inputs[f"{x}-{y}-{t}-{0}-m"]
+                value, divided_value = discriminator.get_value(obs_input, only_value=False, weighted_value=True)
+                values[t, y, x] = value 
+                for i in range(num_nets):
+                    divided_values[i][t, y, x] = divided_value[i]
                 for a in range(nacs):
                     rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
 
@@ -80,10 +83,14 @@ def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discrimi
         multi_render(datas, path, action_str, use_kde=False)
         print(f'Saved in {path}')
 
-        #path = filename + f'-values.gif' 
-        #multi_render([values], path, ['value'], use_kde=False)
+        path = filename + f'-values.gif' 
+        multi_render([values], path, ['value'], use_kde=False)
         print(f'Saved in {path}')
         for i in range(num_nets):
+            path = filename + f'-{labels[i]}-values.gif' 
+            multi_render([divided_values[i]], path, [f'{labels[i]}-value'], use_kde=False)
+            print(f'Saved in {path}')
+
             action_str = ["stop", "right", "down", "up", "left"]
             if labels[i]!='act':
                 datas = [output_rewards[i][:, :, :, a] for a in range(nacs)]
