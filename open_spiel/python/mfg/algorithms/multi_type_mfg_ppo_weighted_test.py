@@ -155,7 +155,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_index=-1):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, is_divided=True, net_input=None, rew_index=-1):
         self._device = device
         self._rew_index = rew_index
 
@@ -171,6 +171,7 @@ class MultiTypeMFGPPO(object):
         self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
         self._discriminator = discriminator
         self._is_nets = is_nets
+        self._is_divided = is_divided
         self._net_input = net_input
 
         self._horizon = env.game.get_parameters()['horizon']
@@ -240,20 +241,31 @@ class MultiTypeMFGPPO(object):
                 inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
 
                 if self._is_nets:
-                    reward, outputs = self._discriminator.get_reward(
-                        inputs,
-                        torch.from_numpy(obs_xym).to(self._device),
-                        torch.from_numpy(obs_next_xym).to(self._device),
-                        None,
-                        discrim_score=False,
-                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                    for rate in combinations:
-                        rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                    if self._is_divided:
+                        reward, outputs = self._discriminator.get_reward(
+                            inputs,
+                            discrim_score=False,
+                            weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                    else:
+                        reward, outputs = self._discriminator.get_reward(
                             inputs,
                             torch.from_numpy(obs_xym).to(self._device),
                             torch.from_numpy(obs_next_xym).to(self._device),
                             None,
-                            rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                            discrim_score=False,
+                            weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                    for rate in combinations:
+                        if self._is_divided:
+                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                                inputs,
+                                rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        else:
+                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                                inputs,
+                                torch.from_numpy(obs_xym).to(self._device),
+                                torch.from_numpy(obs_next_xym).to(self._device),
+                                None,
+                                rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         rate_str = ''
                         for n in range(n_nets):
                             rate_str += f'{rate[n]} '
@@ -298,15 +310,29 @@ class MultiTypeMFGPPO(object):
         ret = np.array(ret)
         assert step==nsteps
 
-        cos_sims = {} 
-        spearmanrs = {}
-        kl_divs = {}
-        #euclids = {}
-        cos_sims_rews = {} 
-        spearmanrs_rews = {}
-        kl_divs_rews = {}
+        cos_sims_dic = {} 
+        spearmanrs_dic = {}
+        kl_divs_dic = {}
+        #euclids_dic = {}
+        cos_sims_rews_dic = {} 
+        spearmanrs_rews_dic = {}
+        kl_divs_rews_dic = {}
+        cos_sims = [] 
+        spearmanrs = []
+        kl_divs = []
+        #euclids = []
+        cos_sims_rews = [] 
+        spearmanrs_rews = []
+        kl_divs_rews = []
         rew = np.array(all_rew).flatten()
+        xs = []
+        ys = []
         for rate_str in all_p_tau.keys():
+            x = float(rate_str.split(' ')[0])
+            y = float(rate_str.split(' ')[1])
+            xs.append(x)
+            ys.append(y)
+
             p_tau = np.array(all_p_tau[rate_str])
             p_tau2 = np.array(all_p_tau2[rate_str])
             rew2 = np.array(all_rew2[rate_str])
@@ -320,13 +346,21 @@ class MultiTypeMFGPPO(object):
             kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
             #euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
 
-            cos_sims[rate_str] = cos_sim
-            spearmanrs[rate_str] = sp 
-            kl_divs[rate_str] = kl_div 
+            cos_sims_dic[rate_str] = cos_sim
+            spearmanrs_dic[rate_str] = sp 
+            kl_divs_dic[rate_str] = kl_div 
 
-            cos_sims_rews[rate_str] = cos_sim_rew
-            spearmanrs_rews[rate_str] = sp_rew
-            kl_divs_rews[rate_str] = kl_div_rew
+            cos_sims_rews_dic[rate_str] = cos_sim_rew
+            spearmanrs_rews_dic[rate_str] = sp_rew
+            kl_divs_rews_dic[rate_str] = kl_div_rew
+
+            cos_sims.append(cos_sim)
+            spearmanrs.append(sp)
+            kl_divs.append(kl_div)
+
+            cos_sims_rews.append(cos_sim_rew)
+            spearmanrs_rews.append(sp_rew)
+            kl_divs_rews.append(kl_div_rew)
 
             print(f'----------------------')
             print(f'rate: {rate_str}')
@@ -336,17 +370,21 @@ class MultiTypeMFGPPO(object):
             print(f'spearmanr(p,p2): {np.mean(sp)}')
             print(f'kl_div(p,p2): {np.mean(kl_div)}')
             #print(f'euclid(p,p2): {np.mean(euclid)}')
-        pkl.dump(all_p_tau, open(f'p_tau_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(all_p_tau2, open(f'p_tau2_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(cos_sims, open(f'cos_sims_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(spearmanrs, open(f'spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(kl_divs, open(f'kl_div_sampled-{self._player_id}.pkl', 'wb'))
 
-        pkl.dump(rew, open(f'rew_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(rew2, open(f'rew2_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(cos_sims_rews, open(f'rew_cos_sims_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(spearmanrs_rews, open(f'rew_spearmanrs_sampled-{self._player_id}.pkl', 'wb'))
-        pkl.dump(kl_divs_rews, open(f'rew_kl_div_sampled-{self._player_id}.pkl', 'wb'))
+        save_dir = logger.get_dir()
+        size = 1
+        plt.scatter(xs, ys, size, cos_sims)
+        plt.title('cos sim')
+        plt.savefig(osp.join(save_dir, 'cos_sim_{weight_lower}-{weight_upper}.png'))
+
+        plt.title('spearmanr')
+        plt.scatter(xs, ys, size, spearmanrs)
+        plt.savefig(osp.join(save_dir, 'spearmanr_{weight_lower}-{weight_upper}.png'))
+
+        plt.title('kl divergense')
+        plt.scatter(xs, ys, size, kl_divs)
+        plt.savefig(osp.join(save_dir, 'kl_div_{weight_lower}-{weight_upper}.png'))
+
         print(f'dumped sampled state pkl agent{self._player_id}')
 
 
@@ -521,10 +559,10 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_s_mua", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mua_diversity", help="logdir")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_weigted_test", help="logdir")
     parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
-    parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
+    parser.add_argument("--update_eps", type=str, default=r"200_1", help="file path")
 
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
@@ -545,10 +583,14 @@ if __name__ == "__main__":
     update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
-    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+    from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
     is_nets = is_networks(args.path)
     print(f'Is networks: {is_nets}')
-    if not is_nets:
+    is_divided = is_divided_value(args.path)
+    if is_nets:
+        if not is_divided:
+            from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
+    else:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
         rew_index = -1
     else:
@@ -615,6 +657,7 @@ if __name__ == "__main__":
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
         reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
         value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
+
         if is_nets:
             discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)
             discriminator.print_weights()
@@ -625,7 +668,7 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, is_divided=is_divided, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
