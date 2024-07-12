@@ -601,7 +601,8 @@ class Discriminator_2nets(nn.Module):
                 score = self.reward_net(rew_inputs.to(torch.float32))
         if weighted_rew:
             weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
-            outputs = [weights[i]*rew_inputs[i] for i in range(len(outputs))]
+            outputs = [output1, output2]
+            outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
             return score, outputs 
         elif only_rew:
             return score
@@ -907,7 +908,8 @@ class Discriminator_3nets(nn.Module):
                 score = self.reward_net(rew_inputs.to(torch.float32))
         if weighted_rew:
             weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
-            outputs = [weights[i]*rew_inputs[i] for i in range(len(outputs))]
+            outputs = [output1, output2, output3]
+            outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
             return score, outputs 
         elif only_rew:
             return score
