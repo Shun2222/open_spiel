@@ -229,7 +229,7 @@ class MultiTypeAIRL(object):
 
                     # expert obs next
                     e_nx, e_ny, e_nt, e_nmu = divide_obs(e_nobs[0], self._size, use_argmax=False)
-                    e_state = np.concatenate([e_nx, e_ny], axis=1)
+                    e_nstate = np.concatenate([e_nx, e_ny], axis=1)
                     e_mnx, e_mny, _, _ = divide_obs(e_nobs[0], self._size, use_argmax=True)
                     e_ndx, e_ndy = goal_distance(e_mnx, e_mny, idx)
                     e_ndxy = np.concatenate([e_ndx, e_ndy], axis=1)

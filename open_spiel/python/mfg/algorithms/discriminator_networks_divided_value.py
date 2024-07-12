@@ -549,10 +549,10 @@ class Discriminator_2nets(nn.Module):
         outputs = torch.cat((output1, output2), dim=1)
         reward = self.reward_net(outputs.to(torch.float32))
 
-        value_fn1 = self.value_net1(input1)
-        value_fn2 = self.value_net2(input2)
-        value_fn_next1 = self.value_next_net1(input1_next)
-        value_fn_next2 = self.value_next_net2(input2_next)
+        value_fn1 = self.value_net1(input1.to(torch.float32))
+        value_fn2 = self.value_net2(input2.to(torch.float32))
+        value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32))
+        value_fn_next2 = self.value_next_net2(input2_next.to(torch.float32))
 
         ws = self.get_weights()
         value_fn = ws[0] * value_fn1 + ws[1] * value_fn2
@@ -614,8 +614,8 @@ class Discriminator_2nets(nn.Module):
         with torch.no_grad():
             input1 = inputs[0]
             input2 = inputs[1]
-            value_fn1 = self.value_net1(input1)
-            value_fn2 = self.value_net2(input2)
+            value_fn1 = self.value_net1(input1.to(torch.float32))
+            value_fn2 = self.value_net2(input2.to(torch.float32))
 
             ws = self.get_weights()
             value =  + ws[1] * value_fn2
@@ -651,10 +651,10 @@ class Discriminator_2nets(nn.Module):
             p_tau = None
             p_tau2 = None
             if expert_prob:
-                value_fn1 = self.value_net1(input1)
-                value_fn2 = self.value_net2(input2)
-                value_fn_next1 = self.value_next_net1(input1_next)
-                value_fn_next2 = self.value_next_net2(input2_next)
+                value_fn1 = self.value_net1(input1.to(torch.float32))
+                value_fn2 = self.value_net2(input2.to(torch.float32))
+                value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32))
+                value_fn_next2 = self.value_next_net2(input2_next.to(torch.float32))
 
                 ws = self.get_weights()
                 value_fn = ws[0] * value_fn1 + ws[1] * value_fn2
@@ -877,9 +877,9 @@ class Discriminator_3nets(nn.Module):
         outputs = torch.cat((output1, output2, output3), dim=1)
         reward = self.reward_net(outputs.to(torch.float32))
 
-        value_fn1 = self.value_net1(input1)
-        value_fn2 = self.value_net2(input2)
-        value_fn3 = self.value_net3(input3)
+        value_fn1 = self.value_net1(input1.to(torch.float32))
+        value_fn2 = self.value_net2(input2.to(torch.float32))
+        value_fn3 = self.value_net3(input3.to(torch.float32))
         value_fn_next1 = self.value_next_net1(input1_next)
         value_fn_next2 = self.value_next_net2(input2_next)
         value_fn_next3 = self.value_next_net3(input3_next)
@@ -949,9 +949,9 @@ class Discriminator_3nets(nn.Module):
             input1 = inputs[0]
             input2 = inputs[1]
             input3 = inputs[2]
-            value_fn1 = self.value_net1(input1)
-            value_fn2 = self.value_net2(input2)
-            value_fn3 = self.value_net3(input3)
+            value_fn1 = self.value_net1(input1.to(torch.float32))
+            value_fn2 = self.value_net2(input2.to(torch.float32))
+            value_fn3 = self.value_net3(input3.to(torch.float32))
 
             ws = self.get_weights()
             value = ws[0] * value_fn1 + ws[1] * value_fn2 + ws[2] * value_fn3
@@ -987,9 +987,9 @@ class Discriminator_3nets(nn.Module):
             p_tau = None
             p_tau2 = None
             if expert_prob:
-                value_fn1 = self.value_net1(input1)
-                value_fn2 = self.value_net2(input2)
-                value_fn3 = self.value_net3(input3)
+                value_fn1 = self.value_net1(input1.to(torch.float32))
+                value_fn2 = self.value_net2(input2.to(torch.float32))
+                value_fn3 = self.value_net3(input3.to(torch.float32))
                 value_fn_next1 = self.value_next_net1(input1_next)
                 value_fn_next2 = self.value_next_net2(input2_next)
                 value_fn_next3 = self.value_next_net3(input3_next)
