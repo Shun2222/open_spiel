@@ -202,7 +202,7 @@ class MultiTypeMFGPPO(object):
         ret = []
         weight_lower = -1  
         weight_upper = 10
-        weight_step = 1.0
+        weight_step = 0.1
         if self._is_nets:
             n_nets = self._discriminator.get_num_nets()
             vs = np.arange(weight_lower, weight_upper, weight_step)
@@ -383,22 +383,46 @@ class MultiTypeMFGPPO(object):
         save_dir = logger.get_dir()
         size = 1
 
+        plt.figure()
         plt.title('cos sim')
         plt.scatter(xs, ys, size, cos_sims)
         plt.colorbar()
         plt.savefig(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}.png'))
         plt.close()
 
+        plt.figure()
         plt.title('spearmanr')
         plt.scatter(xs, ys, size, spearmanrs)
         plt.colorbar()
         plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}.png'))
         plt.close()
 
+        plt.figure()
         plt.title('kl divergense')
         plt.scatter(xs, ys, size, kl_divs, cmap='seismic')
         plt.colorbar()
         plt.savefig(osp.join(save_dir, f'kl_div_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('cos sim_rew')
+        plt.scatter(xs, ys, size, cos_sims_rews)
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'cos_sim_rew_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('spearmanr_rew')
+        plt.scatter(xs, ys, size, spearmanrs_rews)
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'spearmanr_rew_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('kl divergense rew')
+        plt.scatter(xs, ys, size, kl_divs_rews, cmap='seismic')
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'kl_div_rew_{weight_lower}-{weight_upper}-{weight_step}.png'))
         plt.close()
 
         pkl.dump(cos_sims_dic, open(osp.join(save_dir, f'cos_sim_dic_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
