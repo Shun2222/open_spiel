@@ -627,7 +627,31 @@ class Discriminator_2nets(nn.Module):
                 return value, [value_fn1, value_fn2]
 
 
-    def get_reward_weighted(self, inputs, inputs_next, rate=[0.1, 0.1], expert_prob=True):
+    def get_reward_weighted(self, inputs, rate=[0.1, 0.1]):
+        with torch.no_grad():
+            input1 = inputs[0]
+            input2 = inputs[1]
+            output1 = self.net1(input1.to(torch.float32)) 
+            if len(output1.shape)==1:
+                output1 = output1.reshape(1, 1)
+            output2 = self.net2(input2.to(torch.float32)) 
+            if len(output2.shape)==1:
+                output2 = output2.reshape(1, 1)
+            rew_inputs = torch.cat((output1, output2), dim=1)
+            reward = self.reward_net(rew_inputs.to(torch.float32)).numpy()
+
+            outputs = rew_inputs.numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            weights += weights*np.array(rate)
+
+            #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
+            #reward2 = outputs @ weights.T + bias
+            reward2 = torch.from_numpy(outputs @ weights.T )
+            outputs = torch.from_numpy(outputs)
+            return reward, reward2, outputs
+
+
+    def get_reward_weighted_with_probs(self, inputs, inputs_next, rate=[0.1, 0.1], expert_prob=True):
         with torch.no_grad():
             input1 = inputs[0]
             input2 = inputs[1]

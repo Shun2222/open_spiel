@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import seaborn as sns
 import numpy as np
+import random
 
 import torch
 import torch.nn as nn
@@ -79,12 +80,13 @@ class NashC(NashConv):
             self._distrib,
             value.TabularValueFunction(self._game),
             root_state=root_state)
-
 class Agent(nn.Module):
-    def __init__(self, info_state_size, num_actions):
+    def __init__(self, info_state_size, num_networks, num_actions, use_horizon=False):
         super(Agent, self).__init__()
         self.num_actions = num_actions
-        self.info_state_size = info_state_size
+        if not use_horizon:
+            info_state_size -= 40
+        self.info_state_size = info_state_size  + num_networks
         self.critic = nn.Sequential(
             layer_init(nn.Linear(info_state_size, 128)), 
             nn.Tanh(),
@@ -99,7 +101,6 @@ class Agent(nn.Module):
             nn.Tanh(),
             layer_init(nn.Linear(128, num_actions))
         )
-        
 
     def get_value(self, x):
         return self.critic(x)
@@ -155,14 +156,14 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_index=-1):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, sample_size=1e2):
         self._device = device
-        self._rew_index = rew_index
 
         info_state_size = env.observation_spec()["info_state"][0]
         self._nacs = num_actions = env.action_spec()["num_actions"]
         self._num_agent = game.num_players()
         self._player_id = player_id
+        self._sample_size = sample_size
 
         self._eps_agent = Agent(info_state_size,num_actions).to(self._device) 
         self._ppo_policy = PPOpolicy(game, self._eps_agent, None, self._device) 
@@ -172,7 +173,6 @@ class MultiTypeMFGPPO(object):
         self._discriminator = discriminator
         self._is_nets = is_nets
         self._net_input = net_input
-
         self._horizon = env.game.get_parameters()['horizon']
         self._size = env.game.get_parameters()['size']
 
@@ -181,12 +181,52 @@ class MultiTypeMFGPPO(object):
 
         self._expert_policy = expert_policy
 
+        n_nets = self._discriminator.get_num_nets()
+
+        step = 0.1
+        vs = np.arange(-1, 10+step, step)
+        grids = np.meshgrid(*[vs] * n_nets)
+        combinations = np.vstack([grid.ravel() for grid in grids]).T
+        self._weight_values = combinations.T
+        self._est_weight = self._discriminator.get_weights()
+    
+    def random_sampling_weights(self, num_sample):
+        values = self._weight_values
+        #random_weight = np.random.choise(values[i], size=len(values[i]), replace=False)[:num_sample] # 重複を許したサンプリング
+        idxs = random.sample(list(np.arange(len(self._weight_values))), num_sample) # 重複を許さないサンプリング
+        selected_weights = [self._weight_values[i] for i in idxs]
+        return selected_weights 
+
+    def get_action_probs(self, state, weights):
+        outputs = []
+        for i in range(len(weights)):
+            input = torch.concat((state, weights[i]))
+            output = self._eps_agent.get_action_prob(input)
+            outputs.append(outputs)
+        return outputs
+
+    def select_policy_weight(self, state, weights):
+        action_probs  = self.get_action_probs(state, weights)
+
+        input = torch.concat((state, self._est_weight))
+        expert_action_prob = self._eps_agent.get_action_prob(input)
+
+        kl_divs = []
+        for i in range(len(weights)):
+            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(expert_action_prob, action_probs[i])]) 
+            kl_divs.append(kl_div)
+        kl_divs = np.array(kl_divs)
+        probs = np.exp(-kl_divs)/np.sum(np.exp(-kl_divs))
+        weight = np.random.choice(self._action_probs, size=1  p=probs)[0]
+        return weight
+       
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
+       
         info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
         actions = torch.zeros((nsteps,), device=self._device)
         logprobs = torch.zeros((nsteps,), device=self._device)
-        rewards = torch.zeros((nsteps,), device=self._device)
+        rewards = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
         true_rewards = torch.zeros((nsteps,), device=self._device)
         dones = torch.zeros((nsteps,), device=self._device)
         values = torch.zeros((nsteps,), device=self._device)
@@ -194,36 +234,25 @@ class MultiTypeMFGPPO(object):
         t_actions = torch.zeros((nsteps,), device=self._device)
         t_logprobs = torch.zeros((nsteps,), device=self._device)
         all_mu = [] 
-        all_p_tau = {}
-        all_p_tau2 = {}
         all_rew = [] 
-        all_rew2 = {} 
+        all_rew2 = []
+        all_outputs = []
         ret = []
-        if self._is_nets:
-            n_nets = self._discriminator.get_num_nets()
-            vs = np.arange(-10, 11, 1)
-            grids = np.meshgrid(*[vs] * n_nets)
-            combinations = np.vstack([grid.ravel() for grid in grids]).T
-            for rate in combinations:
-                rate_str = ''
-                for n in range(n_nets):
-                    rate_str += f'{rate[n]} '
-                all_p_tau[rate_str] = []
-                all_p_tau2[rate_str] = []
-                all_rew2[rate_str] = []
 
         size = self._size
         step = 0
+        sampled_weights = self.random_sampling_weights(self._sample_size)
         while step!=nsteps:
             time_step = env.reset()
             rew = 0
             while not time_step.last():
-                obs = time_step.observations["info_state"][self._player_id]
+                obs = time_step.observations["info_state"][self._player_id], sampled_weights
                 obs_pth = torch.Tensor(obs).to(self._device)
                 info_state[step] = obs_pth
                 with torch.no_grad():
-                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth)
-                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_pth)
+                    selected_weight = self.select_policy_weight(sampled_weights)
+                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth, selected_weight)
+                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_pth, selected_weight)
 
                 time_step = env.step([action.item()])
 
@@ -235,32 +264,29 @@ class MultiTypeMFGPPO(object):
                 all_mu.append(mus[self._player_id])
                 obs_mu = np.array(obs_list+mus)
 
+                nobs = obs_mu.copy()
+                nobs[:-1] = obs_mu[1:]
+                nobs[-1] = obs_mu[0]
+                obs_next = nobs
+                obs_next_pth = torch.from_numpy(obs_next).to(self._device)
+
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
                 inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
-
+                inputs_next, _, _ = create_disc_input(self._size, self._net_input, [obs_next_pth], acs, self._player_id)
+    
                 if self._is_nets:
-                    reward, outputs = self._discriminator.get_reward(
-                        inputs,
-                        torch.from_numpy(obs_xym).to(self._device),
-                        torch.from_numpy(obs_next_xym).to(self._device),
-                        None,
-                        discrim_score=False,
-                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                    for rate in combinations:
-                        rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                    outputs = []
+                    reward2s = []
+                    for w in sampled_weights:
+                        reward, reward2, output = self._discriminator.get_reward(
                             inputs,
-                            torch.from_numpy(obs_xym).to(self._device),
-                            torch.from_numpy(obs_next_xym).to(self._device),
-                            None,
-                            rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                        rate_str = ''
-                        for n in range(n_nets):
-                            rate_str += f'{rate[n]} '
-                        all_p_tau[rate_str].append(p_tau[0])
-                        all_p_tau2[rate_str].append(p_tau2[0])
-                        all_rew2[rate_str].append(rew2[0])
-                    all_rew.append(rew)
+                            rate=w) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        reward2s.append(reward2)
+                        outputs.append(output)
+                    all_rew.append(reward)
+                    all_rew2.append(rew2s)
+                    all_outputs.append(outputs)
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
@@ -281,10 +307,8 @@ class MultiTypeMFGPPO(object):
                 values[step] = value
                 actions[step] = action
                 #rewards[step] = reward
-                if self._rew_index>=0:
-                    rewards[step] = outputs[self._rew_index] 
-                else:
-                    rewards[step] = reward
+                for smp in range(self._sample_size):
+                    rewards[smp][step] = reward2s[smp]
                     
                 rew += time_step.rewards[self._player_id]
 
@@ -298,37 +322,7 @@ class MultiTypeMFGPPO(object):
         ret = np.array(ret)
         assert step==nsteps
 
-        cos_sims = {} 
-        spearmanrs = {}
-        kl_divs = {}
-        #euclids = {}
-        cos_sims_rews = {} 
-        spearmanrs_rews = {}
-        kl_divs_rews = {}
-        rew = np.array(all_rew).flatten()
-        for rate_str in all_p_tau.keys():
-            p_tau = np.array(all_p_tau[rate_str])
-            p_tau2 = np.array(all_p_tau2[rate_str])
-            rew2 = np.array(all_rew2[rate_str])
-
-            cos_sim = 1-distance.cosine(p_tau, p_tau2)
-            sp, p_value = spearmanr(p_tau, p_tau2)
-            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
-
-            cos_sim_rew = 1-distance.cosine(rew, rew2)
-            sp_rew, p_value = spearmanr(rew, rew2)
-            kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
-            #euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
-
-            cos_sims[rate_str] = cos_sim
-            spearmanrs[rate_str] = sp 
-            kl_divs[rate_str] = kl_div 
-
-            cos_sims_rews[rate_str] = cos_sim_rew
-            spearmanrs_rews[rate_str] = sp_rew
-            kl_divs_rews[rate_str] = kl_div_rew
-
-        return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
+        return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret, sampled_weights
 
 
     def cal_Adv(self, rewards, values, dones, gamma=0.99, norm=True):
@@ -496,11 +490,11 @@ def parse_args():
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--num_iterations", type=int, default=5e3, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--sample_size", type=int, default=1e2, help="Set the number of global update steps of the outer loop")
     
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_s_mua", help="file path")
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mua_diversity", help="logdir")
-    parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
@@ -527,12 +521,9 @@ if __name__ == "__main__":
     print(f'Is networks: {is_nets}')
     if not is_nets:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-        rew_index = -1
     else:
         net_input = get_net_input(args.path)
         label = get_net_labels(net_input)
-        assert len(label)>=args.rew_index, 'rew_index is wrong'
-        rew_index = args.rew_index
 
     # Set the seed 
     seed = args.seed
@@ -602,20 +593,22 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, sample_size=args.sample_size) for i in range(num_agent)]
 
     batch_step = args.batch_step
+    sample_size = args.sample_size
     for niter in tqdm(range(args.num_iterations)):
         exp_ret = [[] for _ in range(num_agent)]
         for neps in range(args.num_episodes):
             logger.record_tabular(f"num_iteration", niter)
             logger.record_tabular(f"num_episodes", neps)
             for i in range(num_agent):
-                obs_pth, actions_pth, logprobs_pth, rewards, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret \
+                obs_pth, actions_pth, logprobs_pth, rewards, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret, sampled_weight \
                     = mfgppo[i].rollout(envs[i], args.batch_step)
-                adv_pth, returns = mfgppo[i].cal_Adv(rewards, values_pth, dones_pth)
-                v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
-                logger.record_tabular(f"total_loss {i}", v_loss.item())
+                for smp in range(sample_size):
+                    adv_pth, returns = mfgppo[i].cal_Adv(rewards[smp], values_pth[smp], dones_pth)
+                    v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
+                    logger.record_tabular(f"total_loss {i}", v_loss.item())
                 exp_ret[i].append(np.mean(ret))
                 #print(f'Exp. ret{i} {np.mean(ret)}')
             input('input here')

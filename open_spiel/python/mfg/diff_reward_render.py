@@ -88,6 +88,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
+    parser.add_argument("--use_rate", action='store_true', help="")
     
     args = parser.parse_args()
     return args
@@ -121,6 +122,7 @@ pathnames = [
 update_infos = [
                 "200_1",
               ]
+rates = [[0.1, 0.1]]
 
 is_single = [False, False, False, False, False, False, False, False, False]
 is_notmu = [False, False, False, False, False, False, False, False, False]
@@ -333,7 +335,10 @@ if __name__ == "__main__":
         for i in range(num_agent):
             if is_nets:
                 if is_divided:
-                    rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                    if args.use_rate:
+                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
+                    else:
+                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 else:
                     rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):
