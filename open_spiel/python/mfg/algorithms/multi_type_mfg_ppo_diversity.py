@@ -184,11 +184,11 @@ class MultiTypeMFGPPO(object):
         n_nets = self._discriminator.get_num_nets()
 
         step = 0.1
-        vs = np.arange(-1, 10+step, step)
+        vs = np.arange(0.0, 10+step, step)
         grids = np.meshgrid(*[vs] * n_nets)
         combinations = np.vstack([grid.ravel() for grid in grids]).T
         self._weight_values = combinations.T
-        self._est_weight = self._discriminator.get_weights()
+        self._est_weight = np.ones((1, n_nets)) # self._discriminator.get_weights()
     
     def random_sampling_weights(self, num_sample):
         values = self._weight_values
@@ -206,10 +206,14 @@ class MultiTypeMFGPPO(object):
         return outputs
 
     def select_policy_weight(self, state, weights):
-        action_probs  = self.get_action_probs(state, weights)
+        exp_input = torch.concat((state, self._est_weight))
+        action_probs = []
+        for w in weights:
+            weighted_input = torch.concat((state, w))
+            action_probs.append(self.get_action_probs(weighted_input))
 
-        input = torch.concat((state, self._est_weight))
-        expert_action_prob = self._eps_agent.get_action_prob(input)
+        expert_action_prob = self._eps_agent.get_action_prob(exp_input)
+        action_probs.append(expert_action_prob)
 
         kl_divs = []
         for i in range(len(weights)):
@@ -217,8 +221,13 @@ class MultiTypeMFGPPO(object):
             kl_divs.append(kl_div)
         kl_divs = np.array(kl_divs)
         probs = np.exp(-kl_divs)/np.sum(np.exp(-kl_divs))
-        weight = np.random.choice(self._action_probs, size=1  p=probs)[0]
-        return weight
+
+        weights_list = list(weights) + list(self._est_weight) 
+        idx = np.random.choice(np.arange(len(weights_list)), size=1  p=probs)[0]
+        selected_weight = weights_list[idx]
+        selected_action_prob = actions_probs[idx]
+
+        return selected_weight, selected_action_prob
        
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
@@ -246,7 +255,7 @@ class MultiTypeMFGPPO(object):
             time_step = env.reset()
             rew = 0
             while not time_step.last():
-                obs = time_step.observations["info_state"][self._player_id], sampled_weights
+                obs = time_step.observations["info_state"][self._player_id]
                 obs_pth = torch.Tensor(obs).to(self._device)
                 info_state[step] = obs_pth
                 with torch.no_grad():
