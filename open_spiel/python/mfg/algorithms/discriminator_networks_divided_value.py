@@ -642,7 +642,8 @@ class Discriminator_2nets(nn.Module):
 
             outputs = rew_inputs.numpy()
             weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
-            weights += weights*np.array(rate)
+            for i in range(len(weights)):
+                weights[i] = weights[i]*np.array(rate[i])
 
             #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
             #reward2 = outputs @ weights.T + bias
@@ -668,7 +669,7 @@ class Discriminator_2nets(nn.Module):
 
             outputs = rew_inputs.numpy()
             weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
-            weights += weights*np.array(rate)
+            weights = weights*np.array(rate)
 
             #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
             #reward2 = outputs @ weights.T + bias
@@ -1007,7 +1008,7 @@ class Discriminator_3nets(nn.Module):
 
             outputs = rew_inputs.numpy()
             weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
-            weights += weights*np.array(rate)
+            weights = weights*np.array(rate)
 
             #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
             #reward2 = outputs @ weights.T + bias
