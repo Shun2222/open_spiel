@@ -165,9 +165,9 @@ class MultiTypeMFGPPO(object):
         self._player_id = player_id
         self._sample_size = sample_size
 
-        self._eps_agent = Agent(info_state_size,num_actions).to(self._device) 
-        self._ppo_policy = PPOpolicy(game, self._eps_agent, None, self._device) 
-        self._iter_agent = Agent(info_state_size,num_actions).to(self._device)
+        self._eps_agent = Agent(info_state_size,2,num_actions).to(self._device) 
+        self._ppo_policy = PPOpolicy(game,self._eps_agent, None, self._device) 
+        self._iter_agent = Agent(info_state_size,2,num_actions).to(self._device)
         self._optimizer_actor = optim.Adam(self._eps_agent.actor.parameters(), lr=1e-3,eps=1e-5)
         self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
         self._discriminator = discriminator
@@ -206,14 +206,38 @@ class MultiTypeMFGPPO(object):
         return outputs
 
     def select_policy_weight(self, state, weights):
-        exp_input = torch.concat((state, self._est_weight))
         action_probs = []
+        actions = []
+        logprobs = []
+        entropies = []
+        values = []
+        t_actions = []
+        t_logprobs = []
         for w in weights:
+            w = torch.Tensor(w)
             weighted_input = torch.concat((state, w))
-            action_probs.append(self.get_action_probs(weighted_input))
+            action_probs.append(self._eps_agent.get_action_probs(weighted_input))
+            action, logprob, entoropy, value = self._eps_agent.get_action_and_value(weighted_input)
+            actions.append(action)
+            logprobs.append(logprob)
+            entropies.append(entoropy)
+            values.append(value)
+            t_action, t_logprob, _, _ = self._eps_agent.get_action_and_value(weighted_input)
+            t_actions.append(action)
+            t_logprobs.append(logprob)
 
+        w = torch.Tensor(self._est_weight)
+        exp_input = torch.concat((state, w))
         expert_action_prob = self._eps_agent.get_action_prob(exp_input)
+        action, logprob, entropy, value = self._eps_agent.get_action_and_value(exp_input)
         action_probs.append(expert_action_prob)
+        actions.append(action)
+        logprobs.append(logprob)
+        entropies.append(entoropy)
+        values.append(value)
+        t_action, t_logprob, _, _ = self._eps_agent.get_action_and_value(exp_input)
+        t_actions.append(action)
+        t_logprobs.append(logprob)
 
         kl_divs = []
         for i in range(len(weights)):
@@ -223,29 +247,24 @@ class MultiTypeMFGPPO(object):
         probs = np.exp(-kl_divs)/np.sum(np.exp(-kl_divs))
 
         weights_list = list(weights) + list(self._est_weight) 
-        idx = np.random.choice(np.arange(len(weights_list)), size=1  p=probs)[0]
-        selected_weight = weights_list[idx]
-        selected_action_prob = actions_probs[idx]
+        selected_idx = np.random.choice(np.arange(len(weights_list)), size=1, p=probs)[0]
 
-        return selected_weight, selected_action_prob
+        return selected_idx, actions, logprobs, entropies, values, t_actions, t_logprobs
        
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
        
-        info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
-        actions = torch.zeros((nsteps,), device=self._device)
-        logprobs = torch.zeros((nsteps,), device=self._device)
-        rewards = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
         true_rewards = torch.zeros((nsteps,), device=self._device)
         dones = torch.zeros((nsteps,), device=self._device)
-        values = torch.zeros((nsteps,), device=self._device)
-        entropies = torch.zeros((nsteps,), device=self._device)
-        t_actions = torch.zeros((nsteps,), device=self._device)
-        t_logprobs = torch.zeros((nsteps,), device=self._device)
+        info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
+        actions = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
+        logprobs = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
+        rewards = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
+        values = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
+        entropies = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
+        t_actions = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
+        t_logprobs = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
         all_mu = [] 
-        all_rew = [] 
-        all_rew2 = []
-        all_outputs = []
         ret = []
 
         size = self._size
@@ -259,10 +278,9 @@ class MultiTypeMFGPPO(object):
                 obs_pth = torch.Tensor(obs).to(self._device)
                 info_state[step] = obs_pth
                 with torch.no_grad():
-                    selected_weight = self.select_policy_weight(sampled_weights)
-                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth, selected_weight)
-                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_pth, selected_weight)
-
+                    selected_idx, all_actions, all_logprobs, all_entropies, all_values, all_t_actions, all_t_logprobs = self.select_policy_weight(obs_pth, sampled_weights)
+                    action = all_actions[selected_idx]
+                    obs_nexts = self.get_obs_next(all_actions)
                 time_step = env.step([action.item()])
 
                 obs_list = obs[:-1]
@@ -273,51 +291,50 @@ class MultiTypeMFGPPO(object):
                 all_mu.append(mus[self._player_id])
                 obs_mu = np.array(obs_list+mus)
 
-                nobs = obs_mu.copy()
-                nobs[:-1] = obs_mu[1:]
-                nobs[-1] = obs_mu[0]
-                obs_next = nobs
-                obs_next_pth = torch.from_numpy(obs_next).to(self._device)
+                obs_xyt = obs_nexts[:, :-1]
+                obs_x = obs_xyt[:, :size]
+                obs_y = obs_xyt[:, size:2*size]
+                obs_t = obs_xyt[:, 2*size:]
+                mus = []
+                for x, y, t in zip(obs_x, obs_y, obs_t):
+                    x = np.argmax(x)
+                    y = np.argmax(y)
+                    t = np.argmax(t)
+                    mu = [self._mu_dist[n][t, y, x] for n in range(num_agent)]
+                    mus.append(mu)
+                mus = np.array(mus)
+                all_mu.append(mus[:, self._player_id])
+                obs_next_xym = np.concatenate([obs_xyt, mus], axis=1)
+                obs_next_xym_pth = torch.from_numpy(obs_next_xym)
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
                 inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
-                inputs_next, _, _ = create_disc_input(self._size, self._net_input, [obs_next_pth], acs, self._player_id)
+                #inputs_next, _, _ = create_disc_input(self._size, self._net_input, [obs_next_xym_pth], acs, self._player_id)
     
-                if self._is_nets:
-                    outputs = []
-                    reward2s = []
-                    for w in sampled_weights:
-                        reward, reward2, output = self._discriminator.get_reward(
-                            inputs,
-                            rate=w) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                        reward2s.append(reward2)
-                        outputs.append(output)
-                    all_rew.append(reward)
-                    all_rew2.append(rew2s)
-                    all_outputs.append(outputs)
-                else:
-                    reward = discriminator.get_reward(
-                        torch.from_numpy(obs_mu).to(torch.float32),
-                        torch.from_numpy(onehot(action, nacs)).to(torch.int64),
-                        None, None,
-                        discrim_score=False,
-                        ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                all_rew = []
+                for w in sampled_weights:
+                    reward, weighted_reward, output = self._discriminator.get_reward_weighted(
+                        inputs,
+                        rate=w) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                    reward.append(weighted_reward)
+                all_rew.append(reward)
 
                 true_rewards[step] = torch.Tensor([time_step.rewards[self._player_id]]).to(self._device)
-                # iteration policy data
-                t_logprobs[step] = t_logprob
-                t_actions[step] = t_action
-
-                # episode policy data
-                logprobs[step] = logprob
                 dones[step] = time_step.last()
-                entropies[step] = entropy
-                values[step] = value
-                actions[step] = action
-                #rewards[step] = reward
+
                 for smp in range(self._sample_size):
-                    rewards[smp][step] = reward2s[smp]
+                    # iteration policy data
+                    t_logprobs[smp][step] = all_t_logprobs[smp]
+                    t_actions[smp][step] = all_t_actions[smp]
+
+                    # episode policy data
+                    logprobs[smp][step] = all_logprobs[smp]
+                    entropies[smp][step] = all_entropies[smp]
+                    values[smp][step] = all_values[smp]
+                    actions[smp][step] = all_actions[smp]
+                    #rewards[step] = reward
+                    rewards[smp][step] = all_rew[smp]
                     
                 rew += time_step.rewards[self._player_id]
 
@@ -616,11 +633,10 @@ if __name__ == "__main__":
                     = mfgppo[i].rollout(envs[i], args.batch_step)
                 for smp in range(sample_size):
                     adv_pth, returns = mfgppo[i].cal_Adv(rewards[smp], values_pth[smp], dones_pth)
-                    v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth) 
+                    v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth[smp], actions_pth[smp], adv_pth, returns, t_actions_pth[smp], t_logprobs_pth[smp]) 
                     logger.record_tabular(f"total_loss {i}", v_loss.item())
                 exp_ret[i].append(np.mean(ret))
                 #print(f'Exp. ret{i} {np.mean(ret)}')
-            input('input here')
 
         mfg_dists = []
         for i in range(num_agent):

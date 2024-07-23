@@ -368,6 +368,34 @@ class MFGPredatorPreyState(pyspiel.State):
     #else:
     #    print(f"candidate_pos is forbidden: candidate_pos={candidate_pos}")
 
+  def update_pos_sim(self, action):
+    """Updates the position of the player given a move action."""
+    if action < 0 or action >= len(self._ACTION_TO_MOVE):
+      raise ValueError(
+          f"The action must be between 0 and {len(self._ACTION_TO_MOVE)}, "
+          f"got {action}")
+    candidate_pos = self._pos + self._ACTION_TO_MOVE[action]
+    if self.geometry == Geometry.TORUS:
+      candidate_pos += self.size
+      candidate_pos %= self.size
+    else:
+      assert self.geometry == Geometry.SQUARE, (
+          f"Invalid geometry {self.geometry}")
+      # Keep the position within the bounds of the square.
+      candidate_pos = np.minimum(candidate_pos, self.size - 1)
+      candidate_pos = np.maximum(candidate_pos, 0)
+
+    is_forbidden = False
+    for f_pos in self.forbidden_position:
+        if np.all(f_pos==candidate_pos):
+            is_forbidden = True 
+            break
+
+    if not is_forbidden:
+      return candidate_pos
+    else:
+      return self._pos
+
   def _apply_action(self, action):
     """Applies the specified action to the state."""
     if self._population is None:
