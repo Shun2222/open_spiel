@@ -153,8 +153,10 @@ class PPOpolicy(policy_std.Policy):
     def action_probabilities(self, state, player_id=None):
         # main method that is called to update the population states distribution
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
+        obs_list = obs.tolist()
+        obs_mu_pth = torch.Tensor(obs_list[:2*size]+[obs_list[-1]]+[1.0, 1.0])
         legal_actions = state.legal_actions()
-        logits = self.agent.actor(obs).detach().cpu()
+        logits = self.agent.actor(obs_mu_pth).detach().cpu()
         legat_logits = np.array([logits[action] for action in legal_actions])
         probs = np.exp(legat_logits -legat_logits.max())
         probs /= probs.sum(axis=0)
@@ -163,7 +165,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, sample_size=1e2):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, sample_size=10):
         self._device = device
 
         info_state_size = env.observation_spec()["info_state"][0]
@@ -516,9 +518,9 @@ def parse_args():
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
-    parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=5e3, help="Set the number of global update steps of the outer loop")
-    parser.add_argument("--sample_size", type=int, default=1e2, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--num_episodes", type=int, default=10, help="set the number of episodes of the inner loop")
+    parser.add_argument("--num_iterations", type=int, default=5000, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--sample_size", type=int, default=10, help="Set the number of global update steps of the outer loop")
     
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_diversity", help="logdir")
 
