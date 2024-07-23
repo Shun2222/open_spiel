@@ -174,9 +174,11 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
     return inputs, obs_xym, obs_next_xym
 
 def is_networks(filename):
-    res = get_net_input(filename)
-    if res!=None:
-        return True
+    net_inputs = get_net_inputs()
+    detected_input = []
+    for net_input in net_inputs:
+        if net_input in filename:
+            return True 
     else:
         return False
 
@@ -185,6 +187,7 @@ def get_net_labels(net_input):
 
 def is_divided_value(filename):
     if "divided_value" in filename:
+        print(f'Detected model as divided value')
         return True
     return False
 
@@ -202,7 +205,6 @@ def get_net_input(filename):
     else:
         return None
 
-# class Discriminator(nn.Module):
 #     def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1, ppo_value_net=None):
 #         super(Discriminator, self).__init__()
 #         assert len(input_shapes)<=len(labels), f'not enough labels'

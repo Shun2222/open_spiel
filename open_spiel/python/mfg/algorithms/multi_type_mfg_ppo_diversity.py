@@ -39,6 +39,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 from games.predator_prey import goal_distance, divide_obs
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
 
 from scipy.spatial import distance
 from scipy.stats import spearmanr
@@ -88,14 +89,14 @@ class Agent(nn.Module):
             info_state_size -= 40
         self.info_state_size = info_state_size  + num_networks
         self.critic = nn.Sequential(
-            layer_init(nn.Linear(info_state_size, 128)), 
+            layer_init(nn.Linear(self.info_state_size, 128)), 
             nn.Tanh(),
             layer_init(nn.Linear(128,128)),
             nn.Tanh(),
             layer_init(nn.Linear(128,1))
         )
         self.actor = nn.Sequential(
-            layer_init(nn.Linear(info_state_size, 128)),
+            layer_init(nn.Linear(self.info_state_size, 128)),
             nn.Tanh(),
             layer_init(nn.Linear(128,128)),
             nn.Tanh(),
@@ -109,6 +110,12 @@ class Agent(nn.Module):
         logits = self.actor(x)
         probs = Categorical(logits=logits)
         return action, probs.log_prob(action)
+
+    def get_action_prob(self, x):
+        with torch.no_grad():
+            logits = self.actor(x)
+            probs = np.exp(Categorical(logits=logits).log_prob(torch.Tensor([i for i in range(self.num_actions)])))
+            return probs.numpy()
 
     def get_log_action_prob(self, states, actions):
         # print(f"obs: {states}")
@@ -181,29 +188,27 @@ class MultiTypeMFGPPO(object):
 
         self._expert_policy = expert_policy
 
-        n_nets = self._discriminator.get_num_nets()
+        self._n_nets = n_nets = self._discriminator.get_num_nets()
 
         step = 0.1
         vs = np.arange(0.0, 10+step, step)
         grids = np.meshgrid(*[vs] * n_nets)
         combinations = np.vstack([grid.ravel() for grid in grids]).T
-        self._weight_values = combinations.T
-        self._est_weight = np.ones((1, n_nets)) # self._discriminator.get_weights()
+        self._weight_values = combinations
+        self._est_weight = np.ones(n_nets) # self._discriminator.get_weights()
     
     def random_sampling_weights(self, num_sample):
         values = self._weight_values
         #random_weight = np.random.choise(values[i], size=len(values[i]), replace=False)[:num_sample] # 重複を許したサンプリング
-        idxs = random.sample(list(np.arange(len(self._weight_values))), num_sample) # 重複を許さないサンプリング
+        num = len(self._weight_values)
+        if num<num_sample:
+            print(f'{num} < {num_sample}, num_sample={num}')
+            num_sample = num 
+        idxs = random.sample(list(np.arange(num)), num_sample) # 重複を許さないサンプリング
         selected_weights = [self._weight_values[i] for i in idxs]
+        #print(f'selected weights: {selected_weights}')
         return selected_weights 
 
-    def get_action_probs(self, state, weights):
-        outputs = []
-        for i in range(len(weights)):
-            input = torch.concat((state, weights[i]))
-            output = self._eps_agent.get_action_prob(input)
-            outputs.append(outputs)
-        return outputs
 
     def select_policy_weight(self, state, weights):
         action_probs = []
@@ -216,7 +221,8 @@ class MultiTypeMFGPPO(object):
         for w in weights:
             w = torch.Tensor(w)
             weighted_input = torch.concat((state, w))
-            action_probs.append(self._eps_agent.get_action_probs(weighted_input))
+            action_probs.append(self._eps_agent.get_action_prob(weighted_input))
+            #print(action_probs[-1])
             action, logprob, entoropy, value = self._eps_agent.get_action_and_value(weighted_input)
             actions.append(action)
             logprobs.append(logprob)
@@ -229,25 +235,17 @@ class MultiTypeMFGPPO(object):
         w = torch.Tensor(self._est_weight)
         exp_input = torch.concat((state, w))
         expert_action_prob = self._eps_agent.get_action_prob(exp_input)
-        action, logprob, entropy, value = self._eps_agent.get_action_and_value(exp_input)
-        action_probs.append(expert_action_prob)
-        actions.append(action)
-        logprobs.append(logprob)
-        entropies.append(entoropy)
-        values.append(value)
-        t_action, t_logprob, _, _ = self._eps_agent.get_action_and_value(exp_input)
-        t_actions.append(action)
-        t_logprobs.append(logprob)
 
         kl_divs = []
+
         for i in range(len(weights)):
             kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(expert_action_prob, action_probs[i])]) 
             kl_divs.append(kl_div)
         kl_divs = np.array(kl_divs)
         probs = np.exp(-kl_divs)/np.sum(np.exp(-kl_divs))
 
-        weights_list = list(weights) + list(self._est_weight) 
-        selected_idx = np.random.choice(np.arange(len(weights_list)), size=1, p=probs)[0]
+        assert len(probs)==len(weights), f'probs:{probs.shape}, weights:{weights.shape}'
+        selected_idx = np.random.choice(np.arange(len(weights)), size=1, p=probs)[0]
 
         return selected_idx, actions, logprobs, entropies, values, t_actions, t_logprobs
        
@@ -256,7 +254,7 @@ class MultiTypeMFGPPO(object):
        
         true_rewards = torch.zeros((nsteps,), device=self._device)
         dones = torch.zeros((nsteps,), device=self._device)
-        info_state = torch.zeros((nsteps,self._iter_agent.info_state_size), device=self._device)
+        info_state = torch.zeros((nsteps,self._iter_agent.info_state_size-self._n_nets), device=self._device)
         actions = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
         logprobs = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
         rewards = [torch.zeros((nsteps,), device=self._device) for _ in range(self._sample_size)]
@@ -269,19 +267,13 @@ class MultiTypeMFGPPO(object):
 
         size = self._size
         step = 0
-        sampled_weights = self.random_sampling_weights(self._sample_size)
+        sampled_weights = self.random_sampling_weights(self._sample_size-1) + [self._est_weight]
         while step!=nsteps:
             time_step = env.reset()
             rew = 0
             while not time_step.last():
                 obs = time_step.observations["info_state"][self._player_id]
                 obs_pth = torch.Tensor(obs).to(self._device)
-                info_state[step] = obs_pth
-                with torch.no_grad():
-                    selected_idx, all_actions, all_logprobs, all_entropies, all_values, all_t_actions, all_t_logprobs = self.select_policy_weight(obs_pth, sampled_weights)
-                    action = all_actions[selected_idx]
-                    obs_nexts = self.get_obs_next(all_actions)
-                time_step = env.step([action.item()])
 
                 obs_list = obs[:-1]
                 obs_x = obs_list[:size].index(1)
@@ -289,8 +281,17 @@ class MultiTypeMFGPPO(object):
                 obs_t = obs_list[2*size:].index(1)
                 mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
                 all_mu.append(mus[self._player_id])
-                obs_mu = np.array(obs_list+mus)
+                obs_mu = np.array(obs_list+mus[self._player_id])
+                obs_mu_pth = torch.Tensor(obs_list[:2*size]+[obs_list[-1]])
+                info_state[step] = obs_mu_pth
 
+                with torch.no_grad():
+                    selected_idx, all_actions, all_logprobs, all_entropies, all_values, all_t_actions, all_t_logprobs = self.select_policy_weight(obs_mu_pth, sampled_weights)
+                    action = all_actions[selected_idx]
+                    #obs_nexts = self.get_obs_next(all_actions)
+                time_step = env.step([action.item()])
+
+                """
                 obs_xyt = obs_nexts[:, :-1]
                 obs_x = obs_xyt[:, :size]
                 obs_y = obs_xyt[:, size:2*size]
@@ -306,6 +307,7 @@ class MultiTypeMFGPPO(object):
                 all_mu.append(mus[:, self._player_id])
                 obs_next_xym = np.concatenate([obs_xyt, mus], axis=1)
                 obs_next_xym_pth = torch.from_numpy(obs_next_xym)
+                """
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
@@ -317,8 +319,7 @@ class MultiTypeMFGPPO(object):
                     reward, weighted_reward, output = self._discriminator.get_reward_weighted(
                         inputs,
                         rate=w) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                    reward.append(weighted_reward)
-                all_rew.append(reward)
+                    all_rew.append(weighted_reward)
 
                 true_rewards[step] = torch.Tensor([time_step.rewards[self._player_id]]).to(self._device)
                 dones[step] = time_step.last()
@@ -519,8 +520,9 @@ def parse_args():
     parser.add_argument("--num_iterations", type=int, default=5e3, help="Set the number of global update steps of the outer loop")
     parser.add_argument("--sample_size", type=int, default=1e2, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_s_mua", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mua_diversity", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_diversity", help="logdir")
+
+    parser.add_argument('--path', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="logdir")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
@@ -542,14 +544,16 @@ if __name__ == "__main__":
     update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
-    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
     is_nets = is_networks(args.path)
     print(f'Is networks: {is_nets}')
-    if not is_nets:
-        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-    else:
+    is_divided = is_divided_value(args.path)
+    if is_nets:
+        if not is_divided:
+            from open_spiel.python.mfg.algorithms.discriminator_networks import Discriminator
         net_input = get_net_input(args.path)
         label = get_net_labels(net_input)
+    else:
+        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # Set the seed 
     seed = args.seed
@@ -604,12 +608,19 @@ if __name__ == "__main__":
         elif is_nets:
             inputs = get_input_shape(net_input, env, num_agent)
             labels = get_net_labels(net_input)
-            discriminator = Discriminator(inputs, obs_xym_size, labels, device)
+            if len(labels)==2:
+                print(f'disciminator 2nets')
+                discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device)
+            elif len(labels)==3:
+                print(f'disciminator 3nets')
+                discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device)
         else:
             discriminator = Discriminator(nobs+num_agent, nacs, False, device)
         reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
         value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
+
         if is_nets:
+            discriminator.print_weights()
             discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)
             discriminator.print_weights()
         else:
@@ -619,21 +630,24 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, sample_size=args.sample_size) for i in range(num_agent)]
+    sample_size = int(args.sample_size)
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, sample_size=sample_size) for i in range(num_agent)]
 
-    batch_step = args.batch_step
-    sample_size = args.sample_size
-    for niter in tqdm(range(args.num_iterations)):
+    batch_step = int(args.batch_step)
+    num_iterations = int(args.num_iterations)
+    num_episodes = int(args.num_episodes)
+    for niter in tqdm(range(num_iterations)):
         exp_ret = [[] for _ in range(num_agent)]
-        for neps in range(args.num_episodes):
+        for neps in range(num_episodes):
             logger.record_tabular(f"num_iteration", niter)
             logger.record_tabular(f"num_episodes", neps)
             for i in range(num_agent):
-                obs_pth, actions_pth, logprobs_pth, rewards, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret, sampled_weight \
-                    = mfgppo[i].rollout(envs[i], args.batch_step)
+                obs_pth, actions_pth, logprobs_pth, rewards, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret, sampled_weights \
+                    = mfgppo[i].rollout(envs[i], batch_step)
                 for smp in range(sample_size):
                     adv_pth, returns = mfgppo[i].cal_Adv(rewards[smp], values_pth[smp], dones_pth)
-                    v_loss = mfgppo[i].update_eps(obs_pth, logprobs_pth[smp], actions_pth[smp], adv_pth, returns, t_actions_pth[smp], t_logprobs_pth[smp]) 
+                    obs_weight_pth = torch.concat((obs_pth, torch.Tensor([list(sampled_weights[smp]) for _ in range(len(obs_pth))])), axis=1)
+                    v_loss = mfgppo[i].update_eps(obs_weight_pth, logprobs_pth[smp], actions_pth[smp], adv_pth, returns, t_actions_pth[smp], t_logprobs_pth[smp]) 
                     logger.record_tabular(f"total_loss {i}", v_loss.item())
                 exp_ret[i].append(np.mean(ret))
                 #print(f'Exp. ret{i} {np.mean(ret)}')

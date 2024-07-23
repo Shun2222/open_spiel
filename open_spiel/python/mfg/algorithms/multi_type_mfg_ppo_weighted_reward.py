@@ -555,8 +555,10 @@ if __name__ == "__main__":
                 inputs = get_input_shape(net_input, env, num_agent)
                 labels = get_net_labels(net_input)
                 if len(labels)==2:
+                    print(f'load from 2nets')
                     discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device)
                 elif len(labels)==3:
+                    print(f'load from 3nets')
                     discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device)
             else:
                 discriminator = Discriminator(nobs+num_agent, nacs, False, device)
