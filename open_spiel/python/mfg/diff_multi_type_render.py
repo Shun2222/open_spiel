@@ -117,15 +117,8 @@ filename = "actor"
 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_diversity3",
          ] 
-rates = [[1.0, 1.0]]
-rates += [[1.0, 1.0+i] for i in [-1.0, -0.8, -0.5, -0.3, -0.2, -0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 1.5, 3.0, 5.0, 12.0]]
-rates += [[1.0+i, 1.0] for i in [-1.0, -0.8, -0.5, -0.3, -0.2, -0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 1.5, 3.0, 5.0, 12.0]]
-for rate in rates:
-    path = "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_weigted"
-    for i in range(len(rate)):
-        path+=f'-{rate[i]}'
-    pathes.append(path) 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_murew",
@@ -157,13 +150,9 @@ for rate in rates:
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "dxy_mu",
+                "expert",
+                "dxy_mu-diversity3",
             ] 
-for rate in rates:
-    pathname = "dxy_mu"
-    for i in range(len(rate)):
-        pathname+=f'-{rate[i]}'
-    pathnames.append(pathname) 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
                 #"ppo_s_mu_a_murew",
@@ -196,14 +185,16 @@ for rate in rates:
 
 filenames = [
                 "50_19",
+                "1115_9",
             ]
-filenames += ["99_19" for _ in range(len(rates))]
+weights = [[1.0, 1.0]]
 
                     #"actor99_19",
                     #"actor200_2",
 
 if __name__ == "__main__":
     args = parse_args()
+    diversity_count = 0
 
     res_final_dists = []
     gifMaker = GifMaker()
@@ -217,9 +208,13 @@ if __name__ == "__main__":
 
 
     for ip, target_path in enumerate(pathes):
-        if ip > 0:
+        from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo_diversity import is_diversity
+        is_diversity_ppo = is_diversity(target_path)
+        if is_diversity_ppo:
+            weight = weights[diversity_count]
+            diversity_count += 1
             print('import from ppo weighted reward')
-            from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo_weighted_reward import *
+            from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo_diversity import *
 
         # Set the seed 
         seed = args.seed
@@ -262,7 +257,10 @@ if __name__ == "__main__":
         ppo_policies = []
         mfg_dists = []
         for i in range(num_agent):
-            agent = Agent(nobs, nacs).to(device)
+            if is_diversity_ppo:
+                agent = Agent(nobs, len(weight), nacs).to(device)
+            else:
+                agent = Agent(nobs, nacs).to(device)
             actor_model = agent.actor
             critic_model = agent.critic
 
@@ -311,11 +309,12 @@ if __name__ == "__main__":
                         x_onehot = onehot(x, size).tolist()
                         y_onehot = onehot(y, size).tolist()
                         t_onehot = onehot(t, horizon).tolist()
-                        if ip>0:
-                            state = x_onehot + y_onehot + t_onehot
+                        if is_diversity_ppo:
+                            state = x_onehot + y_onehot
+                            obs = torch.Tensor(state+mu+weight)
                         else:
                             state = x_onehot + y_onehot
-                        obs = torch.Tensor(state+mu)
+                            obs = torch.Tensor(state+mu)
                         inputs[idx][f"obs-{x}-{y}-{t}-m"] = obs 
 
         values = np.zeros((horizon, size, size))
@@ -362,8 +361,8 @@ if __name__ == "__main__":
                 obs = torch.Tensor(obs).to(device)
                 info_state[i][step] = obs
                 obs_list = list(obs)
-                if ip>0:
-                    obs_pth = torch.Tensor(obs_list)
+                if is_diversity_ppo:
+                    obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]] + weight)
                 else:
                     obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
                 #obs_pth = torch.Tensor(obs).to(device)
