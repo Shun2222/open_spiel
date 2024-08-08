@@ -45,6 +45,8 @@ def net_labels(net_input):
         labels = ['state', 'mu']
     elif net_input=='dxy_mu':
         labels = ['dxy', 'mu']
+    elif net_input=='dist_mu':
+        labels = ['dist', 'mu']
     else:
         assert False, f'not matched disc type: {net_input}'
     return labels
@@ -58,6 +60,7 @@ def get_net_inputs():
                   'dxy_mua',
                   's_mu',
                   'dxy_mu',
+                  'dist_mu',
                   ]
     return net_inputs
 
@@ -88,6 +91,9 @@ def get_input_shape(net_input, env, num_agent):
     elif net_input=='dxy_mu':
         #inputs = [state_size*2-1, nmu]
         inputs = [2, nmu]
+    elif net_input=='dist_mu':
+        #inputs = [state_size*2-1, nmu]
+        inputs = [1, nmu]
     else:
         assert False, f'not matched disc type: {net_input}'
     return inputs
@@ -152,15 +158,22 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
         x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
         dx, dy = goal_distance(x, y, idx)
         dxy = np.concatenate([dx, dy], axis=1)
-        dxy_abs = np.abs(dxy)
+        #dxy_abs = np.abs(dxy)
 
-        dx[dx<0] = np.abs(dx[dx<0])+size
-        dy[dy<0] = np.abs(dy[dy<0])+size
-        dx_onehot = multionehot(dx, size*2)
-        dy_onehot = multionehot(dy, size*2)
-        dxy_onehot = np.concatenate([dx_onehot, dy_onehot], axis=1)
+        #dx[dx<0] = np.abs(dx[dx<0])+size
+        #dy[dy<0] = np.abs(dy[dy<0])+size
+        #dx_onehot = multionehot(dx, size*2)
+        #dy_onehot = multionehot(dy, size*2)
+        #dxy_onehot = np.concatenate([dx_onehot, dy_onehot], axis=1)
 
         inputs = [torch.from_numpy(dxy),
+                    torch.from_numpy(mu),]
+    elif net_input=='dist_mu':
+        x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
+        dx, dy = goal_distance(x, y, idx)
+        dist = np.array(np.sqrt(dx**2+dy**2))
+
+        inputs = [torch.from_numpy(dist),
                     torch.from_numpy(mu),]
 
 
@@ -174,11 +187,9 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
     return inputs, obs_xym, obs_next_xym
 
 def is_networks(filename):
-    net_inputs = get_net_inputs()
-    detected_input = []
-    for net_input in net_inputs:
-        if net_input in filename:
-            return True 
+    res = get_net_input(filename)
+    if res!=None:
+        return True
     else:
         return False
 
@@ -187,7 +198,6 @@ def get_net_labels(net_input):
 
 def is_divided_value(filename):
     if "divided_value" in filename:
-        print(f'Detected model as divided value')
         return True
     return False
 
@@ -205,6 +215,7 @@ def get_net_input(filename):
     else:
         return None
 
+# class Discriminator(nn.Module):
 #     def __init__(self, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1, ppo_value_net=None):
 #         super(Discriminator, self).__init__()
 #         assert len(input_shapes)<=len(labels), f'not enough labels'
@@ -809,6 +820,7 @@ class Discriminator_2nets(nn.Module):
                             a_onehot = onehot(a, nacs).tolist()
                             state = x_onehot + y_onehot
                             dx, dy = goal_distance(x, y, idx)
+                            dist = list(np.array([np.sqrt(dx**2+dy**2)]))
                             dxy = [dx, dy]
                             dxy_abs = np.abs(dxy).tolist()
 
@@ -834,6 +846,10 @@ class Discriminator_2nets(nn.Module):
                                     input.append(torch.Tensor(dxy+a_onehot))
                                 elif input_str == 'act':
                                     input.append(torch.Tensor(a_onehot))
+                                elif input_str == 'dist':
+                                    input.append(torch.Tensor(dist))
+                                else:
+                                    assert False, f'unexpected label is detected: {input_str}'
                             inputs[idx][f'{x}-{y}-{t}-{a}-m'] = input
                             t_onehot = onehot(t, horizon)
                             #obs = torch.Tensor(state+[mu[idx]])

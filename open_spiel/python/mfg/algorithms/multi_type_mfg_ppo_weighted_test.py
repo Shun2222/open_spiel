@@ -207,7 +207,8 @@ class MultiTypeMFGPPO(object):
             n_nets = self._discriminator.get_num_nets()
             vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
-            combinations = np.vstack([grid.ravel() for grid in grids]).T
+            #combinations = np.vstack([grid.ravel() for grid in grids]).T
+            combinations = np.array([[10.1, 10.9], [10.1, 10.8]])
             for rate in combinations:
                 rate_str = ''
                 for n in range(n_nets):
@@ -264,7 +265,7 @@ class MultiTypeMFGPPO(object):
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     for rate in combinations:
                         if self._is_divided:
-                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted_with_probs(
                                 inputs,
                                 inputs_next,
                                 rate=rate) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)

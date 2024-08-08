@@ -95,7 +95,8 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value",
+            "/mnt/shunsuke/result/0726/multi_maze2_dist_mu-divided_value_common",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -111,6 +112,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
+                "MF-AITL_dist_mu-divided_value",
                 "MF-AITL_dxy_mu-divided_value",
             ] 
                 #"MF-AITL_s_mu_a",
@@ -120,6 +122,7 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
+                "200_1",
                 "200_1",
               ]
 rates = [[0.1, 0.1]]
@@ -189,15 +192,13 @@ if __name__ == "__main__":
         notmu = is_notmu[p]
         is_1hidden = is_1hiddens[p]
 
-        from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+        from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
         is_nets = is_networks(pathnames[p]) 
         if is_nets:
             net_input = get_net_input(pathnames[p])
             net_labels = net_labels(net_input)
             is_divided = is_divided_value(pathnames[p])
-            if is_divided:
-                from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
-            else:
+            if not is_divided:
                 from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         if is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator

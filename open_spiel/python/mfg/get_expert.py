@@ -275,8 +275,9 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
             
             if printinfo:
                 print(f'traj_num:{i}/{num_trajs}, expected_return:{ep_ret}')
-            elif i%(int(num_trajs/10))==0:
-                print(f'{10+100*i/num_trajs}%')
+            elif i!=0:
+                if i%(int(num_trajs/10))==0:
+                    print(f'{10+100*i/num_trajs}%')
 
             avg_ret[idx].append(ep_ret)
 

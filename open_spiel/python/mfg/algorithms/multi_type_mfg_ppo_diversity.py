@@ -45,6 +45,11 @@ from scipy.spatial import distance
 from scipy.stats import spearmanr
 from scipy.special import kl_div
 
+def is_diversity(filename):
+    if 'diversity' in filename:
+        return True
+    return False
+
 def convert_distrib(envs, distrib):
     env = envs[0]
     num_agent = len(envs)
@@ -152,6 +157,7 @@ class PPOpolicy(policy_std.Policy):
 
     def action_probabilities(self, state, player_id=None):
         # main method that is called to update the population states distribution
+        size = 10
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
         obs_list = obs.tolist()
         obs_mu_pth = torch.Tensor(obs_list[:2*size]+[obs_list[-1]]+[1.0, 1.0])
@@ -193,9 +199,10 @@ class MultiTypeMFGPPO(object):
         self._n_nets = n_nets = self._discriminator.get_num_nets()
 
         step = 0.1
-        vs = np.arange(0.0, 10+step, step)
-        grids = np.meshgrid(*[vs] * n_nets)
-        combinations = np.vstack([grid.ravel() for grid in grids]).T
+        #vs = np.arange(0.0, 10+step, step)
+        #grids = np.meshgrid(*[vs] * n_nets)
+        #combinations = np.vstack([grid.ravel() for grid in grids]).T
+        combinations = np.array([[1.0, 1.0-0.01*i] for i in range(100)])
         self._weight_values = combinations
         self._est_weight = np.ones(n_nets) # self._discriminator.get_weights()
     
@@ -245,6 +252,8 @@ class MultiTypeMFGPPO(object):
             kl_divs.append(kl_div)
         kl_divs = np.array(kl_divs)
         probs = np.exp(-kl_divs)/np.sum(np.exp(-kl_divs))
+        if np.isnan(probs).any():
+            probs = np.ones(len(weights))/len(weights)
 
         assert len(probs)==len(weights), f'probs:{probs.shape}, weights:{weights.shape}'
         selected_idx = np.random.choice(np.arange(len(weights)), size=1, p=probs)[0]
@@ -522,7 +531,7 @@ def parse_args():
     parser.add_argument("--num_iterations", type=int, default=5000, help="Set the number of global update steps of the outer loop")
     parser.add_argument("--sample_size", type=int, default=10, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_diversity", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_diversity4", help="logdir")
 
     parser.add_argument('--path', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="logdir")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
@@ -650,7 +659,7 @@ if __name__ == "__main__":
                     adv_pth, returns = mfgppo[i].cal_Adv(rewards[smp], values_pth[smp], dones_pth)
                     obs_weight_pth = torch.concat((obs_pth, torch.Tensor([list(sampled_weights[smp]) for _ in range(len(obs_pth))])), axis=1)
                     v_loss = mfgppo[i].update_eps(obs_weight_pth, logprobs_pth[smp], actions_pth[smp], adv_pth, returns, t_actions_pth[smp], t_logprobs_pth[smp]) 
-                    logger.record_tabular(f"total_loss {i}", v_loss.item())
+                logger.record_tabular(f"total_loss {i}", v_loss.item())
                 exp_ret[i].append(np.mean(ret))
                 #print(f'Exp. ret{i} {np.mean(ret)}')
 
