@@ -36,15 +36,36 @@ class Dset(object):
             return self.inputs, self.labels, self.all_obs, self.rews
         if self.pointer + batch_size >= self.num_pairs:
             self.init_pointer()
-        end = self.pointer + batch_size
-        inputs, labels, rews, nobs = [], [], [], []
+        inputs, labels, rews, nobs = [[] for _ in range(self.num_agents)], [[] for _ in range(self.num_agents)], [[] for _ in range(self.num_agents)], [[] for _ in range(self.num_agents)]
+
+        all_obs = []
+        while len(inputs[0])<batch_size:
+            end = self.pointer + batch_size
+            for k in range(self.num_agents):
+                inputs[k] += list(self.inputs[k][self.pointer:end, :])
+                labels[k] += list(self.labels[k][self.pointer:end, :])
+                rews[k] += list(self.rews[k][self.pointer:end])
+                if self.nobs_flag:
+                    nobs[k] += list(self.nobs[k][self.pointer:end, :])
+            all_obs += list(self.all_obs[self.pointer:end, :])
+
+        if len(inputs[0])>batch_size:
+            for k in range(self.num_agents):
+                inputs[k] = inputs[k][:batch_size]
+                labels[k] = labels[k][:batch_size]
+                rews[k] = rews[k][:batch_size]
+                if self.nobs_flag:
+                    nobs[k] = nobs[k][:batch_size]
+            all_obs = all_obs[:batch_size]
+
         for k in range(self.num_agents):
-            inputs.append(self.inputs[k][self.pointer:end, :])
-            labels.append(self.labels[k][self.pointer:end, :])
-            rews.append(self.rews[k][self.pointer:end])
+            inputs[k] = np.array(inputs[k])
+            labels[k] = np.array(labels[k])
+            rews[k] = np.array(rews[k])
             if self.nobs_flag:
-                nobs.append(self.nobs[k][self.pointer:end, :])
-        all_obs = self.all_obs[self.pointer:end, :]
+                nobs[k] = np.array(nobs[k])
+            all_obs = np.array(all_obs)
+
         self.pointer = end
         if self.nobs_flag:
             return inputs, labels, nobs, all_obs, rews
