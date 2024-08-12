@@ -117,7 +117,7 @@ filename = "actor"
 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_diversity3",
+            "/mnt/shunsuke/result/0726/multi_maze2_dist_mu-divided_value_common_1traj",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -151,7 +151,7 @@ pathes = [
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
                 "expert",
-                "dxy_mu-diversity3",
+                "dist_mu_common-1traj",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -185,7 +185,7 @@ pathnames = [
 
 filenames = [
                 "50_19",
-                "1115_9",
+                "200_2",
             ]
 weights = [[1.0, 1.0]]
 
