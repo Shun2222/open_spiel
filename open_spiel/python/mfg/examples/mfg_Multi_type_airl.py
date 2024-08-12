@@ -41,10 +41,11 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze/expert-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0708/multi_maze/actor99_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0708/multi_maze_airl", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000---", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_airl_1tra", help="log path")
 
+    parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument('--torch-deterministic', 
@@ -62,6 +63,11 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+differ_expert_path = [
+                        "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1tra",
+                        "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra",
+                        "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra",
+                     ]
 
 
 if __name__ == "__main__":
@@ -125,7 +131,10 @@ if __name__ == "__main__":
 
     experts = []
     for i in range(num_agent):
-        fname = expert_path + f'-{i}.pkl'
+        if args.differ_expert:
+            fname = differ_expert_path[i] + f'-{i}.pkl'
+        else:
+            fname = expert_path + f'-{i}.pkl'
         expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
         experts.append(expert)
         print(f'expert load from {fname}')

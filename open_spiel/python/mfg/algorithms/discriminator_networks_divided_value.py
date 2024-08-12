@@ -621,7 +621,6 @@ class Discriminator_2nets(nn.Module):
         else:
             return score, outputs 
 
-        return reward2, p_tau, p_tau2 
 
     def get_value(self, inputs, only_value=True, weighted_value=False):
         with torch.no_grad():

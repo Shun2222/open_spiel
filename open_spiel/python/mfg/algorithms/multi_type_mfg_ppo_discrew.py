@@ -212,23 +212,21 @@ class MultiTypeMFGPPO(object):
                 mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
                 all_mu.append(mus[self._player_id])
                 obs_mu = np.array(obs_list+mus)
+                obs_xym = np.array(obs_list[:2*size] + mus)
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
-                inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
 
                 if self._is_nets:
+                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
                     reward, outputs = discriminator.get_reward(
                         inputs,
-                        torch.from_numpy(obs_xym).to(self._device),
-                        torch.from_numpy(obs_next_xym).to(self._device),
-                        None,
                         discrim_score=False,
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
                     reward = discriminator.get_reward(
-                        torch.from_numpy(obs_mu).to(torch.float32),
-                        torch.from_numpy(onehot(action, nacs)).to(torch.int64),
+                        torch.from_numpy(np.array([obs_xym])).to(torch.float32),
+                        torch.from_numpy(acs).to(torch.int64),
                         None, None,
                         discrim_score=False,
                         ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
@@ -429,11 +427,12 @@ def parse_args():
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=100, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0627/multi_maze2_sa_mu", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_sarew", help="logdir")
-    parser.add_argument("--rew_index", type=int, default=1, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_1traj", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-common-1traj", help="logdir")
+
+    parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
@@ -455,16 +454,20 @@ if __name__ == "__main__":
     update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
-    from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+    from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
     is_nets = is_networks(args.path)
     print(f'Is networks: {is_nets}')
     if not is_nets:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
         rew_index = -1
+        net_input = None
     else:
         net_input = get_net_input(args.path)
-        label = get_net_label(net_input)
-        assert len(label)>=args.rew_index, 'rew_index is wrong'
+        net_label = get_net_labels(net_input)
+        is_divided = is_divided_value(args.path)
+        if not is_divided:
+            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
+        assert len(net_label)>=args.rew_index, 'rew_index is wrong'
         rew_index = args.rew_index
 
     # Set the seed 
@@ -519,18 +522,22 @@ if __name__ == "__main__":
             discriminator = Discriminator(nobs, nacs, False, device)
         elif is_nets:
             inputs = get_input_shape(net_input, env, num_agent)
-            labels = get_net_label(net_input)
-            discriminator = Discriminator(inputs, obs_xym_size, labels, device)
+            labels = get_net_labels(net_input)
+            num_hidden = get_num_hidden(args.path)
+            print(num_hidden)
+            if len(labels)==2:
+                discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+            if len(labels)==3:
+                discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
         else:
-            discriminator = Discriminator(nobs+num_agent, nacs, False, device)
-        reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
-        value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
+            discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
+
         if is_nets:
             discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)
             discriminator.print_weights()
         else:
-            distance_path = osp.join(args.path, args.distance_filename+update_eps_info + f'-{i}.pth')
-            mu_path = osp.join(args.path, args.mu_filename+update_eps_info + f'-{i}.pth')
+            reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
+            value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
             discriminator.load(reward_path, value_path, use_eval=True)
             print(f'')
         discriminators.append(discriminator)
