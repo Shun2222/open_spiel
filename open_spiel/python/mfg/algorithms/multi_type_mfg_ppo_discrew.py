@@ -76,9 +76,12 @@ class NashC(NashConv):
             root_state=root_state)
 
 class Agent(nn.Module):
-    def __init__(self, info_state_size, num_actions):
+    def __init__(self, info_state_size, num_actions, use_horizon=False):
         super(Agent, self).__init__()
         self.num_actions = num_actions
+        self.use_horizon = use_horizon
+        if not use_horizon:
+            info_state_size -= 40
         self.info_state_size = info_state_size
         self.critic = nn.Sequential(
             layer_init(nn.Linear(info_state_size, 128)), 
@@ -139,9 +142,15 @@ class PPOpolicy(policy_std.Policy):
 
     def action_probabilities(self, state, player_id=None):
         # main method that is called to update the population states distribution
+        size = 10
         obs = torch.Tensor(state.observation_tensor()).to(self.device)
+        if self.agent.use_horizon:
+            obs_pth = torch.Tensor(obs)
+        else:
+            obs_list = obs.tolist()
+            obs_pth = torch.Tensor(obs_list[:2*size]+[obs_list[-1]])
         legal_actions = state.legal_actions()
-        logits = self.agent.actor(obs).detach().cpu()
+        logits = self.agent.actor(obs_pth).detach().cpu()
         legat_logits = np.array([logits[action] for action in legal_actions])
         probs = np.exp(legat_logits -legat_logits.max())
         probs /= probs.sum(axis=0)
@@ -198,10 +207,20 @@ class MultiTypeMFGPPO(object):
             while not time_step.last():
                 obs = time_step.observations["info_state"][self._player_id]
                 obs_pth = torch.Tensor(obs).to(self._device)
-                info_state[step] = obs_pth
+
+                obs_list = obs[:-1]
+                obs_x = obs_list[:size].index(1)
+                obs_y = obs_list[size:2*size].index(1)
+                obs_t = obs_list[2*size:].index(1)
+                mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
+                all_mu.append(mus[self._player_id])
+                obs_mu = np.array(obs_list+mus[self._player_id])
+                obs_mu_pth = torch.Tensor(obs_list[:2*size]+[obs_list[-1]])
+                info_state[step] = obs_mu_pth
+
                 with torch.no_grad():
-                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_pth)
-                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_pth)
+                    t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_mu_pth)
+                    action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_mu_pth)
 
                 time_step = env.step([action.item()])
 
@@ -429,7 +448,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_1traj", help="file path")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_1traj", help="file path")
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-common-1traj", help="logdir")
 
     parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")

@@ -31,7 +31,8 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
-from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
+#from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo_discrew import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 import copy
@@ -114,10 +115,14 @@ def parse_args():
 
 # 4items: args actor_filename, filename, pathes, pathnames
 filename = "actor"
+#"/mnt/shunsuke/result/0726/multi_maze2_expert",
 
+use_horizon = True
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/0726/multi_maze2_airl_1tra",
+            "/mnt/shunsuke/result/0726/multi_maze2_ppo_airl-1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-common-1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-dxyrew-1traj",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -183,9 +188,14 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 
+#"50_19",
 filenames = [
-                "50_19",
-                "200_2",
+                "49_19",
+                "49_19",
+                "49_19",
+                "49_19",
+                "49_19",
+                "49_19",
             ]
 weights = [[1.0, 1.0]]
 
@@ -258,9 +268,9 @@ if __name__ == "__main__":
         mfg_dists = []
         for i in range(num_agent):
             if is_diversity_ppo:
-                agent = Agent(nobs, len(weight), nacs).to(device)
+                agent = Agent(nobs, len(weight), nacs, use_horizon=use_horizon).to(device)
             else:
-                agent = Agent(nobs, nacs).to(device)
+                agent = Agent(nobs, nacs, use_horizon=use_horizon).to(device)
             actor_model = agent.actor
             critic_model = agent.critic
 
@@ -315,6 +325,9 @@ if __name__ == "__main__":
                         else:
                             state = x_onehot + y_onehot
                             obs = torch.Tensor(state+mu)
+                        if use_horizon:
+                            state = x_onehot + y_onehot + t_onehot
+                            obs = torch.Tensor(state+mu)
                         inputs[idx][f"obs-{x}-{y}-{t}-m"] = obs 
 
         values = np.zeros((horizon, size, size))
@@ -365,8 +378,10 @@ if __name__ == "__main__":
                     obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]] + weight)
                 else:
                     obs_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
-                #obs_pth = torch.Tensor(obs).to(device)
-                #obs = torch.Tensor(obs).to(device)
+                if use_horizon:
+                    obs_pth = torch.Tensor(obs).to(device)
+                    obs = torch.Tensor(obs).to(device)
+
                 with torch.no_grad():
                     t_action, t_logprob, _, _ = agents[i].get_action_and_value(obs_pth)
                     action, logprob, entropy, value = agents[i].get_action_and_value(obs_pth)
