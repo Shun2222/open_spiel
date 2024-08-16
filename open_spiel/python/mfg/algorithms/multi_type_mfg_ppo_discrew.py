@@ -578,7 +578,7 @@ if __name__ == "__main__":
     inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
     disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index, disc_rewards=disc_rewards, disc_outputs=disc_outputs, disc_inputs=inputs[0], disc_path=[args.path, f'{update_eps_info}-{i}']) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
