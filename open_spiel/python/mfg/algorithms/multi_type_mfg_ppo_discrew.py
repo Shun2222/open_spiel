@@ -38,7 +38,6 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 from games.predator_prey import goal_distance, divide_obs
-from multi_render_reward import multi_render_reward_nets_divided_value
 
 def convert_distrib(envs, distrib):
     env = envs[0]
@@ -451,8 +450,8 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_1traj", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-1traj", help="logdir")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_airl_1traj", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_airl_1traj", help="logdir")
 
     parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
@@ -564,8 +563,9 @@ if __name__ == "__main__":
             print(f'')
         discriminators.append(discriminator)
     
+    """
+    from multi_render_reward import multi_render_reward_nets_divided_value
     mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
-
     for k,v in merge_dist.distribution.items():
         if "mu" in k:
             tt = k.split(",")
@@ -577,6 +577,7 @@ if __name__ == "__main__":
             mu_dists[pop][t,y,x] = v
     inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
     disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
+    """
 
     mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
 
