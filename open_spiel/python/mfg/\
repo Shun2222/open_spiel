@@ -16,7 +16,6 @@ import time
 import logging
 import seaborn as sns
 import matplotlib.pyplot as plt
-import copy
 from matplotlib import animation
 
 import torch
@@ -161,7 +160,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_index=-1):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_index=-1, disc_rewards=None, disc_outputs=None):
         self._device = device
         self._rew_index = rew_index
 
@@ -185,6 +184,8 @@ class MultiTypeMFGPPO(object):
         self._mu_dist = conv_dist 
 
         self._expert_policy = expert_policy
+        self._disc_rewards = disc_rewards
+        self._disc_outputs = disc_outputs
 
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
@@ -223,6 +224,10 @@ class MultiTypeMFGPPO(object):
                 with torch.no_grad():
                     t_action, t_logprob, _, _ = self._iter_agent.get_action_and_value(obs_mu_pth)
                     action, logprob, entropy, value = self._eps_agent.get_action_and_value(obs_mu_pth)
+                print(f'x, y, t: {obs_x}, {obs_y}, {obs_t}')
+                print(obs)
+                print(obs_mu_pth)
+                print(action)
 
                 time_step = env.step([action.item()])
 
@@ -240,13 +245,12 @@ class MultiTypeMFGPPO(object):
 
                 if self._is_nets:
                     inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
-                    reward, outputs = self._discriminator.get_reward(
+                    reward, outputs = discriminator.get_reward(
                         inputs,
                         discrim_score=False,
-                        only_rew=False,
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
-                    reward = self._discriminator.get_reward(
+                    reward = discriminator.get_reward(
                         torch.from_numpy(np.array([obs_xym])).to(torch.float32),
                         torch.from_numpy(acs).to(torch.int64),
                         None, None,
@@ -267,8 +271,21 @@ class MultiTypeMFGPPO(object):
                 #rewards[step] = reward
                 if self._rew_index>=0:
                     rewards[step] = outputs[self._rew_index] 
+                    print(f'reward: {rewards[step]}')
+                    disc_rew = self._disc_outputs[self._rew_index][t, y, x, action]
+                    if disc_rew!=rewards[step]:
+                        print(f'x, y, t: {x}, {y}, {t}')
+                        print(f'disc rew: {disc_rew}')
+                        print(f'reward: {rewards[step]}')
+                        input()
                 else:
                     rewards[step] = reward
+                    disc_rew = self._disc_rewards[t, y, x, action]
+                    if disc_rew!=rewards[step]:
+                        print(f'x, y, t: {x}, {y}, {t}')
+                        print(f'disc rew: {disc_rew}')
+                        print(f'reward: {rewards[step]}')
+                        input()
                     
                 rew += time_step.rewards[self._player_id]
 
@@ -449,10 +466,10 @@ def parse_args():
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--num_iterations", type=int, default=500, help="Set the number of global update steps of the outer loop")
     
     parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_1traj", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-1traj-dxyrew", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_test", help="logdir")
 
     parser.add_argument("--rew_index", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
@@ -578,7 +595,7 @@ if __name__ == "__main__":
     inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
     disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index, disc_rewards=disc_rewards, disc_outputs=disc_outputs, disc_inputs=inputs[0], disc_path=[args.path, f'{update_eps_info}-{i}']) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index, disc_rewards=disc_rewards, disc_outputs=disc_outputs) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):

@@ -117,12 +117,9 @@ def parse_args():
 filename = "actor"
 #"/mnt/shunsuke/result/0726/multi_maze2_expert",
 
-use_horizon = True
+use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_airl-1traj",
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-1traj",
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-common-1traj",
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-dxyrew-1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu-dxyrew-1traj-500iter",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -155,8 +152,7 @@ pathes = [
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "expert",
-                "airl-1traj",
+                "dxy_mu-dxyrew-1traj-500iter",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -190,7 +186,7 @@ pathnames = [
 
 #"50_19",
 filenames = [
-                "49_19",
+                "208_19",
                 "49_19",
                 "49_19",
                 "49_19",
