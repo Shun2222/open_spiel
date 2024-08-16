@@ -159,7 +159,6 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
         dx, dy = goal_distance(x, y, idx)
         dxy = np.concatenate([dx, dy], axis=1)
         #dxy_abs = np.abs(dxy)
-        print(f'dx, dy: {dx}, {dy}')
 
         #dx[dx<0] = np.abs(dx[dx<0])+size
         #dy[dy<0] = np.abs(dy[dy<0])+size
