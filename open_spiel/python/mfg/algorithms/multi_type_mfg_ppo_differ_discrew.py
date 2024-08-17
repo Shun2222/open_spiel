@@ -229,8 +229,11 @@ class MultiTypeMFGPPO(object):
                 x = obs_list[:size].index(1)
                 y = obs_list[size:2*size].index(1)
                 t = obs_list[2*size:].index(1)
-                mus = [self._mu_dist[n][t, y, x] for n in range(num_agent)]
-                all_mu.append(mus[self._player_id])
+                mus = [self._mu_dist[self._player_id][t, y, x] for n in range(num_agent)]
+                for idx in range(num_agent):
+                    if idx!=self._player_id:
+                        mus.append(self._mu_dist[idx][t, y, x])
+                all_mu.append(mus[0])
                 obs_mu = np.array(obs_list+mus)
                 obs_xym = np.array(obs_list[:2*size] + mus)
 
@@ -457,7 +460,7 @@ def parse_args():
     
     parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
     parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_skip_common_1traj", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_dxyrew-skip_common_murew", help="logdir")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")

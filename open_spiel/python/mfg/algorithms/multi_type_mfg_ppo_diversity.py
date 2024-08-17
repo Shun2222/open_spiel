@@ -312,17 +312,25 @@ class MultiTypeMFGPPO(object):
                     x = np.argmax(x)
                     y = np.argmax(y)
                     t = np.argmax(t)
-                    mu = [self._mu_dist[n][t, y, x] for n in range(num_agent)]
+                    mu = [self._mu_dist[self._player_id][t, y, x]]
+                    for idx in range(num_agent):
+                        if idx!=self._player_id:
+                            mu.append(self._mu_dist[idx][t, y, x])
                     mus.append(mu)
                 mus = np.array(mus)
-                all_mu.append(mus[:, self._player_id])
+                all_mu.append(mus[:, 0])
                 obs_next_xym = np.concatenate([obs_xyt, mus], axis=1)
                 obs_next_xym_pth = torch.from_numpy(obs_next_xym)
                 """
 
+                mus = [self._mu_dist[self._player_id][obs_t, obs_y, obs_x]]
+                for idx in range(num_agent):
+                    if idx!=self._player_id:
+                        mus.append(self._mu_dist[idx][obs_t, obs_y, obs_x])
+                obs_mus = np.array(obs_list+mus)
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
-                inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
+                inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mus], acs, self._player_id)
                 #inputs_next, _, _ = create_disc_input(self._size, self._net_input, [obs_next_xym_pth], acs, self._player_id)
     
                 all_rew = []

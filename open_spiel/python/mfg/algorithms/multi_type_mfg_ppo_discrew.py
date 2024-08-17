@@ -213,9 +213,13 @@ class MultiTypeMFGPPO(object):
                 obs_x = obs_list[:size].index(1)
                 obs_y = obs_list[size:2*size].index(1)
                 obs_t = obs_list[2*size:].index(1)
-                mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
-                all_mu.append(mus[self._player_id])
-                obs_mu = np.array(obs_list+mus[self._player_id])
+                mus = [self._mu_dist[self._player_id][obs_t, obs_y, obs_x]]
+                for idx in range(num_agent):
+                    if idx!=self._player_id:
+                        mus.append(self._mu_dist[idx][obs_t, obs_y, obs_x])
+                all_mu.append(mus[0])
+                obs_mu = np.array(obs_list+mus[0])
+                obs_mus = np.array(obs_list+mus)
                 obs_mu_pth = torch.Tensor(obs_list[:2*size]+[obs_list[-1]])
                 info_state[step] = obs_mu_pth
 
@@ -225,20 +229,12 @@ class MultiTypeMFGPPO(object):
 
                 time_step = env.step([action.item()])
 
-                obs_list = obs[:-1]
-                x = obs_list[:size].index(1)
-                y = obs_list[size:2*size].index(1)
-                t = obs_list[2*size:].index(1)
-                mus = [self._mu_dist[n][t, y, x] for n in range(num_agent)]
-                all_mu.append(mus[self._player_id])
-                obs_mu = np.array(obs_list+mus)
-                obs_xym = np.array(obs_list[:2*size] + mus)
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
 
                 if self._is_nets:
-                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
+                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mus], acs, self._player_id)
                     reward, outputs = self._discriminator.get_reward(
                         inputs,
                         discrim_score=False,

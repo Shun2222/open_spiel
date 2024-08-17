@@ -204,7 +204,7 @@ class MultiTypeMFGPPO(object):
         weight_upper = 10
         weight_step = 0.1
         if self._is_nets:
-            n_nets = self._discriminator.get_num_nets()
+            n_nets = self._discriminator[0].get_num_nets()
             vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
             #combinations = np.vstack([grid.ravel() for grid in grids]).T
@@ -236,8 +236,11 @@ class MultiTypeMFGPPO(object):
                 obs_x = obs_list[:size].index(1)
                 obs_y = obs_list[size:2*size].index(1)
                 obs_t = obs_list[2*size:].index(1)
-                mus = [self._mu_dist[n][obs_t, obs_y, obs_x] for n in range(num_agent)]
-                all_mu.append(mus[self._player_id])
+                mus = [self._mu_dist[self._player_id][obs_t, obs_y, obs_x]]
+                for idx in range(num_agent):
+                    if idx!=self._player_id:
+                        mus.append(self._mu_dist[idx][obs_t, obs_y, obs_x])
+                all_mu.append(mus[0])
                 obs_mu = np.array(obs_list+mus)
                 nobs = obs_mu.copy()
                 nobs[:-1] = obs_mu[1:]
@@ -257,33 +260,44 @@ class MultiTypeMFGPPO(object):
                         reward0, outputs0 = self._discriminator[0].get_reward(
                             inputs,
                             discrim_score=False,
+                            only_rew=False,
                             weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         reward1, outputs1 = self._discriminator[1].get_reward(
                             inputs,
                             discrim_score=False,
+                            only_rew=False,
                             weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                         reward = weights0[0] * reward0 + weights1[1] * reward1
 
                         disc_value0, disc_values0 = self._discriminator[0].get_value(
                             inputs,
-                            weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                            only_value=False,
+                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         disc_value1, disc_values1 = self._discriminator[1].get_value(
                             inputs, 
-                            weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                            only_value=False,
+                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         disc_value_next0, disc_values_next0 = self._discriminator[0].get_value(
                             inputs_next, 
-                            weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                            only_value=False,
+                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         disc_value_next1, disc_values_next1 = self._discriminator[1].get_value(
                             inputs_next, 
-                            weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                            only_value=False,
+                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                         gamma = 0.99
                         value_fn = weights0[0] * disc_values0[0] + weights1[1] * disc_values1[1]
                         value_fn_next = weights0[0] * disc_values_next0[0] + weights1[1] * disc_values_next1[1]
                         log_p_tau = reward + gamma * value_fn_next - value_fn
+                        log_p_tau = log_p_tau.numpy()
                         tf = np.abs(log_p_tau)<5
                         p_tau = np.zeros(log_p_tau.shape)
+                        print(f"p_tau shape: {p_tau.shape}")
+                        print(f"log_p_tau shape: {log_p_tau.shape}")
+                        print(f"ptau type: {type(p_tau.shape)}")
+                        print(f"log ptau type: {type(log_p_tau.shape)}")
                         p_tau[tf] = np.exp(-np.abs(log_p_tau[tf]))
                         p_tau = p_tau.flatten()
 
@@ -661,9 +675,12 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_weigted_test", help="logdir")
-    parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
+    parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")
+
     parser.add_argument("--update_eps", type=str, default=r"200_1", help="file path")
 
     parser.add_argument("--single", action='store_true')

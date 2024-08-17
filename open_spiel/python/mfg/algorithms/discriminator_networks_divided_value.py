@@ -611,6 +611,7 @@ class Discriminator_2nets(nn.Module):
                     output2 = output2.reshape(1, 1)
                 rew_inputs = torch.cat((output1, output2), dim=1)
                 score = self.reward_net(rew_inputs.to(torch.float32))
+                outputs = [output1, output2]
         if weighted_rew:
             weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
             outputs = [output1, output2]
