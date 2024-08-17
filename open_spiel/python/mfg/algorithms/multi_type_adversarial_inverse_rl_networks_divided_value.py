@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=None):
         self._game = game
         self._envs = envs
         self._device = device

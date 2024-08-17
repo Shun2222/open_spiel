@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False]):
         self._game = game
         self._envs = envs
         self._device = device
@@ -66,7 +66,11 @@ class MultiTypeAIRL(object):
             else:
                 assert False, 'Unknown number of nets'
         self._optimizer = optim.Adam(self._discriminator.parameters(), lr=0.01)
-
+        self._skip_train = skip_train
+        if len(skip_train)!=self._num_agent:
+            print(f'skip train is not match the size of num agent. ((skip_train num, num agent) = {len(skip_train)}, {self._num_agent})')
+            self._skip_train = [False for _ in range(self._num_agent)]
+            print(f'Set skip train to {self._skip_train}')
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
         logger.record_tabular("total_step", total_step)
@@ -120,7 +124,10 @@ class MultiTypeAIRL(object):
                         x = np.argmax(obs[step][:self._size])
                         y = np.argmax(obs[step][self._size:2*self._size])
                         t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
-                        mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
+                        mu = [self._mu_dists[idx][t, y, x]]
+                        for pop in range(self._num_agent):
+                            if pop!=idx:
+                                mu.append(self._mu_dists[pop][t, y, x])
                         obs_mu.append(obs_list + mu)
                     obs_mu = np.array(obs_mu)
 
@@ -140,8 +147,9 @@ class MultiTypeAIRL(object):
                     disc_rewards = disc_rewards_pth.cpu().detach().numpy().reshape(batch_step)
                     disc_rewards_pth = torch.from_numpy(disc_rewards).to(self._device)
 
-                    adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
-                    v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
+                    if self._skip_train[idx]:
+                        adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
+                        v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
 
                     mh_obs = [np.array(obs)]
                     mh_actions = [np.array(multionehot(actions, self._nacs))]
@@ -375,27 +383,29 @@ class MultiTypeAIRL(object):
                     d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
                     if self._n_networks==2:
-                        total_loss = self._discriminator.train(
-                            input1, 
-                            input2, 
-                            input1_next, 
-                            input2_next, 
-                            self._optimizer,
-                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                        )
+                        if self._skip_train[idx]:
+                            total_loss = self._discriminator.train(
+                                input1, 
+                                input2, 
+                                input1_next, 
+                                input2_next, 
+                                self._optimizer,
+                                torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                                torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                            )
                     elif self._n_networks==3:
-                        total_loss = self._discriminator.train(
-                            input1, 
-                            input2, 
-                            input3, 
-                            input1_next, 
-                            input2_next, 
-                            input3_next, 
-                            self._optimizer,
-                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                        )
+                        if self._skip_train[idx]:
+                            total_loss = self._discriminator.train(
+                                input1, 
+                                input2, 
+                                input3, 
+                                input1_next, 
+                                input2_next, 
+                                #input3_next, 
+                                self._optimizer,
+                                torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                                torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                            )
                     else:
                         assert False, 'Unknown number of networks'
 
@@ -407,7 +417,8 @@ class MultiTypeAIRL(object):
                     except:
                         pass
 
-                    logger.record_tabular(f"generator_loss{idx}", v_loss.item())
+                    if not self._skip_train[idx]:
+                        logger.record_tabular(f"generator_loss{idx}", v_loss.item())
                     logger.record_tabular(f"discriminator_loss{idx}", total_loss)
                     logger.record_tabular(f"mean_ret{idx}", np.mean(ret))
                     logger.record_tabular(f"pearsonr{idx}", pear)

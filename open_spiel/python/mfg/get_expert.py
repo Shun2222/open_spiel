@@ -247,8 +247,10 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
                     obs_mu.append(conv_dist[idx][obs_t, obs_y, obs_x])
                 else:
                     obs_mu = list(obs_xyt)
+                    obs_mu.append(conv_dist[idx][obs_t, obs_y, obs_x])
                     for k in range(num_agent):
-                        obs_mu.append(conv_dist[k][obs_t, obs_y, obs_x])
+                        if idx!=k:
+                            obs_mu.append(conv_dist[k][obs_t, obs_y, obs_x])
 
                 if notmu:
                     all_ob.append(obs)
