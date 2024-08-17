@@ -160,9 +160,9 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_index=-1):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_indexes=None):
         self._device = device
-        self._rew_index = rew_index
+        self._rew_indexes = rew_indexes
 
         info_state_size = env.observation_spec()["info_state"][0]
         self._nacs = num_actions = env.action_spec()["num_actions"]
@@ -239,7 +239,12 @@ class MultiTypeMFGPPO(object):
 
                 if self._is_nets:
                     inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
-                    reward, outputs = self._discriminator.get_reward(
+                    reward0, outputs0 = self._discriminator[0].get_reward(
+                        inputs,
+                        discrim_score=False,
+                        only_rew=False,
+                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                    reward1, outputs1 = self._discriminator[1].get_reward(
                         inputs,
                         discrim_score=False,
                         only_rew=False,
@@ -265,7 +270,7 @@ class MultiTypeMFGPPO(object):
                 actions[step] = action
                 #rewards[step] = reward
                 if self._rew_index>=0:
-                    rewards[step] = outputs[self._rew_index] 
+                    rewards[step] = outputs0[self._rew_indexes[0]] + outputs1[self._rew_indexes[1]]
                 else:
                     rewards[step] = reward
                     
@@ -450,10 +455,12 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_1traj", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_common_1traj-dxymu", help="logdir")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_skip_common_1traj", help="logdir")
 
-    parser.add_argument("--rew_index", type=int, default=0, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
@@ -469,6 +476,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
+    pathes = [args.path0, args.path1]
     single = args.single
     notmu = args.notmu
 
@@ -476,20 +484,20 @@ if __name__ == "__main__":
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
-    is_nets = is_networks(args.path)
+    is_nets = is_networks(args.path0)
     print(f'Is networks: {is_nets}')
     if not is_nets:
         from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-        rew_index = -1
+        rew_indexes = [-1, -1]
         net_input = None
     else:
-        net_input = get_net_input(args.path)
+        net_input = get_net_input(args.path0)
         net_label = get_net_labels(net_input)
-        is_divided = is_divided_value(args.path)
+        is_divided = is_divided_value(args.path0)
         if not is_divided:
             from open_spiel.python.mfg.algorithms.discriminator_networks import * 
         assert len(net_label)>=args.rew_index, 'rew_index is wrong'
-        rew_index = args.rew_index
+        rew_indexes = [args.rew_index0, args.rew_index1]
 
     # Set the seed 
     seed = args.seed
@@ -544,21 +552,22 @@ if __name__ == "__main__":
         elif is_nets:
             inputs = get_input_shape(net_input, env, num_agent)
             labels = get_net_labels(net_input)
-            num_hidden = get_num_hidden(args.path)
+            num_hidden = get_num_hidden(args.path0)
             print(num_hidden)
             if len(labels)==2:
-                discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden) for _ in range(2)]
             if len(labels)==3:
                 discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
         else:
             discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
 
         if is_nets:
-            discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)
-            discriminator.print_weights()
+            for j in range(2):
+                discriminator[j].load(pathes[j], f'{update_eps_info}-{i}', use_eval=True)
+                discriminator[j].print_weights()
         else:
-            reward_path = osp.join(args.path, args.reward_filename+update_eps_info + f'-{i}.pth')
-            value_path = osp.join(args.path, args.value_filename+update_eps_info + f'-{i}.pth')
+            reward_path = osp.join(args.path0, args.reward_filename+update_eps_info + f'-{i}.pth')
+            value_path = osp.join(args.path0, args.value_filename+update_eps_info + f'-{i}.pth')
             discriminator.load(reward_path, value_path, use_eval=True)
             print(f'')
         discriminators.append(discriminator)
@@ -578,8 +587,7 @@ if __name__ == "__main__":
     inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
     disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
     """
-
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_index=rew_index) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_indexes=rew_indexes) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
