@@ -42,14 +42,15 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000---", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy-divided_value_1traj", help="log path")
-    parser.add_argument("--net_input", type=str, default="dxy", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="log path")
+    parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
 
     parser.add_argument("--is_common", action='store_true', help="commonalize reward")
     parser.add_argument('--skip_train', nargs='*', default=["false", "false", "false"])
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
+
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument('--torch-deterministic', 

@@ -119,9 +119,8 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_1traj",
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_common_1traj-dxyrew",
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_common_1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -154,9 +153,8 @@ pathes = [
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "dxy_mu-1traj",
-                "dxy_mu_common_-1traj-dxyrew",
                 "dxy_mu_common_-1traj",
+                "dxy_mu_fixmu_-1traj",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -190,14 +188,17 @@ pathnames = [
 
 #"50_19",
 filenames = [
-                "49_19",
-                "49_19",
-                "49_19",
+                "200_2",
+                "200_2",
             ]
 weights = [[1.0, 1.0]]
 
                     #"actor99_19",
                     #"actor200_2",
+skip_train = [
+               [True, [True, False, False]], 
+               [False, []],
+             ]
 
 if __name__ == "__main__":
     args = parse_args()
