@@ -269,7 +269,7 @@ class MultiTypeMFGPPO(object):
                 values[step] = value
                 actions[step] = action
                 #rewards[step] = reward
-                if self._rew_index>=0:
+                if self._rew_indexes[0]>=0:
                     rewards[step] = outputs0[self._rew_indexes[0]] + outputs1[self._rew_indexes[1]]
                 else:
                     rewards[step] = reward
@@ -496,7 +496,7 @@ if __name__ == "__main__":
         is_divided = is_divided_value(args.path0)
         if not is_divided:
             from open_spiel.python.mfg.algorithms.discriminator_networks import * 
-        assert len(net_label)>=args.rew_index, 'rew_index is wrong'
+        assert len(net_label)>=args.rew_index0 and len(net_label)>=args.rew_index1, 'rew_index is wrong'
         rew_indexes = [args.rew_index0, args.rew_index1]
 
     # Set the seed 
