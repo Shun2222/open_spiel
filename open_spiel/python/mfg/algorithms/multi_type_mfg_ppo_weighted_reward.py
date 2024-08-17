@@ -245,7 +245,7 @@ class MultiTypeMFGPPO(object):
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     w_rew = weighted_reward.numpy()[0]
                 else:
-                    reward = discriminator.get_reward(
+                    reward = self._discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
                         torch.from_numpy(onehot(action, nacs)).to(torch.int64),
                         None, None,

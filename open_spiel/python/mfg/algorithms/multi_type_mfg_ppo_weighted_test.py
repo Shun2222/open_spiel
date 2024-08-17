@@ -284,7 +284,7 @@ class MultiTypeMFGPPO(object):
                         all_rew2[rate_str].append(rew2[0])
                     all_rew.append(rew)
                 else:
-                    reward = discriminator.get_reward(
+                    reward = self._discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
                         torch.from_numpy(onehot(action, nacs)).to(torch.int64),
                         None, None,
