@@ -630,7 +630,7 @@ class Discriminator_2nets(nn.Module):
             value_fn2 = self.value_net2(input2.to(torch.float32))
 
             ws = self.get_weights()
-            value =  + ws[1] * value_fn2
+            value = ws[0] * value_fn1 + ws[1] * value_fn2
             if only_value:
                 return value 
             elif weighted_value:
