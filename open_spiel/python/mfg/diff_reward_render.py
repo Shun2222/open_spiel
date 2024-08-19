@@ -95,7 +95,8 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_dist_mu-divided_value_common_1traj",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_skip_common_1traj",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -111,7 +112,8 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dist_mu-divided_value_common_1traj",
+                "MF-AITL_dxy_mu-divided_value_1traj",
+                "MF-AITL_dxy_mu-divided_value_skip_common_1traj",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -292,7 +294,8 @@ if __name__ == "__main__":
                 if len(labels)==3:
                     discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
-                discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
+                #discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
+                discriminator = Discriminator(5, nacs, False, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
 
@@ -343,7 +346,7 @@ if __name__ == "__main__":
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
-                rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, save=True, filename=save_path+f"-{i}")
+                rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
             datas.append(np.mean(rewards, axis=3))
 
         res.append(datas)

@@ -200,15 +200,14 @@ class MultiTypeMFGPPO(object):
         all_rew = [] 
         all_rew2 = {} 
         ret = []
-        weight_lower = -1  
-        weight_upper = 10
+        weight_lower = 0.5
+        weight_upper = 1.5
         weight_step = 0.1
         if self._is_nets:
             n_nets = self._discriminator[0].get_num_nets()
             vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
-            #combinations = np.vstack([grid.ravel() for grid in grids]).T
-            combinations = np.array([[10.1, 10.9], [10.1, 10.8]])
+            combinations = np.vstack([grid.ravel() for grid in grids]).T
             for rate in combinations:
                 rate_str = ''
                 for n in range(n_nets):
@@ -268,7 +267,7 @@ class MultiTypeMFGPPO(object):
                             only_rew=False,
                             weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                        reward = weights0[0] * reward0 + weights1[1] * reward1
+                        reward = weights0[0] * outputs0[0] + weights1[1] * outputs1[1]
 
                         disc_value0, disc_values0 = self._discriminator[0].get_value(
                             inputs,
@@ -294,12 +293,14 @@ class MultiTypeMFGPPO(object):
                         log_p_tau = log_p_tau.numpy()
                         tf = np.abs(log_p_tau)<5
                         p_tau = np.zeros(log_p_tau.shape)
-                        print(f"p_tau shape: {p_tau.shape}")
-                        print(f"log_p_tau shape: {log_p_tau.shape}")
-                        print(f"ptau type: {type(p_tau.shape)}")
-                        print(f"log ptau type: {type(log_p_tau.shape)}")
                         p_tau[tf] = np.exp(-np.abs(log_p_tau[tf]))
                         p_tau = p_tau.flatten()
+
+                        #print(f'weights0: {weights0}')
+                        #print(f'weights1: {weights1}')
+                        #print(f'outputs0: {outputs0}')
+                        #print(f'outputs1: {outputs1}')
+                        #input()
 
                     else:
                         reward, outputs = self._discriminator.get_reward(
@@ -313,16 +314,20 @@ class MultiTypeMFGPPO(object):
                         if self._is_divided:
                             disc_value0, disc_values0 = self._discriminator[0].get_value(
                                 inputs,
-                                weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                                only_value=False,
+                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value1, disc_values1 = self._discriminator[1].get_value(
                                 inputs, 
-                                weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                                only_value=False,
+                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value_next0, disc_values_next0 = self._discriminator[0].get_value(
                                 inputs_next, 
-                                weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                                only_value=False,
+                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value_next1, disc_values_next1 = self._discriminator[1].get_value(
                                 inputs_next, 
-                                weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                                only_value=False,
+                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                             weights0 = self._discriminator[0].get_weights() * rate[0]
                             weights1 = self._discriminator[1].get_weights() * rate[1]
@@ -330,11 +335,12 @@ class MultiTypeMFGPPO(object):
 
                             value_fn = weights0[0] * disc_values0[0] + weights1[1] * disc_values1[1]
                             value_fn_next = weights0[0] * disc_values_next0[0] + weights1[1] * disc_values_next1[1]
-                            disc_reward = weights0[0] * reward0 + weights1[1] * reward1
+                            disc_reward = weights0[0] * outputs0[0] + weights1[1] * outputs1[1] 
                             log_p_tau2 = disc_reward + gamma * value_fn_next - value_fn
+                            log_p_tau2 = log_p_tau2.numpy()
                             tf = np.abs(log_p_tau2)<5
-                            p_tau = np.zeros(log_p_tau2.shape)
-                            p_tau[tf] = np.exp(-np.abs(log_p_tau2[tf]))
+                            p_tau2 = np.zeros(log_p_tau2.shape)
+                            p_tau2[tf] = np.exp(-np.abs(log_p_tau2[tf]))
                             p_tau2 = p_tau2.flatten()
                         else:
                             rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
@@ -348,8 +354,9 @@ class MultiTypeMFGPPO(object):
                             rate_str += f'{rate[n]} '
                         all_p_tau[rate_str].append(p_tau[0])
                         all_p_tau2[rate_str].append(p_tau2[0])
-                        all_rew2[rate_str].append(disc_reward[0])
-                    all_rew.append(reward[0])
+                        all_rew2[rate_str].append(disc_reward.numpy()[0])
+                    all_rew.append(reward.numpy()[0])
+                    print(f'{all_rew[-1].shape}: {all_rew[-1]}')
                 else:
                     reward = self._discriminator.get_reward(
                         torch.from_numpy(obs_mu).to(torch.float32),
@@ -370,8 +377,8 @@ class MultiTypeMFGPPO(object):
                 values[step] = value
                 actions[step] = action
                 #rewards[step] = reward
-                if self._rew_index>=0:
-                    rewards[step] = outputs[self._rew_index] 
+                if self._rew_indexes[0]>=0:
+                    rewards[step] = reward 
                 else:
                     rewards[step] = reward
                     
@@ -401,7 +408,7 @@ class MultiTypeMFGPPO(object):
         cos_sims_rews = [] 
         spearmanrs_rews = []
         kl_divs_rews = []
-        rew = np.array(all_rew).flatten()
+        rew = np.array(all_rew)
         xs = []
         ys = []
         for rate_str in all_p_tau.keys():
@@ -416,28 +423,28 @@ class MultiTypeMFGPPO(object):
 
             cos_sim = 1-distance.cosine(p_tau, p_tau2)
             sp, p_value = spearmanr(p_tau, p_tau2)
-            kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
+            #kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(p_tau, p_tau2)]) 
 
-            cos_sim_rew = 1-distance.cosine(rew, rew2)
-            sp_rew, p_value = spearmanr(rew, rew2)
-            kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
+            #cos_sim_rew = 1-distance.cosine(rew, rew2)
+            #sp_rew, p_value = spearmanr(rew, rew2)
+            #kl_div_rew = np.sum([ai * np.log(ai / bi) for ai, bi in zip(rew, rew2)]) 
             #euclid = np.sqrt(np.sum((p_tau-p_tau2)**2))
 
             cos_sims_dic[rate_str] = cos_sim
             spearmanrs_dic[rate_str] = sp 
-            kl_divs_dic[rate_str] = kl_div 
+            #kl_divs_dic[rate_str] = kl_div 
 
-            cos_sims_rews_dic[rate_str] = cos_sim_rew
-            spearmanrs_rews_dic[rate_str] = sp_rew
-            kl_divs_rews_dic[rate_str] = kl_div_rew
+            #cos_sims_rews_dic[rate_str] = cos_sim_rew
+            #spearmanrs_rews_dic[rate_str] = sp_rew
+            #kl_divs_rews_dic[rate_str] = kl_div_rew
 
             cos_sims.append(cos_sim)
             spearmanrs.append(sp)
-            kl_divs.append(kl_div)
+            #kl_divs.append(kl_div)
 
-            cos_sims_rews.append(cos_sim_rew)
-            spearmanrs_rews.append(sp_rew)
-            kl_divs_rews.append(kl_div_rew)
+            #cos_sims_rews.append(cos_sim_rew)
+            #Jspearmanrs_rews.append(sp_rew)
+            #kl_divs_rews.append(kl_div_rew)
 
             print(f'----------------------')
             print(f'rate: {rate_str}')
@@ -445,7 +452,7 @@ class MultiTypeMFGPPO(object):
             print(f'log p tau2: {np.mean(p_tau2)}')
             print(f'cos_sim(p,p2): {np.mean(cos_sim)}')
             print(f'spearmanr(p,p2): {np.mean(sp)}')
-            print(f'kl_div(p,p2): {np.mean(kl_div)}')
+            #print(f'kl_div(p,p2): {np.mean(kl_div)}')
             #print(f'euclid(p,p2): {np.mean(euclid)}')
 
         save_dir = logger.get_dir()
@@ -465,6 +472,7 @@ class MultiTypeMFGPPO(object):
         plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}.png'))
         plt.close()
 
+        """
         plt.figure()
         plt.title('kl divergense')
         plt.scatter(xs, ys, size, kl_divs, cmap='seismic')
@@ -492,6 +500,7 @@ class MultiTypeMFGPPO(object):
         plt.colorbar()
         plt.savefig(osp.join(save_dir, f'kl_div_rew_{weight_lower}-{weight_upper}-{weight_step}.png'))
         plt.close()
+        """
 
         pkl.dump(cos_sims_dic, open(osp.join(save_dir, f'cos_sim_dic_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
         pkl.dump(spearmanrs_dic, open(osp.join(save_dir, f'spearmanr_dic_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
@@ -676,8 +685,10 @@ def parse_args():
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_weigted_test", help="logdir")
-    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value", help="file path")
+
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj", help="file path")
+
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")
 

@@ -813,7 +813,10 @@ class Discriminator_2nets(nn.Module):
             for x in range(ob_shape[1]):
                 for y in range(ob_shape[0]):
                     for t in range(horizon):
-                        mu = [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
+                        mu = [mu_dists[idx][t, y, x]]
+                        for k in range(num_agents):
+                            if k!=idx:
+                                mu.append(mu_dists[k][t, y, x])
                         for a in range(nacs):
                             x_onehot = onehot(x, ob_shape[0]).tolist()
                             y_onehot = onehot(y, ob_shape[1]).tolist()

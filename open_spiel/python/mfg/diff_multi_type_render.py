@@ -119,8 +119,8 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
-            "/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_skip_common_1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_expert",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_dxy_1tra",
          ] 
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
@@ -153,8 +153,8 @@ pathes = [
             # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
-                "dxy_mu_fixmu_-1traj",
-                "dxy_mu_common_-1traj",
+                "expert",
+                "airl_dxy-1traj",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
@@ -188,8 +188,8 @@ pathnames = [
 
 #"50_19",
 filenames = [
-                "49_19",
-                "49_19",
+                "50_19",
+                "200_2",
             ]
 weights = [[1.0, 1.0]]
 

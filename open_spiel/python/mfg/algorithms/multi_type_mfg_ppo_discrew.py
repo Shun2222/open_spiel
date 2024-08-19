@@ -241,12 +241,15 @@ class MultiTypeMFGPPO(object):
                         only_rew=False,
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
+                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, 'dxy_mu', [obs_mus], acs, self._player_id)
+                    dxym = torch.cancat([inputs[0], inputs[1]], axis=1)
                     reward = self._discriminator.get_reward(
-                        torch.from_numpy(np.array([obs_xym])).to(torch.float32),
+                        dxym.to(torch.float32),
                         torch.from_numpy(acs).to(torch.int64),
                         None, None,
                         discrim_score=False,
                         ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        #torch.from_numpy(np.array([obs_xym])).to(torch.float32),
 
                 true_rewards[step] = torch.Tensor([time_step.rewards[self._player_id]]).to(self._device)
                 # iteration policy data
@@ -446,10 +449,10 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew", help="logdir")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_1tra", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_1traj", help="logdir")
 
-    parser.add_argument("--rew_index", type=int, default=0, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
     parser.add_argument("--single", action='store_true')
@@ -547,7 +550,8 @@ if __name__ == "__main__":
             if len(labels)==3:
                 discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
         else:
-            discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
+            #discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
+            discriminator = Discriminator(5, nacs, False, device)
 
         if is_nets:
             discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)

@@ -238,13 +238,14 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
     return rewards, output_rewards
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, save=False, filename="agent_dist"):
+def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, dxyinput=False, save=False, filename="agent_dist"):
     from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     rewards = np.zeros((horizon, size, size, nacs))
     dist_rewards = np.zeros((horizon, size, size, nacs))
     mu_rewards = np.zeros((horizon, size, size, nacs))
+    num_agent = 3
 
     for t in range(horizon):
         for x in range(size):
@@ -275,6 +276,20 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                     dxy = np.array([dxy[0] for _ in range(nacs)])
                     mu = np.array([mu[0] for _ in range(nacs)])
                     obs_input = np.array([obs_input for _ in range(nacs)])
+                elif dxyinput:
+                    from games.predator_prey import goal_distance
+                    obs_input = inputs[f"{x}-{y}-{t}-m"]
+                    x = np.argmax(obs_input[:size])
+                    y = np.argmax(obs_input[size:2*size])
+                    mu = obs_input[-3:]
+                    mus = [mu[pop]]
+                    for idx in range(num_agent):
+                        if idx!=pop:
+                            mus.append(mu[idx])
+                    dx, dy = goal_distance(x, y, pop)
+                    dxy = np.array([dx, dy]+mu)
+                    dxy = np.array([dxy for _ in range(nacs)])
+                    obs_input = np.array([obs_input for _ in range(nacs)])
                     
                 else:
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
@@ -288,6 +303,13 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                         None, None,
                         discrim_score=False,
                         only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                elif dxyinput:
+                    reward = discriminator.get_reward(
+                        torch.from_numpy(dxy).to(torch.float32),
+                        torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
+                        None, None,
+                        discrim_score=False,
+                        ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
                     reward = discriminator.get_reward(
                         torch.from_numpy(obs_input).to(torch.float32),
