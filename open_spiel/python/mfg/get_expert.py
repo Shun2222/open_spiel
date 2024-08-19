@@ -229,6 +229,10 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
             time_step = envs[idx].reset()
             while not time_step.last():
                 obs = time_step.observations["info_state"][idx]
+                #print(f'x:{np.argmax(obs[:10])}')
+                #print(f'y:{np.argmax(obs[10:20])}')
+                #input()
+
                 obs_pth = torch.Tensor(obs).to(device)
                 obs_list = list(obs)
                 obs_input_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
