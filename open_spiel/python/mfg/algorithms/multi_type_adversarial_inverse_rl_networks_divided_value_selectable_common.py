@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None]):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 0, 0]):
         self._game = game
         self._envs = envs
         self._device = device
@@ -151,7 +151,7 @@ class MultiTypeAIRL(object):
                     disc_rewards = disc_rewards_pth.cpu().detach().numpy().reshape(batch_step)
                     disc_rewards_pth = torch.from_numpy(disc_rewards).to(self._device)
 
-                    if not self._skip_train[idx]:
+                    if self._skip_train[idx]:
                         adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
                         v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
 
@@ -387,9 +387,8 @@ class MultiTypeAIRL(object):
                     d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
                     if self._n_networks==2:
-                        if not self._skip_train[idx]:
-                            disc_idx = self._common_idx[idx]
-                            total_loss = self._discriminator[disc_idx].train(
+                        if self._skip_train[idx]:
+                            total_loss = self._discriminator.train(
                                 input1, 
                                 input2, 
                                 input1_next, 
@@ -399,7 +398,7 @@ class MultiTypeAIRL(object):
                                 torch.from_numpy(d_labels).to(torch.int64).to(self._device),
                             )
                     elif self._n_networks==3:
-                        if not self._skip_train[idx]:
+                        if self._skip_train[idx]:
                             total_loss = self._discriminator.train(
                                 input1, 
                                 input2, 
@@ -436,8 +435,7 @@ class MultiTypeAIRL(object):
                     for i in range(self._num_agent):
                         fname = f"{num_update_eps}_{num_update_iter}-{i}"
                         self._generator[i].save(self._game, filename=fname)
-                        disc_idx = self._common_idx[i]
-                        self._discriminator[disc_idx].save(filename=fname)
+                        self._discriminator.save(filename=fname)
 
 
             #if t_step < total_step_gen:
@@ -472,5 +470,4 @@ class MultiTypeAIRL(object):
         for i in range(self._num_agent):
             fname = f"{num_update_eps}_{num_update_iter}-{i}"
             self._generator[i].save(self._game, filename=fname)
-            disc_idx = self._common_idx[i]
-            self._discriminator[disc_idx].save(filename=fname)
+            self._discriminator.save(filename=fname)
