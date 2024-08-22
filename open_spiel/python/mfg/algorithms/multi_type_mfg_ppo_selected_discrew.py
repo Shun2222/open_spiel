@@ -466,7 +466,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_mastermiddle-1.1w0", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_mastermiddle2", help="logdir")
 
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 
@@ -481,10 +481,10 @@ def parse_args():
     return args
 
 disc_path = [
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
-                "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj"],
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj"],
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj"],
+                ["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
+                "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
+                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
+                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
             ]
 rew_indexes = [[0, 1], [-1], [-1]]
 if __name__ == "__main__":
