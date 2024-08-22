@@ -347,6 +347,8 @@ class MFGPredatorPreyState(pyspiel.State):
           f"The action must be between 0 and {len(self._ACTION_TO_MOVE)}, "
           f"got {action}")
     candidate_pos = self._pos + self._ACTION_TO_MOVE[action]
+    print(f'pos:{candidate_pos}, action:{self._ACTION_TO_MOVE[action]}')
+    input()
     if self.geometry == Geometry.TORUS:
       candidate_pos += self.size
       candidate_pos %= self.size
