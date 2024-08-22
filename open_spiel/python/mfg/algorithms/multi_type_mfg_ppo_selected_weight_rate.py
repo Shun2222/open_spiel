@@ -283,6 +283,9 @@ class MultiTypeMFGPPO(object):
                 if self._rew_indexes[0]>=0:
                     rewards[step] = outputs0[self._rew_indexes[0]] + outputs1[self._rew_indexes[1]]
                     #reward_rate[step] = reward1/reward0
+                    print(f"reward0: {reward0}, output0{outputs0[0]}, output1: {outputs0[1]}")
+                    print(f"reward1: {reward1}, output1{outputs1[0]}, output1: {outputs1[1]}")
+                    input()
                     reward_rate[step] = (outputs1[1]/outputs1[0])/(outputs0[1]/outputs0[0])
                 else:
                     rewards[step] = reward
@@ -485,10 +488,10 @@ def parse_args():
     return args
 
 disc_path = [
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
-                "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj"],
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj"],
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj"],
+                ["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
+                "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
+                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
+                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
             ]
 rew_indexes = [[0, 1], [-1], [-1]]
 if __name__ == "__main__":

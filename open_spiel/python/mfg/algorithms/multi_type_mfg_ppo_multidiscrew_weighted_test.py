@@ -200,8 +200,8 @@ class MultiTypeMFGPPO(object):
         all_rew = [] 
         all_rew2 = {} 
         ret = []
-        weight_lower = 0.5
-        weight_upper = 1.5
+        weight_lower = 0.0 
+        weight_upper = 2.0
         weight_step = 0.1
         if self._is_nets:
             n_nets = self._discriminator[0].get_num_nets()
@@ -458,6 +458,11 @@ class MultiTypeMFGPPO(object):
         save_dir = logger.get_dir()
         size = 1
 
+        cos_sims = np.array(cos_sims)
+        spearmanrs = np.array(spearmanrs)
+        xs = np.array(xs)
+        ys = np.array(ys)
+
         plt.figure()
         plt.title('cos sim')
         plt.scatter(xs, ys, size, cos_sims)
@@ -466,10 +471,58 @@ class MultiTypeMFGPPO(object):
         plt.close()
 
         plt.figure()
+        plt.title('cos sim')
+        tf = cos_sims>0.8
+        plt.scatter(xs[tf], ys[tf], size, cos_sims[tf])
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}over08.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('cos sim')
+        tf = cos_sims>0.9
+        plt.scatter(xs[tf], ys[tf], size, cos_sims[tf])
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}over09.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('cos sim')
+        tf = cos_sims==1.0
+        plt.scatter(xs[tf], ys[tf], size, cos_sims[tf])
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}equal1.png'))
+        plt.close()
+
+        plt.figure()
         plt.title('spearmanr')
         plt.scatter(xs, ys, size, spearmanrs)
         plt.colorbar()
         plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('spearmanr')
+        tf = spearmanrs>0.8
+        plt.scatter(xs[tf], ys[tf], size, spearmanrs[tf])
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}over08.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('spearmanr')
+        tf = spearmanrs>0.9
+        plt.scatter(xs[tf], ys[tf], size, spearmanrs[tf])
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}over09.png'))
+        plt.close()
+
+        plt.figure()
+        plt.title('spearmanr')
+        tf = spearmanrs==1.0
+        plt.scatter(xs[tf], ys[tf], size, spearmanrs[tf])
+        plt.colorbar()
+        plt.savefig(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}equal1.png'))
         plt.close()
 
         """
@@ -684,10 +737,10 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu_weigted_test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu_weigted_test", help="logdir")
 
-    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_skip_common_1traj", help="file path")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")

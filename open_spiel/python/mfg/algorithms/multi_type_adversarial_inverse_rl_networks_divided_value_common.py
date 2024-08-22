@@ -53,7 +53,8 @@ class MultiTypeAIRL(object):
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         for i in range(self._num_agent): 
-            self._generator.set_agent(skip_agents[i])
+            if skip_train[i]:
+                self._generator[i].set_agent(skip_agents[i])
         self._state_size = state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         obs_xym_size = state_size + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)

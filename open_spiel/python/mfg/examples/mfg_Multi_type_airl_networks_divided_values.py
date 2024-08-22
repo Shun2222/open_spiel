@@ -42,7 +42,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000---", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj", help="log path")
     parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
@@ -73,10 +73,11 @@ differ_expert_path = [
                         "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra",
                         "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra",
                      ]
-skip_agent_actor = [
-                        "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew/expert-1tra/actor49-0.pth",
-                        "", 
-                        "",
+skip_agent_actor = [ 
+                        {"folder" : "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
+                         "update_info": "49_19" },
+                        {},
+                        {},
                    ]
 
 if __name__ == "__main__":
@@ -118,20 +119,21 @@ if __name__ == "__main__":
 
     assert len(args.skip_train)==num_agent, f"not match size of skip train and num agent: {len(args.skip_train)}, {num_agent}"
     skip_train = [args.skip_train[idx]=="true" for idx in range(num_agent)]
+    print(f'skip train: {skip_train}')
 
     mfg_dists = []
     skip_agents = [None for _ in range(num_agent)]
     for i in range(num_agent):
         uniform_policy = policy_std.UniformRandomPolicy(game)
         mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
-        if args.skip_train[i]:
-            agent =  Agent(23, 5).to(device)
+        if skip_train[i]:
+            agent =  Agent(61, 5).to(device)
             folder = skip_agent_actor[i]["folder"]
             fileupd = skip_agent_actor[i]["update_info"]
-            filepath = os.path.join(folder+f"actor{fileupd}-{i}.pth")
+            filepath = os.path.join(folder, f"actor{fileupd}-{i}.pth")
             print("load actor model from", filepath)
             agent.actor.load_state_dict(torch.load(filepath))
-            filepath = os.path.join(folder+f"critic{fileupd}-{i}.pth")
+            filepath = os.path.join(folder, f"critic{fileupd}-{i}.pth")
             agent.critic.load_state_dict(torch.load(filepath))
             ppo_policy = PPOpolicy(game, agent, None, device)
             mfg_dist = distribution.DistributionPolicy(game, ppo_policy)
