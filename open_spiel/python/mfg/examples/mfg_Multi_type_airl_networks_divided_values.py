@@ -73,6 +73,11 @@ differ_expert_path = [
                         "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra",
                         "/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra",
                      ]
+skip_agent_actor = [
+                        "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew/expert-1tra/actor49-0.pth",
+                        "", 
+                        "",
+                   ]
 
 if __name__ == "__main__":
     args = parse_args()
@@ -113,9 +118,22 @@ if __name__ == "__main__":
     skip_train = [args.skip_train[idx]=="true" for idx in range(num_agent)]
 
     mfg_dists = []
+    skip_agents = [None for _ in range(num_agent)]
     for i in range(num_agent):
         uniform_policy = policy_std.UniformRandomPolicy(game)
         mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+        if args.skip_train[i]:
+            agent =  Agent(23, 5).to(device)
+            folder = skip_agent_actor[i]["folder"]
+            fileupd = skip_agent_actor[i]["update_info"]
+            filepath = os.path.join(folder+f"actor{fileupd}-{i}.pth")
+            print("load actor model from", filepath)
+            agent.actor.load_state_dict(torch.load(filepath))
+            filepath = os.path.join(folder+f"critic{fileupd}-{i}.pth")
+            agent.critic.load_state_dict(torch.load(filepath))
+            ppo_policy = PPOpolicy(game, agent, None, device)
+            mfg_dist = distribution.DistributionPolicy(game, ppo_policy)
+            skip_agents[i] = agent
         mfg_dists.append(mfg_dist)
     merge_dist = distribution.MergeDistribution(game, mfg_dists)
 
@@ -124,23 +142,24 @@ if __name__ == "__main__":
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(args.seed)
 
+    conv_dist = convert_distrib(envs, merge_dist)
+    device = torch.device("cpu")
+
     num_obs = envs[0].observation_spec()['info_state'][0]
     num_acs = envs[0].action_spec()['num_actions']
 
+    # expertと比較用にモデルを読み込む
     expert_actor_pathes = [expert_actor_path + f'-{i}.pth' for i in range(num_agent)]
     ppo_policies = []
     for i in range(num_agent):
         agent =  Agent(num_obs, num_acs).to(device)
-        actor_model = agent.actor
         filepath = os.path.join(expert_actor_pathes[i])
+        actor_model = agent.actor
         print("load actor model from", filepath)
         actor_model.load_state_dict(torch.load(filepath))
 
         # Set the initial policy to uniform and generate the distribution 
         ppo_policies.append(PPOpolicy(game, agent, None, device))
-
-    conv_dist = convert_distrib(envs, merge_dist)
-    device = torch.device("cpu")
 
     experts = []
     for i in range(num_agent):
@@ -151,7 +170,7 @@ if __name__ == "__main__":
         expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
         experts.append(expert)
         print(f'expert load from {fname}')
-    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train)
+    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 

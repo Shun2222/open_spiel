@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False]):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None]):
         self._game = game
         self._envs = envs
         self._device = device
@@ -32,6 +32,13 @@ class MultiTypeAIRL(object):
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
+
+        self._skip_train = skip_train
+        if len(skip_train)!=self._num_agent:
+            print(f'skip train is not match the size of num agent. ((skip_train num, num agent) = {len(skip_train)}, {self._num_agent})')
+            self._skip_train = [False for _ in range(self._num_agent)]
+            print(f'Set skip train to {self._skip_train}')
+
         mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
         for k,v in merge_dist.distribution.items():
             if "mu" in k:
@@ -45,6 +52,8 @@ class MultiTypeAIRL(object):
         self._mu_dists = mu_dists
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
+        for i in range(self._num_agent): 
+            self._generator.set_agent(skip_agents[i])
         self._state_size = state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         obs_xym_size = state_size + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
@@ -66,11 +75,6 @@ class MultiTypeAIRL(object):
             else:
                 assert False, 'Unknown number of nets'
         self._optimizer = optim.Adam(self._discriminator.parameters(), lr=0.01)
-        self._skip_train = skip_train
-        if len(skip_train)!=self._num_agent:
-            print(f'skip train is not match the size of num agent. ((skip_train num, num agent) = {len(skip_train)}, {self._num_agent})')
-            self._skip_train = [False for _ in range(self._num_agent)]
-            print(f'Set skip train to {self._skip_train}')
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
         logger.record_tabular("total_step", total_step)

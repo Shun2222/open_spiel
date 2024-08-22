@@ -153,6 +153,8 @@ class PPOpolicy(policy_std.Policy):
 class MultiTypeMFGPPO(object):
     def __init__(self, game, env, merge_dist, conv_dist, device, player_id=0, expert_policy=None):
         self._device = device
+        self._game = game
+        self._env = env
 
         info_state_size = env.observation_spec()["info_state"][0]
         num_actions = env.action_spec()["num_actions"]
@@ -173,6 +175,12 @@ class MultiTypeMFGPPO(object):
         self._mu_dist = conv_dist 
 
         self._expert_policy = expert_policy
+
+    def set_agent(self, agent):
+        self._eps_agent = agent
+        self._iter_agent = agent
+        self._ppo_policy = PPOpolicy(self._game, agent, None, self._device)
+        return
 
     def rollout(self, env, nsteps):
         num_agent = self._num_agent
