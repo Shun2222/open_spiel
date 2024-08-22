@@ -120,8 +120,12 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_dxy_1tra",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_1traj",
          ] 
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_1tra",
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_dxyrew-skip_common_murew",
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_skip_common_1traj",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
            # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_murew",
@@ -189,7 +193,7 @@ pathnames = [
 #"50_19",
 filenames = [
                 "50_19",
-                "200_2",
+                "49_19",
             ]
 weights = [[1.0, 1.0]]
 
@@ -307,6 +311,15 @@ if __name__ == "__main__":
                 x = int(xy[1].split("[")[-1])
                 y = int(xy[2].split("]")[0])
                 mu_dists[pop][t,y,x] = v
+        
+        fig = plt.figure()
+        for i in range(num_agent):
+            ax = fig.add_subplot(1, num_agent, i+1)
+            ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+            ax.imshow(np.mean(mu_dists[i], axis=0))
+            ax.set_title(f'Group{i}')
+        save_path = os.path.join(target_path, f"mu_dists.png")
+        plt.savefig(save_path)
 
         inputs = [{} for _ in range(num_agent)]
         for idx in range(num_agent):
