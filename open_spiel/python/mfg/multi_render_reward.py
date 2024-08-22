@@ -238,7 +238,7 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
     return rewards, output_rewards
 
-def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, dxyinput=False, save=False, filename="agent_dist"):
+def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, dxyinput=False, save=False, filename="agent_dist"):
     from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
@@ -281,13 +281,13 @@ def multi_render_reward(size, nacs, horizon, inputs, discriminator, pop, single,
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
                     x = np.argmax(obs_input[:size])
                     y = np.argmax(obs_input[size:2*size])
-                    mu = obs_input[-3:]
+                    mu = [mu_dists[idx][t, y, x] for idx in range(3)]
                     mus = [mu[pop]]
                     for idx in range(num_agent):
                         if idx!=pop:
                             mus.append(mu[idx])
                     dx, dy = goal_distance(x, y, pop)
-                    dxy = np.array([dx, dy]+mu)
+                    dxy = np.array([dx, dy]+mus)
                     dxy = np.array([dxy for _ in range(nacs)])
                     obs_input = np.array([obs_input for _ in range(nacs)])
                     

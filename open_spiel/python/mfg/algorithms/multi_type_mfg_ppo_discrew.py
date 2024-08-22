@@ -242,7 +242,7 @@ class MultiTypeMFGPPO(object):
                         weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 else:
                     inputs, obs_xym, obs_next_xym = create_disc_input(self._size, 'dxy_mu', [obs_mus], acs, self._player_id)
-                    dxym = torch.cancat([inputs[0], inputs[1]], axis=1)
+                    dxym = torch.concat([inputs[0], inputs[1]], axis=1)
                     reward = self._discriminator.get_reward(
                         dxym.to(torch.float32),
                         torch.from_numpy(acs).to(torch.int64),

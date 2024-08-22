@@ -95,8 +95,7 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_skip_common_1traj",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_1tra",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -112,8 +111,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu-divided_value_1traj",
-                "MF-AITL_dxy_mu-divided_value_skip_common_1traj",
+                "MF-AITL_airl_1traj",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -122,7 +120,6 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "200_1",
                 "200_1",
               ]
 rates = [[0.1, 0.1]]
@@ -346,7 +343,7 @@ if __name__ == "__main__":
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
-                rewards = multi_render_reward(size, nacs, horizon, inputs, discriminators[i], i, single, notmu, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
+                rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminators[i], i, single, notmu, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
             datas.append(np.mean(rewards, axis=3))
 
         res.append(datas)

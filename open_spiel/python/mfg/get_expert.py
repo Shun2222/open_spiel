@@ -229,6 +229,10 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
             time_step = envs[idx].reset()
             while not time_step.last():
                 obs = time_step.observations["info_state"][idx]
+                #print(f'x:{np.argmax(obs[:10])}')
+                #print(f'y:{np.argmax(obs[10:20])}')
+                #input()
+
                 obs_pth = torch.Tensor(obs).to(device)
                 obs_list = list(obs)
                 obs_input_pth = torch.Tensor(obs_list[0:20] + [obs_list[-1]])
@@ -295,19 +299,28 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         info_states[i] = np.array(info_states[i])
     final_dists = calc_distribution(envs, merge_dist, info_states, save=True, filename=path+f"/experts.gif")
 
-    save_path = os.path.join(path, f"expert_state_visitation_count.gif")
+    save_path = os.path.join(path, f"expert_state_visitation_count-{num_trajs}.gif")
     multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
 
     state_visitation_count /= num_trajs
     diff_mu_svf = final_dists - state_visitation_count  
-    save_path = os.path.join(path, f"dif_mu-svf.gif")
+    save_path = os.path.join(path, f"dif_mu-svf-{num_trajs}.gif")
     multi_render(diff_mu_svf, save_path, [f'Group{i}' for i in range(num_agent)], vmin=-1.0, vmax=1.0, cmap='seismic')
 
     for i in range(num_agent):
         for h in range(horizon):
             state_visitation_count[i][h] /= np.max(state_visitation_count[i][h])
-    save_path = os.path.join(path, f"expert_state_visitation_normalized.gif")
+    save_path = os.path.join(path, f"expert_state_visitation_normalized-{num_trajs}.gif")
     multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
+
+    svc_nottime = np.sum(state_visitation_count, axis=1) / num_trajs
+
+    for i in range(num_agent):
+        plt.figure()
+        plt.imshow(svc_nottime[i])
+        save_path = os.path.join(path, f"expert_state_visitation_timemean-{num_trajs}-{i}.png")
+        plt.savefig(save_path)
+        plt.close()
     
     #print(f"Saved expert trajs and best expert mp4 in {path}")
 
