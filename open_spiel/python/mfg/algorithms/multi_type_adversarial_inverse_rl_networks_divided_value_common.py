@@ -18,13 +18,14 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None]):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 1, 2]):
         self._game = game
         self._envs = envs
         self._device = device
         self._num_agent = len(envs)
         self._size = game.get_parameters()['size']
         self._disc_type = disc_type
+        self._common_idx = common_index
 
         env = envs[0]
         self._horizon = env.game.get_parameters()['horizon']
@@ -70,12 +71,12 @@ class MultiTypeAIRL(object):
                 assert False, 'Unknown number of nets'
         else:
             if len(inputs)==2:
-                self._discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden)
+                self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for _ in range(np.max(common_index)+1)]
             elif len(inputs)==3:
                 self._discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden)
             else:
                 assert False, 'Unknown number of nets'
-        self._optimizer = optim.Adam(self._discriminator.parameters(), lr=0.01)
+        self._optimizer = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(np.max(common_index)+1)]
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
         logger.record_tabular("total_step", total_step)
@@ -145,7 +146,8 @@ class MultiTypeAIRL(object):
                     onehot_acs = np.array(multionehot(actions, self._nacs))
                     inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._disc_type, obs_mu, onehot_acs, idx)
 
-                    disc_rewards_pth = self._discriminator.get_reward(
+                    disc_idx = self._common_idx[idx]
+                    disc_rewards_pth = self._discriminator[disc_idx].get_reward(
                         inputs, 
                         discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
@@ -395,7 +397,7 @@ class MultiTypeAIRL(object):
                                 input2, 
                                 input1_next, 
                                 input2_next, 
-                                self._optimizer,
+                                self._optimizer[disc_idx],
                                 torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
                                 torch.from_numpy(d_labels).to(torch.int64).to(self._device),
                             )

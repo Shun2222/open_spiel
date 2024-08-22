@@ -466,9 +466,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_mastermiddle2", help="logdir")
-
-    parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc-learned-sametime", help="logdir")
 
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
@@ -481,11 +479,13 @@ def parse_args():
     return args
 
 disc_path = [
-                ["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj",
-                "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
-                ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj"],
+                [["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-0"],
+                 ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-1"],
+                ],
+                [["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-1"]],
+                [["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-2"]],
             ]
+
 rew_indexes = [[0, 1], [-1], [-1]]
 if __name__ == "__main__":
     args = parse_args()
@@ -493,7 +493,6 @@ if __name__ == "__main__":
     single = args.single
     notmu = args.notmu
 
-    update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
@@ -575,7 +574,7 @@ if __name__ == "__main__":
         if is_nets:
             for j in range(len(disc_path[i])):
                 print(f'jth disc of Agent i is loaded from {disc_path[i][j]}')
-                discriminator[j].load(disc_path[i][j], f'{update_eps_info}-{i}', use_eval=True)
+                discriminator[j].load(disc_path[i][j][0], disc_path[i][j][1], use_eval=True)
                 discriminator[j].print_weights()
         else:
             #reward_path = osp.join(args.path0, args.reward_filename+update_eps_info + f'-{i}.pth')

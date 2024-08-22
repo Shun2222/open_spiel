@@ -37,19 +37,20 @@ from open_spiel.python.mfg.algorithms import best_response_value
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
 from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
 
+### python3 examples/mfg_Multi_type_airl_networks_divided_values.py --select_common 0 1 1 --differ_expert
 def parse_args():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000---", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", help="log path")
     parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
 
     parser.add_argument('--select_common', nargs='*', type=int, default=[0, 1, 2])
-    parser.add_argument('--skip_train', nargs='*', default=["false", "false", "false"])
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
+    parser.add_argument('--skip_train', nargs='*', default=["false", "false", "false"])
 
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
@@ -83,12 +84,6 @@ skip_agent_actor = [
 if __name__ == "__main__":
     args = parse_args()
 
-    is_common = np.max(args.select_common)+1!=3
-    print(f'select common mode? {is_common}, {args.select_common}')
-    if is_common:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_networks_divided_value_selectable_common import MultiTypeAIRL
-    else:
-        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_networks_divided_value import MultiTypeAIRL
 
     # Set the seed 
     seed = args.seed
@@ -119,6 +114,14 @@ if __name__ == "__main__":
 
     assert len(args.skip_train)==num_agent, f"not match size of skip train and num agent: {len(args.skip_train)}, {num_agent}"
     skip_train = [args.skip_train[idx]=="true" for idx in range(num_agent)]
+
+    is_common = np.max(args.select_common)+1!=num_agent
+    if is_common:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_networks_divided_value_common import MultiTypeAIRL
+    else:
+        from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_networks_divided_value import MultiTypeAIRL
+
+    print(f'select common mode? {is_common}, {args.select_common}')
     print(f'skip train: {skip_train}')
 
     mfg_dists = []
@@ -174,7 +177,7 @@ if __name__ == "__main__":
         expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
         experts.append(expert)
         print(f'expert load from {fname}')
-    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, disc_index=args.select_common)
+    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, common_index=args.select_common)
     airl.run(args.total_step, None, \
         args.num_episode, args.batch_step, args.save_interval)
 
