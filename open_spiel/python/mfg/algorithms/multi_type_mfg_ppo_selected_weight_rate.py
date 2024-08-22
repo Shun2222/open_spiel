@@ -191,6 +191,7 @@ class MultiTypeMFGPPO(object):
         actions = torch.zeros((nsteps,), device=self._device)
         logprobs = torch.zeros((nsteps,), device=self._device)
         rewards = torch.zeros((nsteps,), device=self._device)
+        reward_rate = np.zeros(nsteps)
         true_rewards = torch.zeros((nsteps,), device=self._device)
         dones = torch.zeros((nsteps,), device=self._device)
         values = torch.zeros((nsteps,), device=self._device)
@@ -259,7 +260,6 @@ class MultiTypeMFGPPO(object):
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                        
                 else:
                     reward = self._discriminator.get_reward(
                         torch.from_numpy(np.array([obs_xym])).to(torch.float32),
@@ -282,6 +282,8 @@ class MultiTypeMFGPPO(object):
                 #rewards[step] = reward
                 if self._rew_indexes[0]>=0:
                     rewards[step] = outputs0[self._rew_indexes[0]] + outputs1[self._rew_indexes[1]]
+                    #reward_rate[step] = reward1/reward0
+                    reward_rate[step] = (outputs1[1]/outputs1[0])/(outputs0[1]/outputs0[0])
                 else:
                     rewards[step] = reward
                     
@@ -296,6 +298,8 @@ class MultiTypeMFGPPO(object):
             ret.append(rew)
         ret = np.array(ret)
         assert step==nsteps
+        print(f' rate = reward1/reward0 = {np.mean(reward_rate)}')
+        input()
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
 
@@ -466,7 +470,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_mastermiddle-1.1w0", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_mastermiddle-weight0.98", help="logdir")
 
     parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
 

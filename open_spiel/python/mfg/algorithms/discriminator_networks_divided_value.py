@@ -551,8 +551,6 @@ class Discriminator_2nets(nn.Module):
         self.value_next_net1 = self.value_net1
         self.value_next_net2 = self.value_net2
 
-
-
         self.l2_loss = nn.MSELoss()
 
     def forward(self, input1, input2, input1_next, input2_next, path_probs):
