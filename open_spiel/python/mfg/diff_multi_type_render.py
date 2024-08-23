@@ -120,7 +120,7 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_1tra",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_dxyrew-skip_common_murew",
@@ -158,7 +158,7 @@ pathes = [
             #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
 pathnames = [
                 "expert",
-                "airl_dxy_mu-divided_value_common_skip_1traj",
+                "aril_dxy_mu-divided_value",
             ] 
                 #"ppo_s_mu_a",
                 #"ppo_s_mu_a_srew",
