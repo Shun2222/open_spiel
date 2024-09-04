@@ -161,7 +161,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_indexes=None):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_indexes=None, rates=np.ones(2)):
         self._device = device
         self._rew_indexes = rew_indexes
 
@@ -169,6 +169,7 @@ class MultiTypeMFGPPO(object):
         self._nacs = num_actions = env.action_spec()["num_actions"]
         self._num_agent = game.num_players()
         self._player_id = player_id
+        self._rates = rates
 
         self._eps_agent = Agent(info_state_size,num_actions).to(self._device) 
         self._ppo_policy = PPOpolicy(game, self._eps_agent, None, self._device) 
@@ -282,7 +283,7 @@ class MultiTypeMFGPPO(object):
                 actions[step] = action
                 #rewards[step] = reward
                 if self._rew_indexes[0]>=0:
-                    rewards[step] = outputs0[self._rew_indexes[0]] + outputs1[self._rew_indexes[1]]
+                    rewards[step] = self._rates[0]*outputs0[self._rew_indexes[0]] + self._rates[1]*outputs1[self._rew_indexes[1]]
                 else:
                     rewards[step] = reward
                     
@@ -490,14 +491,25 @@ disc_path = [
 
 rew_indexes = [[0, 1], [-1], [-1]]
 if __name__ == "__main__":
-    for seed in range(30):
-        args = parse_args()
+
+    args = parse_args()
+    seed = args.seed
+    weight_lower = 0.5 
+    weight_upper = 1.5
+    weight_step = 0.1
+    vs = np.arange(weight_lower, weight_upper, weight_step)
+    grids = np.meshgrid(*[vs] * 2)
+    combinations = np.vstack([grid.ravel() for grid in grids]).T
+    print(combinations.shape)
+    #for seed in range(30):
+    for rate in combinations:
+        rates = [rate, [1.0, 1.0], [1.0, 1.0]]
         logger.reset()
 
         single = args.single
         notmu = args.notmu
-
-        logger.configure(args.logdir+f"-seed{seed}", format_strs=['stdout', 'log', 'json'])
+        
+        logger.configure(args.logdir+f"-rate{np.round(rate[0], 1)}-{np.round(rate[1], 1)}", format_strs=['stdout', 'log', 'json'])
 
         from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
         is_nets = True 
@@ -669,7 +681,7 @@ if __name__ == "__main__":
         inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
         disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
         """
-        mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_indexes=rew_indexes[i]) for i in range(num_agent)]
+        mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
 
         batch_step = args.batch_step
         for niter in tqdm(range(args.num_iterations)):

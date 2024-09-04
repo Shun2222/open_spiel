@@ -119,81 +119,19 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
          ] 
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_1tra",
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_dxyrew-skip_common_murew",
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_skip_common_1traj",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_srew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_murew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mu_a_arew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_sarew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_sa_mu_murew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mua",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mua_srew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_s_mua_muarew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mu_a",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mu_a_dxyrew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mu_a_murew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mu_a_arew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxya_mu",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxya_mu_dxyarew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxya_mu_murew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mua",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mua_dxyrew",
-           # "/mnt/shunsuke/result/0627/multi_maze2_ppo_dxy_mua_muarew",
-            #"/mnt/shunsuke/result/0627/multi_maze2_airl",
-            #"/mnt/shunsuke/result/0627/multi_maze2_1hidden_mfairl",
-            #"/mnt/shunsuke/result/0627/multi_maze2_2hidden_mfairl",
-            # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
-            # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
-            # "/mnt/shunsuke/result/0627/multi_maze2_s_mua",
-            # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a",
-            # "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
-            # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
-            #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
+
 pathnames = [
                 "expert",
-                "aril_dxy_mu-divided_value",
+                "1traj",
             ] 
-                #"ppo_s_mu_a",
-                #"ppo_s_mu_a_srew",
-                #"ppo_s_mu_a_murew",
-                #"ppo_s_mu_a_arew",
-                #"ppo_sa_mu",
-                #"ppo_sa_mu_sarew",
-                #"ppo_sa_mu_murew",
-                #"ppo_s_mua",
-                #"ppo_s_mua_srew",
-                #"ppo_s_mua_muarew",
-                #"ppo_dxy_mu_a",
-                #"ppo_dxy_mu_a_dxyrew",
-                #"ppo_dxy_mu_a_murew",
-                #"ppo_dxy_mu_a_arew",
-                #"ppo_dxya_mu",
-                #"ppo_dxya_mu_dxyarew",
-                #"ppo_dxya_mu_murew",
-                #"ppo_dxy_mua",
-                #"ppo_dxy_mua_dxyrew",
-                #"ppo_dxy_mua_muarew",
-                #"MF-AITL",
-                #"MF-AITL_2hidden",
-                #"MF-AITL_3hidden",
-                #"MF-AITL_s_mu_a",
-                #"MF-AITL_sa_mu",
-                #"MF-AITL_s_mua",
-                #"MF-AITL_dxy_mu_a",
-                #"MF-AITL_dxya_mu",
-                #"MF-AITL_dxy_mua",
 
 #"50_19",
 filenames = [
                 "50_19",
-                "200_1",
+                "49_19",
             ]
 weights = [[1.0, 1.0]]
 
@@ -203,6 +141,21 @@ skip_train = [
                [True, [True, False, False]], 
                [False, []],
              ]
+weight_lower = 0.5 
+weight_upper = 1.5
+weight_step = 0.1
+vs = np.arange(weight_lower, weight_upper, weight_step)
+grids = np.meshgrid(*[vs] * 2)
+combinations = np.vstack([grid.ravel() for grid in grids]).T
+print(combinations.shape)
+combinations = [[0.9, 0.8]] 
+
+
+for rate in combinations:
+    p = f"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc-learned-sametime-rate{np.round(rate[0], 1)}-{np.round(rate[1], 1)}"
+    pathes.append(p),
+    pathnames.append(f"ppo_dxy_mu{np.round(rate[0], 1)}-{np.round(rate[1], 1)}")
+    filenames.append("49_19")
 
 if __name__ == "__main__":
     args = parse_args()
