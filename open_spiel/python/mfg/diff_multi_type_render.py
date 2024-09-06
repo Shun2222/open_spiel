@@ -120,17 +120,21 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_1traj",
             "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
          ] 
 
+
 pathnames = [
-                "expert",
-                "1traj",
+                "Expert",
+                "Airl",
+                "Only_dxyrew",
             ] 
 
 #"50_19",
 filenames = [
                 "50_19",
+                "49_19",
                 "49_19",
             ]
 weights = [[1.0, 1.0]]
@@ -154,7 +158,7 @@ combinations = [[0.9, 0.8]]
 for rate in combinations:
     p = f"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc-learned-sametime-rate{np.round(rate[0], 1)}-{np.round(rate[1], 1)}"
     pathes.append(p),
-    pathnames.append(f"ppo_dxy_mu{np.round(rate[0], 1)}-{np.round(rate[1], 1)}")
+    pathnames.append(f"Proposed_Method")
     filenames.append("49_19")
 
 if __name__ == "__main__":
@@ -403,4 +407,8 @@ if __name__ == "__main__":
     #gifMaker.make(save_path, titles, cmap='seismic', min_value=-1.0, max_value=1.0)
 
     labels = [f"Group {n}" for n in range(num_agent)] 
-    diff_render_distance_plot(res_final_dists, pathes, pathnames, labels)
+    names = ["Expert",
+             "AIRL",
+             "Only dxy reward",
+             "Proposed Method"]
+    diff_render_distance_plot_with_target(res_final_dists, pathes, names, labels)

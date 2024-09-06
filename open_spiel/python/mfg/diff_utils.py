@@ -219,3 +219,67 @@ def diff_render_distance_plot(datas, pathes, filenames, labels):
 
                     print(f'saved {save_path} ')
                     print(f'mean cos_sim: {np.mean(all_cos_sim)}')
+
+def diff_render_distance_plot_with_target(datas, pathes, filenames, labels):
+    num_agent = len(datas[0]) 
+
+    fig1 = plt.figure(figsize=(24, 16))
+    axes = []
+    for i in range(num_agent):
+        ax = fig1.add_subplot(2, num_agent, i+1)
+        ax.set_title(f"Group{i}")
+        axes.append(ax)
+        ax = fig1.add_subplot(2, num_agent, i+4)
+        ax.set_title(f"Group{i}")
+        axes.append(ax)
+    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
+    p1 = 0  
+    cos_sim_pathes = [[] for _ in range(num_agent)]
+    spearmanr_pathes = [[] for _ in range(num_agent)]
+    for p2 in range(p1+1, len(datas)):
+
+        data1 = datas[p1].reshape(3, 40, 100)
+        data2 = datas[p2].reshape(3, 40, 100)
+        #distances_plot(data1, data2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-time')
+
+        #data1 = np.array([data1[n].T for n in range(len(data1))])
+        #data2 = np.array([data2[n].T for n in range(len(data2))])
+        #distances_imshow(data1, data2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-state', xlabel='State')
+
+
+        for i in range(num_agent):
+            all_cos_sim = []
+            all_spearmanr = []
+            all_kl_div = []
+            all_euclid = []
+            for t in range(len(data1[0])):
+                a = data1[i][t]
+                b = data2[i][t]
+                cos_sim = 1-distance.cosine(a, b)
+                corr, p_value = spearmanr(a, b)
+                epsilon = 0.0000001
+                kl_div = np.sum([ai * np.log(ai / bi) for ai, bi in zip(a+epsilon, b+epsilon)]) 
+                euclid = np.sqrt(np.sum((a-b)**2))
+                all_cos_sim.append(cos_sim)
+                all_spearmanr.append(corr)
+                all_kl_div.append(kl_div)
+                all_euclid.append(euclid)
+
+            im = axes[i*2].plot(np.arange(len(all_cos_sim)), all_cos_sim, label=f'{filenames[p2]}')
+            im = axes[i*2+1].plot(np.arange(len(all_spearmanr)), all_spearmanr, label=f'{filenames[p2]}')
+
+    for i in range(num_agent):
+        plt.rcParams["font.size"] = 16 
+        axes[i*2].set_xlabel('Time')
+        axes[i*2].set_ylabel(r"Corr")
+        axes[i*2].legend()
+
+        plt.rcParams["font.size"] = 16 
+        axes[i*2+1].set_xlabel('Time')
+        axes[i*2+1].set_ylabel(r"Corr")
+        axes[i*2+1].legend()
+
+        save_path = os.path.join(pathes[0], f'corr-{i}-plots.png')
+        plt.savefig(save_path)
+        plt.close()
+

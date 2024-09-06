@@ -202,7 +202,7 @@ class MultiTypeMFGPPO(object):
         ret = []
         weight_lower = 0.0 
         weight_upper = 2.0
-        weight_step = 0.1
+        weight_step = 0.01
         if self._is_nets:
             n_nets = self._discriminator[0].get_num_nets()
             vs = np.arange(weight_lower, weight_upper, weight_step)
@@ -739,8 +739,8 @@ def parse_args():
     
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu_weigted_test", help="logdir")
 
-    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_fixmu_1traj", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj", help="file path")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")

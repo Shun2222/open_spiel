@@ -95,7 +95,7 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_common_skip_defagent_1traj",
+            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
          ] 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
@@ -111,7 +111,7 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu-divided_value-common-skip-defagent-1traj",
+                "MF-AITL_dxy_mu-divided_value-common",
             ] 
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
@@ -122,7 +122,7 @@ pathnames = [
 update_infos = [
                 "200_1",
               ]
-rates = [[0.1, 0.1]]
+rates = [[0.9, 0.8]]
 
 is_single = [False, False, False, False, False, False, False, False, False]
 is_notmu = [False, False, False, False, False, False, False, False, False]
@@ -335,7 +335,7 @@ if __name__ == "__main__":
             if is_nets:
                 if is_divided:
                     if args.use_rate:
-                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
+                        rewards, output = multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
                     else:
                         rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 else:

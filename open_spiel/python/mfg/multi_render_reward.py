@@ -74,8 +74,7 @@ def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs,
 
                     rewards[t, y, x, a] = reward
                     for i in range(num_nets):
-                        print(f'output{i} shape: {outputs[i].shape}')
-                        outputs[i] *= (weights[i] + weights[i]*rate[i])
+                        outputs[i] = rate[i] * weights[i] * outputs[i]
                         output_rewards[i][t, y, x, a] = outputs[i]
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]
