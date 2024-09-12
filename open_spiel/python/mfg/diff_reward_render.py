@@ -310,6 +310,9 @@ if __name__ == "__main__":
                 save_path = os.path.join(pathes[p], filename+str(update_info)+f'weights-{i}.png')
                 discriminator.savefig_weights(save_path)
                 discriminator.print_weights()
+            else:
+                discriminator.load(reward_path, value_path, use_eval=True)
+                
             discriminators.append(discriminator)
 
         merge_dist = distribution.MergeDistribution(game, mfg_dists)
