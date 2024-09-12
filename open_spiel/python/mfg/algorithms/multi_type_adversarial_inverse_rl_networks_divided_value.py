@@ -119,7 +119,11 @@ class MultiTypeAIRL(object):
                         x = np.argmax(obs[step][:self._size])
                         y = np.argmax(obs[step][self._size:2*self._size])
                         t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
-                        mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
+                        #mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
+                        mu = [self._mu_dists[idx][t, y, x]]
+                        for pop in range(self._num_agent):
+                            if pop!=idx:
+                                mu.append(self._mu_dists[pop][t, y, x])
                         obs_mu.append(obs_list + mu)
                     obs_mu = np.array(obs_mu)
 
@@ -165,8 +169,8 @@ class MultiTypeAIRL(object):
                     e_log_prob = [] 
                     g_log_prob = [] 
                     for i in range(len(e_obs_mu[0])):
-                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent-idx)]])
-                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent-idx)]])
+                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent)]])
+                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent)]])
                         e_log_prob.append(self._generator[idx].get_log_action_prob(
                             torch.from_numpy(np.array(e_obs_mu_input)).to(torch.float32).to(self._device), 
                             torch.from_numpy(onehot(e_a[0][i], self._nacs)).to(torch.float32).to(self._device)).cpu().detach().numpy())

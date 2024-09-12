@@ -15,6 +15,8 @@ import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 from games.predator_prey import divide_obs, goal_distance
+from open_spiel.python.mfg.diff_reward_render import create_rew_input 
+from open_spiel.python.mfg.multi_render_reward import multi_render_reward 
 
 
 class MultiTypeAIRL(object):
@@ -56,6 +58,9 @@ class MultiTypeAIRL(object):
                 mu_dists[pop][t,y,x] = v
         self._mu_dists = mu_dists
 
+    def create_rew_input(self):
+        inputs = create_rew_input([self._size, self._size], self._nacs, self._horizon, self._mu_dists, False, False, state_only=False)
+        return inputs
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
         logger.record_tabular("total_step", total_step)
@@ -72,6 +77,7 @@ class MultiTypeAIRL(object):
 
         buffer = [None for _ in range(self._num_agent)]
         while(t_step < total_step):
+            inputs = self.create_rew_input()
             for neps in range(num_episodes): 
                 rollouts = []
                 mus = []
@@ -133,7 +139,6 @@ class MultiTypeAIRL(object):
                     nobs[-1] = dxym[0]
                     dxym_next = nobs
 
-                    print(dxym.shape)
                     disc_rewards_pth = self._discriminator[idx].get_reward(
                         torch.from_numpy(dxym).to(self._device),
                         torch.from_numpy(multionehot(actions, self._nacs)).to(self._device),
@@ -246,6 +251,15 @@ class MultiTypeAIRL(object):
                         fname = f"{num_update_eps}_{num_update_iter}-{i}"
                         self._generator[i].save(self._game, filename=fname)
                         self._discriminator[i].save(filename=fname)
+                        path = osp.join(logger.get_dir(), fname)
+                        rewards = multi_render_reward(self._mu_dists, self._size, self._nacs, self._horizon, inputs[i], self._discriminator[i], i, False, False, False, False, dxyinput=True, save=True, filename=path)
+                        gp = np.array([[5, 4], [4, 5], [5, 5]])
+                        rew = self._discriminator[idx].get_reward(
+                            torch.from_numpy(np.array([[0.0, 0.0, 0.0, 0.0, 0.0]])).to(self._device),
+                            False, False, False,
+                            discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        print(f'idx:{i}, {rew}')
+
 
 
             #if t_step < total_step_gen:

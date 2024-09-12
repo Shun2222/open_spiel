@@ -46,21 +46,26 @@ plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 
 def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
-    inputs = {}
+    inputs = [{} for _ in range(len(mu_dists))]
     for x in range(obs_shape[1]):
         x_onehot = onehot(x, obs_shape[1]).tolist()
         for y in range(obs_shape[0]):
             for t in range(horizon):
-                xy_onehot = x_onehot + onehot(y, obs_shape[0]).tolist()
-                if single:
-                    for i in range(len(mu_dists)):
-                        xym_onehot = xy_onehot + [mu_dists[i][t, y, x]]
-                        inputs[f'{x}-{y}-{t}-m-{i}'] = xym_onehot
-                elif notmu:
-                    inputs[f'{x}-{y}-{t}'] = xy_onehot
-                else:
-                    xym_onehot = xy_onehot + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
-                    inputs[f'{x}-{y}-{t}-m'] = xym_onehot
+                for idx in range(len(mu_dists)):
+                    xy_onehot = x_onehot + onehot(y, obs_shape[0]).tolist()
+                    if single:
+                        for i in range(len(mu_dists)):
+                            xym_onehot = xy_onehot + [mu_dists[i][t, y, x]]
+                            inputs[f'{x}-{y}-{t}-m-{i}'] = xym_onehot
+                    elif notmu:
+                        inputs[f'{x}-{y}-{t}'] = xy_onehot
+                    else:
+                        mu = [mu_dists[idx][t, y, x]]
+                        for pop in range(len(mu_dists)):
+                            if pop!=idx:
+                                mu.append(mu_dists[pop][t, y, x])
+                        xym_onehot = xy_onehot + mu 
+                        inputs[idx][f'{x}-{y}-{t}-m'] = xym_onehot
     return inputs
 
 def create_rew_with_tieme_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
@@ -347,7 +352,7 @@ if __name__ == "__main__":
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
-                rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminators[i], i, single, notmu, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
+                rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs[i], discriminators[i], i, single, notmu, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
             datas.append(np.mean(rewards, axis=3))
 
         res.append(datas)
