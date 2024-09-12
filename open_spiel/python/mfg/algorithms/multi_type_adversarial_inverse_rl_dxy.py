@@ -57,6 +57,7 @@ class MultiTypeAIRL(object):
                 y = int(xy[2].split("]")[0])
                 mu_dists[pop][t,y,x] = v
         self._mu_dists = mu_dists
+        self._goalrew_log = [[] for _ in range(self._num_agent)]
 
     def create_rew_input(self):
         inputs = create_rew_input([self._size, self._size], self._nacs, self._horizon, self._mu_dists, False, False, state_only=False)
@@ -258,7 +259,8 @@ class MultiTypeAIRL(object):
                             torch.from_numpy(np.array([[0.0, 0.0, 0.0, 0.0, 0.0]])).to(self._device),
                             False, False, False,
                             discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                        print(f'idx:{i}, {rew}')
+                        print(f'idx:{i}, {rew[0][0]}')
+                        self._goalrew_log[i].append(rew[0][0])
 
 
 
@@ -290,6 +292,7 @@ class MultiTypeAIRL(object):
             self._mu_dists = mu_dists
             logger.dump_tabular()
             num_update_iter += 1
+            print(self._goalrew_log)
 
         for i in range(self._num_agent):
             fname = f"{num_update_eps}_{num_update_iter}-{i}"
