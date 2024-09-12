@@ -255,7 +255,7 @@ class MultiTypeAIRL(object):
                         path = osp.join(logger.get_dir(), fname)
                         rewards = multi_render_reward(self._mu_dists, self._size, self._nacs, self._horizon, inputs[i], self._discriminator[i], i, False, False, False, False, dxyinput=True, save=True, filename=path)
                         gp = np.array([[5, 4], [4, 5], [5, 5]])
-                        rew = self._discriminator[idx].get_reward(
+                        rew = self._discriminator[i].get_reward(
                             torch.from_numpy(np.array([[0.0, 0.0, 0.0, 0.0, 0.0]])).to(self._device),
                             False, False, False,
                             discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
