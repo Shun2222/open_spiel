@@ -551,7 +551,7 @@ if __name__ == "__main__":
                 discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
         else:
             #discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
-            discriminator = Discriminator(5, nacs, False, device)
+            discriminator = Discriminator(5, nacs, True, device)
 
         if is_nets:
             discriminator.load(args.path, f'{update_eps_info}-{i}', use_eval=True)
