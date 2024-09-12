@@ -301,7 +301,7 @@ if __name__ == "__main__":
                     discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 #discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
-                discriminator = Discriminator(5, nacs, False, device)
+                discriminator = Discriminator(5, nacs, True, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
 
