@@ -120,21 +120,31 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_1traj",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_dxy_fixed_1traj",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
+         ] 
+
+pathes = [
+            "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
             "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
          ] 
 
 
+
 pathnames = [
                 "Expert",
-                "Airl",
+                "MFAirl",
+                "Only_dxyrew",
+            ] 
+pathnames = [
+                "Expert",
                 "Only_dxyrew",
             ] 
 
 #"50_19",
+#"49_19",
 filenames = [
                 "50_19",
-                "49_19",
                 "49_19",
             ]
 weights = [[1.0, 1.0]]
@@ -409,6 +419,9 @@ if __name__ == "__main__":
     labels = [f"Group {n}" for n in range(num_agent)] 
     names = ["Expert",
              "AIRL",
+             "Only dxy reward",
+             "Proposed Method"]
+    names = ["Expert",
              "Only dxy reward",
              "Proposed Method"]
     diff_render_distance_plot_with_target(res_final_dists, pathes, names, labels)

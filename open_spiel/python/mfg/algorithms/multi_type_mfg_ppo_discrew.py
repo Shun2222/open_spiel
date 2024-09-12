@@ -449,11 +449,11 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_1tra", help="file path")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_1traj", help="logdir")
+    parser.add_argument("--path", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_airl_dxy_fixed_1traj", help="file path")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_dxy_fixed_1traj", help="logdir")
 
     parser.add_argument("--rew_index", type=int, default=-1, help="-1 is reward, 0 or more are output")
-    parser.add_argument("--update_eps", type=str, default=r"200_2", help="file path")
+    parser.add_argument("--update_eps", type=str, default=r"200_1", help="file path")
 
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')

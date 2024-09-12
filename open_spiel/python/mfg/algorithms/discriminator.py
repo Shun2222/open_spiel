@@ -95,6 +95,12 @@ class Discriminator(nn.Module):
             # if you want to erase noise of output, you should do use_eval=True
             self.reward_net.eval()
             self.value_net.eval()
+    def eval_mode(self):
+        self.reward_net.eval()
+        self.value_net.eval()
+    def train_mode(self):
+        self.reward_net.train()
+        self.value_net.train()
 
 
 if __name__ == "__main__":

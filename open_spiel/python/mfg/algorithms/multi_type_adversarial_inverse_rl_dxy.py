@@ -35,9 +35,26 @@ class MultiTypeAIRL(object):
         #self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i) for i in range(self._num_agent)]
         obs_input_size = 2+self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        self._discriminator = [Discriminator(obs_input_size, self._nacs, False, device) for _ in range(self._num_agent)]
+        self._discriminator = [Discriminator(obs_input_size, self._nacs, True, device) for _ in range(self._num_agent)]
+
+        for i in range(self._num_agent):
+            fname = f"0_0-{i}"
+            self._generator[i].save(self._game, filename=fname)
+            self._discriminator[i].save(filename=fname)
 
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
+
+        mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
+        for k,v in merge_dist.distribution.items():
+            if "mu" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                t = int(tt[1].split('=')[1].split('_')[0])
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                mu_dists[pop][t,y,x] = v
+        self._mu_dists = mu_dists
 
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
@@ -63,9 +80,9 @@ class MultiTypeAIRL(object):
                         = self._generator[i].rollout(self._envs[i], batch_step)
                     rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
                     mus.append(mu_pth)
-                merge_mu = []
-                for step in range(len(mus[0])):
-                    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
+                #merge_mu = []
+                #for step in range(len(mus[0])):
+                #    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -88,8 +105,15 @@ class MultiTypeAIRL(object):
 
                     obs_mu = []
                     for step in range(batch_step):
-                        obs_list = list(obs[step][:-1])
-                        obs_mu.append(obs_list + list(merge_mu[step]))
+                        obs_list = list(obs[step])
+                        x = np.argmax(obs[step][:self._size])
+                        y = np.argmax(obs[step][self._size:2*self._size])
+                        t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
+                        mu = [self._mu_dists[idx][t, y, x]]
+                        for pop in range(self._num_agent):
+                            if pop!=idx:
+                                mu.append(self._mu_dists[pop][t, y, x])
+                        obs_mu.append(obs_list + mu)
                     obs_mu = np.array(obs_mu)
 
                     nobs = obs_mu.copy()
@@ -100,6 +124,7 @@ class MultiTypeAIRL(object):
 
                     x, y, t, mu = divide_obs(obs_mu, self._size, use_argmax=True)
                     dx, dy = goal_distance(x, y, idx)
+                    gp = np.array([[5, 4], [4, 5], [5, 5]])
 
                     dxym = np.concatenate([dx, dy, mu], axis=1)
                     #obs_xym = np.concatenate([x, y, mu], axis=1)
@@ -145,8 +170,8 @@ class MultiTypeAIRL(object):
                     e_log_prob = [] 
                     g_log_prob = [] 
                     for i in range(len(e_obs_mu[0])):
-                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent-idx)]])
-                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent-idx)]])
+                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent)]])
+                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent)]])
                         e_log_prob.append(self._generator[idx].get_log_action_prob(
                             torch.from_numpy(np.array([e_obs_mu_input])).to(torch.float32).to(self._device), 
                             torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
@@ -184,10 +209,11 @@ class MultiTypeAIRL(object):
 
                     d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
                     #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
-                    d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
+                    #d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
 
+                    #self._discriminator[idx].train_mode()
                     total_loss = self._discriminator[idx].train(
                         self._optimizers[idx],
                         torch.from_numpy(d_dxym).to(torch.float32).to(self._device),
@@ -196,6 +222,7 @@ class MultiTypeAIRL(object):
                         torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
                         torch.from_numpy(d_labels).to(torch.int64).to(self._device),
                     )
+                    #self._discriminator[idx].eval_mode()
 
                     pear = ""
                     spear = ""
@@ -235,6 +262,18 @@ class MultiTypeAIRL(object):
                 logger.record_tabular(f"nashc_ppo{i}", nashc_ppo)
                 nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=False, population=i)
                 logger.record_tabular(f"nashc_expert{i}", nashc_expert)
+
+            mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
+            for k,v in merge_dist.distribution.items():
+                if "mu" in k:
+                    tt = k.split(",")
+                    pop = int(tt[0][-1])
+                    t = int(tt[1].split('=')[1].split('_')[0])
+                    xy = tt[2].split(" ")
+                    x = int(xy[1].split("[")[-1])
+                    y = int(xy[2].split("]")[0])
+                    mu_dists[pop][t,y,x] = v
+            self._mu_dists = mu_dists
             logger.dump_tabular()
             num_update_iter += 1
 

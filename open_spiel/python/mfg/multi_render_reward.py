@@ -303,9 +303,10 @@ def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, po
                         discrim_score=False,
                         only_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                 elif dxyinput:
+                    #torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
                     reward = discriminator.get_reward(
                         torch.from_numpy(dxy).to(torch.float32),
-                        torch.from_numpy(multionehot(np.arange(nacs), nacs)).to(torch.int64),
+                        None,
                         None, None,
                         discrim_score=False,
                         ) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)

@@ -95,8 +95,10 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_dxy_fixed_1traj4",
          ] 
+            #"/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
+
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
             # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mua",
@@ -111,8 +113,10 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu-divided_value-common",
+                "MF-AIRL"
             ] 
+                #"MF-AITL_dxy_mu-divided_value-common",
+
                 #"MF-AITL_s_mu_a",
                 #"MF-AITL_sa_mu",
                 #"MF-AITL_s_mua",
@@ -292,7 +296,7 @@ if __name__ == "__main__":
                     discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 #discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
-                discriminator = Discriminator(5, nacs, False, device)
+                discriminator = Discriminator(5, nacs, True, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
 
