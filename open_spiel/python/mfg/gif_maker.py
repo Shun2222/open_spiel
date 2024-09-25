@@ -55,7 +55,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
 
         for i in range(n_datas):
-            axes[i].set_title(labels[i])
+            axes[i].set_title(labels[i], pad=5)
 
         path = filename
         ani.save(path, writer="ffmpeg", fps=5)
@@ -95,7 +95,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
 
         for i in range(n_datas):
-            axes[i].set_title(labels[i])
+            axes[i].set_title(labels[i], pad=5)
 
         path =filename[:-4] + 'vimin-max' + filename[-4:]
         ani.save(path, writer="ffmpeg", fps=5)
@@ -143,7 +143,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0])), blit=False, interval = 200)
 
     for i in range(n_datas):
-        axes[i].set_title(labels[i])
+        axes[i].set_title(labels[i], pad=5)
 
     path =filename[:-4] + 'vimin-max2' + filename[-4:]
     ani.save(path, writer="ffmpeg", fps=5)
@@ -238,9 +238,9 @@ class GifMaker():
                 axes[n].cla()
                 axes[n].axis('off')
                 if titles:
-                    ax.set_title(titles[n])
+                    ax.set_title(titles[n], pad=5)
                 else:
-                    ax.set_title("Time="+str(i))
+                    ax.set_title("Time="+str(i), pad=5)
                 data = np.array(self.datas[n][i])
                 if n==n_datas-1:
                     sns.heatmap(data, ax=axes[n], cbar=True, cbar_ax=cbar_ax, vmin=min_value, vmax=max_value, cmap=cmap)
@@ -395,9 +395,9 @@ class GifMaker():
                 axes[n].cla()
                 axes[n].axis('off')
                 if titles:
-                    ax.set_title(titles[n])
+                    ax.set_title(titles[n], pad=5)
                 else:
-                    ax.set_title("Time="+str(i))
+                    ax.set_title("Time="+str(i), pad=5)
                 data = np.array(self.datas[n][i])
                 if n==n_datas-1:
                     sns.heatmap(data, ax=axes[n], cbar=True, cbar_ax=cbar_ax, vmin=min_value, vmax=max_value, cmap=cmap)

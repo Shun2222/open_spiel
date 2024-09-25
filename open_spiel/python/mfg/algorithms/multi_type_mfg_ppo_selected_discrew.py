@@ -468,7 +468,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc-learned-sametime", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_test", help="logdir")
 
     parser.add_argument("--save_disc_reward", action='store_true')
     parser.add_argument("--single", action='store_true')
@@ -482,14 +482,15 @@ def parse_args():
     return args
 
 disc_path = [
-                [["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-0"],
-                 ["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-1"],
+                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-0"],
+                 ["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-1"],
                 ],
-                [["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-1"]],
-                [["/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", "200_2-2"]],
+                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-1"]],
+                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-2"]],
             ]
 
 rew_indexes = [[0, 1], [-1], [-1]]
+
 if __name__ == "__main__":
 
     args = parse_args()
@@ -499,9 +500,10 @@ if __name__ == "__main__":
     weight_step = 0.1
     vs = np.arange(weight_lower, weight_upper, weight_step)
     grids = np.meshgrid(*[vs] * 2)
-    combinations = np.vstack([grid.ravel() for grid in grids]).T
-    print(combinations.shape)
+    #combinations = np.vstack([grid.ravel() for grid in grids]).T
+    #print(combinations.shape)
     #for seed in range(30):
+    combinations = [[1.0, 2], [0.9, 0.8], [0.8, 0.9]]
     for rate in combinations:
         rates = [rate, [1.0, 1.0], [1.0, 1.0]]
         logger.reset()
@@ -609,7 +611,44 @@ if __name__ == "__main__":
                 x = int(xy[1].split("[")[-1])
                 y = int(xy[2].split("]")[0])
                 mu_dists[pop][t,y,x] = v
+
         if args.save_disc_reward:
+            agents = []
+            actor_models = []
+            ppo_policies = []
+            gen_mfg_dists = []
+            for i in range(num_agent):
+                agent = Agent(nobs, nacs).to(device)
+                actor_model = agent.actor
+                critic_model = agent.critic
+
+                actor_path = fr"{disc_path[i][0][0]}/actor{disc_path[i][0][1]}.pth"
+                actor_model.load_state_dict(torch.load(actor_path))
+                actor_model.eval()
+
+                critic_path = fr"{disc_path[i][0][0]}/critic{disc_path[i][0][1]}.pth"
+                critic_model.load_state_dict(torch.load(critic_path))
+                critic_model.eval()
+                print("load actor model from", actor_path)
+
+                agents.append(agent)
+                actor_models.append(actor_model)
+
+                ppo_policies.append(PPOpolicy(game, agent, None, device))
+                gen_mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+                gen_mfg_dists.append(gen_mfg_dist)
+            gen_merge_dist = distribution.MergeDistribution(game, gen_mfg_dists)
+
+            gen_mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
+            for k,v in gen_merge_dist.distribution.items():
+                if "mu" in k:
+                    tt = k.split(",")
+                    pop = int(tt[0][-1])
+                    t = int(tt[1].split('=')[1].split('_')[0])
+                    xy = tt[2].split(" ")
+                    x = int(xy[1].split("[")[-1])
+                    y = int(xy[2].split("]")[0])
+                    gen_mu_dists[pop][t,y,x] = v
             for target_i in [0]:
                 rewards = np.zeros((horizon, size, size, nacs))
                 rewards0 = np.zeros((horizon, size, size, nacs))
@@ -617,7 +656,10 @@ if __name__ == "__main__":
                 num_nets = 2
                 output_rewards0 = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
                 output_rewards1 = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
-                inputs = discriminators[i][0].create_inputs([size, size], nacs, horizon, mu_dists)[0]
+                inputs = discriminators[target_i][0].create_inputs([size, size], nacs, horizon, gen_mu_dists)[0]
+                #inputs = discriminators[target_i][0].create_inputs([size, size], nacs, horizon, mu_dists)[0]
+
+                _DEFAULT_FORBIDDEN_POSITION = dfp = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
                 for t in range(horizon):
                     for x in range(size):
                         for y in range(size):
@@ -642,24 +684,32 @@ if __name__ == "__main__":
                                     output_rewards0[i][t, y, x, a] = outputs0[i]
                                 for i in range(num_nets):
                                     output_rewards1[i][t, y, x, a] = outputs1[i]
-                                rewards[t, y, x, a] = outputs0[0] + outputs1[1]
+                                rewards[t, y, x, a] = rate[0]*outputs0[0] + rate[1]*outputs1[1]
+                for xy in dfp:
+                    rewards[:, xy[1], xy[0], :] = None
+                    rewards0[:, xy[1], xy[0], :] = None
+                    rewards1[:, xy[1], xy[0], :] = None
+                    for i in range(num_nets):
+                        output_rewards0[i][:, xy[1], xy[0], :] = None 
+                        output_rewards1[i][:, xy[1], xy[0], :] = None 
                 datas = [rewards[:, :, :, a] for a in range(nacs)]
                 action_str = ["stop", "right", "down", "up", "left"]
-                path = args.logdir+f"-seed{seed}/" + f'reward.gif' 
+                path = logger.get_dir()+ f'/reward.gif' 
                 print(np.array(datas).shape)
+                os.makedirs(logger.get_dir(), exist_ok=True)
                 multi_render(datas, path, action_str, use_kde=False)
                 print(f'Saved in {path}')
 
                 datas = [rewards0[:, :, :, a] for a in range(nacs)]
                 action_str = ["stop", "right", "down", "up", "left"]
-                path = args.logdir+f"-seed{seed}/" + f'reward0.gif' 
+                path = logger.get_dir() + f'/reward0.gif' 
                 print(np.array(datas).shape)
                 multi_render(datas, path, action_str, use_kde=False)
                 print(f'Saved in {path}')
 
                 datas = [rewards1[:, :, :, a] for a in range(nacs)]
                 action_str = ["stop", "right", "down", "up", "left"]
-                path = args.logdir+f"-seed{seed}/" + f'reward1.gif' 
+                path = logger.get_dir() + f'/reward1.gif' 
                 print(np.array(datas).shape)
                 multi_render(datas, path, action_str, use_kde=False)
                 print(f'Saved in {path}')
@@ -667,12 +717,12 @@ if __name__ == "__main__":
                 for i in range(num_nets):
                     action_str = ["stop", "right", "down", "up", "left"]
                     datas = [output_rewards0[i][:, :, :, a] for a in range(nacs)]
-                    path = args.logdir+f"-seed{seed}/" + f'output0-{i}.gif' 
+                    path = logger.get_dir() + f'/output0-{i}.gif' 
                     print(np.array(datas).shape)
                     multi_render(np.array(datas), path, action_str, use_kde=False)
 
                     datas = [output_rewards1[i][:, :, :, a] for a in range(nacs)]
-                    path = args.logdir+f"-seed{seed}/" + f'output1-{i}.gif' 
+                    path = logger.get_dir() + f'/output1-{i}.gif' 
                     print(np.array(datas).shape)
                     multi_render(np.array(datas), path, action_str, use_kde=False)
 

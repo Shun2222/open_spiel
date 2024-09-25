@@ -242,9 +242,9 @@ def diff_render_distance_plot_with_target(datas, pathes, filenames, labels):
         data2 = datas[p2].reshape(3, 40, 100)
         #distances_plot(data1, data2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-time')
 
-        #data1 = np.array([data1[n].T for n in range(len(data1))])
-        #data2 = np.array([data2[n].T for n in range(len(data2))])
-        #distances_imshow(data1, data2, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-state', xlabel='State')
+        #data1T = np.array([data1[n].T for n in range(len(data1))])
+        #data2T = np.array([data2[n].T for n in range(len(data2))])
+        #distances_imshow(data1T, data2T, pathes[p1], f'{filenames[p1]}-{filenames[p2]}-state', xlabel='State')
 
 
         for i in range(num_agent):

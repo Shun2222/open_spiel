@@ -36,7 +36,7 @@ class MultiTypeAIRL(object):
 
         #self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i) for i in range(self._num_agent)]
-        obs_input_size = 2+self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_input_size = 3 # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         self._discriminator = [Discriminator(obs_input_size, self._nacs, True, device) for _ in range(self._num_agent)]
 
         for i in range(self._num_agent):
@@ -133,6 +133,7 @@ class MultiTypeAIRL(object):
                     dx, dy = goal_distance(x, y, idx)
                     gp = np.array([[5, 4], [4, 5], [5, 5]])
 
+                    mu = (mu.T[0].T).reshape(dx.shape)
                     dxym = np.concatenate([dx, dy, mu], axis=1)
                     #obs_xym = np.concatenate([x, y, mu], axis=1)
                     nobs = dxym.copy()
@@ -192,11 +193,13 @@ class MultiTypeAIRL(object):
                     e_x, e_y, e_t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
                     e_mx, e_my, _, _ = divide_obs(e_obs_mu[0], self._size, use_argmax=True)
                     e_dx, e_dy = goal_distance(e_mx, e_my, idx)
+                    e_mu = (e_mu.T[0].T).reshape(e_dx.shape)
                     e_dxym = np.concatenate([e_dx, e_dy, e_mu], axis=1)
 
                     g_x, g_y, g_t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
                     g_mx, g_my, _, _ = divide_obs(g_obs_mu[0], self._size, use_argmax=True)
                     g_dx, g_dy = goal_distance(g_mx, g_my, idx)
+                    g_mu = (g_mu.T[0].T).reshape(g_dx.shape)
                     g_dxym = np.concatenate([g_dx, g_dy, g_mu], axis=1)
 
                     d_dxym = np.concatenate([g_dxym, e_dxym], axis=0)
@@ -204,11 +207,13 @@ class MultiTypeAIRL(object):
                     e_nx, e_ny, e_nt, e_nmu = divide_obs(e_nobs[0], self._size, use_argmax=False)
                     e_mnx, e_mny, _, _ = divide_obs(e_nobs[0], self._size, use_argmax=True)
                     e_ndx, e_ndy = goal_distance(e_mnx, e_mny, idx)
+                    e_nmu = (e_nmu.T[0].T).reshape(e_ndx.shape)
                     e_ndxym = np.concatenate([e_ndx, e_ndy, e_nmu], axis=1)
 
                     g_nx, g_ny, g_nt, g_nmu = divide_obs(g_nobs[0], self._size, use_argmax=False)
                     g_mnx, g_mny, _, _ = divide_obs(g_nobs[0], self._size, use_argmax=True)
                     g_ndx, g_ndy = goal_distance(g_mnx, g_mny, idx)
+                    g_nmu = (g_nmu.T[0].T).reshape(g_ndx.shape)
                     g_ndxym = np.concatenate([g_ndx, g_ndy, e_nmu], axis=1)
 
                     d_ndxym = np.concatenate([g_ndxym, e_ndxym], axis=0)
@@ -256,7 +261,7 @@ class MultiTypeAIRL(object):
                         rewards = multi_render_reward(self._mu_dists, self._size, self._nacs, self._horizon, inputs[i], self._discriminator[i], i, False, False, False, False, dxyinput=True, save=True, filename=path)
                         gp = np.array([[5, 4], [4, 5], [5, 5]])
                         rew = self._discriminator[i].get_reward(
-                            torch.from_numpy(np.array([[0.0, 0.0, 0.0, 0.0, 0.0]])).to(self._device),
+                            torch.from_numpy(np.array([[0.0, 0.0, 0.0]])).to(self._device),
                             False, False, False,
                             discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         print(f'idx:{i}, {rew[0][0]}')

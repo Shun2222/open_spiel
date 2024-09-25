@@ -61,9 +61,9 @@ def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_on
                         inputs[f'{x}-{y}-{t}'] = xy_onehot
                     else:
                         mu = [mu_dists[idx][t, y, x]]
-                        for pop in range(len(mu_dists)):
-                            if pop!=idx:
-                                mu.append(mu_dists[pop][t, y, x])
+                        #for pop in range(len(mu_dists)):
+                        #    if pop!=idx:
+                        #        mu.append(mu_dists[pop][t, y, x])
                         xym_onehot = xy_onehot + mu 
                         inputs[idx][f'{x}-{y}-{t}-m'] = xym_onehot
     return inputs
@@ -100,8 +100,10 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_dxy_fixed_1traj4",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
          ] 
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
             #"/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
 
             # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
@@ -120,6 +122,7 @@ pathes = [
 pathnames = [
                 "MF-AIRL"
             ] 
+                #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
 
                 #"MF-AITL_s_mu_a",
@@ -129,6 +132,7 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
+                "200_1",
                 "200_1",
               ]
 rates = [[0.9, 0.8]]
@@ -301,7 +305,7 @@ if __name__ == "__main__":
                     discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
             else:
                 #discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
-                discriminator = Discriminator(5, nacs, True, device)
+                discriminator = Discriminator(3, nacs, True, device)
             reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
             value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
 

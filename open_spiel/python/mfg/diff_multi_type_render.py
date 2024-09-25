@@ -120,13 +120,9 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_dxy_fixed_1traj",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_diffexpert",
             "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
-         ] 
-
-pathes = [
-            "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
+            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc_mastermiddle-rate0.9-0.8",
          ] 
 
 
@@ -135,16 +131,15 @@ pathnames = [
                 "Expert",
                 "MFAirl",
                 "Only_dxyrew",
-            ] 
-pathnames = [
-                "Expert",
-                "Only_dxyrew",
+                "Proposed_Method",
             ] 
 
 #"50_19",
 #"49_19",
 filenames = [
                 "50_19",
+                "49_19",
+                "49_19",
                 "49_19",
             ]
 weights = [[1.0, 1.0]]
@@ -167,7 +162,7 @@ combinations = [[0.9, 0.8]]
 
 for rate in combinations:
     p = f"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc-learned-sametime-rate{np.round(rate[0], 1)}-{np.round(rate[1], 1)}"
-    pathes.append(p),
+    #pathes.append(p),
     pathnames.append(f"Proposed_Method")
     filenames.append("49_19")
 
@@ -419,9 +414,6 @@ if __name__ == "__main__":
     labels = [f"Group {n}" for n in range(num_agent)] 
     names = ["Expert",
              "AIRL",
-             "Only dxy reward",
-             "Proposed Method"]
-    names = ["Expert",
              "Only dxy reward",
              "Proposed Method"]
     diff_render_distance_plot_with_target(res_final_dists, pathes, names, labels)

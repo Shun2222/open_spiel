@@ -44,6 +44,8 @@ from gif_maker import *
 plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
+_DEFAULT_FORBIDDEN_POSITION = dfp = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+
 def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, rate, save=False, filename="agent_dist"):
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
@@ -63,6 +65,7 @@ def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs,
                 for i in range(num_nets):
                     divided_values[i][t, y, x] = divided_value[i]
                 for a in range(nacs):
+
                     rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
 
                     weights = discriminator.get_weights() 
@@ -76,6 +79,10 @@ def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs,
                     for i in range(num_nets):
                         outputs[i] = rate[i] * weights[i] * outputs[i]
                         output_rewards[i][t, y, x, a] = outputs[i]
+    for xy in dfp:
+        rewards[:, xy[1], xy[0], :] = None
+        for i in range(num_nets):
+            output_rewards[i][:, xy[1], xy[0], :] = None 
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
@@ -141,6 +148,10 @@ def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discrimi
                     for i in range(num_nets):
                         print(f'output{i} shape: {outputs[i].shape}')
                         output_rewards[i][t, y, x, a] = outputs[i]
+    for xy in dfp:
+        rewards[:, xy[1], xy[0], :] = None
+        for i in range(num_nets):
+            output_rewards[i][:, xy[1], xy[0], :] = None 
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]
         action_str = ["stop", "right", "down", "up", "left"]
@@ -225,9 +236,6 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
                 print(np.array(datas).shape)
                 multi_render(np.array(datas), path, action_str, use_kde=False)
             else:
-                datas = np.array([output_rewards[i][0, 0, 0, a] for a in range(nacs)])
-                datas = datas.reshape(1, nacs)
-                plt.figure(figsize=(24, 18))
                 plt.bar(action_str, datas[0])
                 path = filename + f'-all-action-{labels[i]}.png' 
                 plt.savefig(path)
@@ -282,9 +290,9 @@ def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, po
                     y = np.argmax(obs_input[size:2*size])
                     mu = [mu_dists[idx][t, y, x] for idx in range(3)]
                     mus = [mu[pop]]
-                    for idx in range(num_agent):
-                        if idx!=pop:
-                            mus.append(mu[idx])
+                    #for idx in range(num_agent):
+                    #    if idx!=pop:
+                    #        mus.append(mu[idx])
                     dx, dy = goal_distance(x, y, pop)
                     dxy = np.array([dx, dy]+mus)
                     dxy = np.array([dxy for _ in range(nacs)])
@@ -323,6 +331,8 @@ def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, po
                     if basicfuncs:
                         dist_rewards[t, y, x, a] = dist_rew[a]
                         mu_rewards[t, y, x, a] = mu_rew[a]
+    for xy in dfp:
+        rewards[:, xy[1], xy[0], :] = None
 
     if save:
         datas = [rewards[:, :, :, a] for a in range(nacs)]

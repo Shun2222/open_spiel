@@ -739,8 +739,8 @@ def parse_args():
     
     parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu_weigted_test", help="logdir")
 
-    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common", help="file path")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")
