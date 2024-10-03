@@ -295,6 +295,10 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         pkl.dump(sample_trajs[i], open(fname,  'wb'))
         print(f'Saved {fname}')
 
+        fname = path + f'/expert-svf-{num_trajs}tra-{i}.pkl'
+        pkl.dump(state_visitation_count[i], open(fname,  'wb'))
+        print(f'Saved {fname}')
+
     for i in range(num_agent):
         info_states[i] = np.array(info_states[i])
     final_dists = calc_distribution(envs, merge_dist, info_states, save=True, filename=path+f"/experts.gif")
