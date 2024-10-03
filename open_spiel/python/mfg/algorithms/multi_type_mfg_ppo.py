@@ -411,8 +411,8 @@ def parse_args():
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert", help="logdir")
+    parser.add_argument("--num_iterations", type=int, default=1000, help="Set the number of global update steps of the outer loop")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert", help="logdir")
     
     args = parser.parse_args()
     return args

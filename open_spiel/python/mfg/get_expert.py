@@ -142,11 +142,12 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 
 @click.command()
-@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0726/multi_maze2_expert")
+@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/09xx/predator_prey_expert")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
-@click.option('--distrib_filename', type=click.STRING, default="distrib50_19")
-@click.option('--actor_filename', type=click.STRING, default="actor50_19")
-@click.option('--critic_filename', type=click.STRING, default="critic50_19")
+@click.option('--distrib_filename', type=click.STRING, default="distrib")
+@click.option('--actor_filename', type=click.STRING, default="actor")
+@click.option('--critic_filename', type=click.STRING, default="critic")
+@click.option('--iter_episode', type=click.STRING, default="25_19")
 @click.option('--num_trajs', type=click.INT, default=1000)
 @click.option('--seed', type=click.INT, default=0)
 @click.option('--num_acs', type=click.INT, default=5)
@@ -155,7 +156,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 @click.option('--single', is_flag=True)
 @click.option('--notmu', is_flag=True)
 
-def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, num_trajs, game_setting, seed, num_acs, num_obs, printinfo, single, notmu):
+def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_filename, iter_episode, num_trajs, game_setting, seed, num_acs, num_obs, printinfo, single, notmu):
     device = torch.device("cpu")
     game = pyspiel.load_game('python_mfg_predator_prey')
     states = game.new_initial_state()
@@ -167,19 +168,20 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
     ppo_policies = []
     distribs = []
     mfg_dists = []
+    iterepi = iter_episode
     for i in range(num_agent):
         agents.append(Agent(num_obs, num_acs).to(device))
         actor_model = agents[-1].actor
-        filepath = os.path.join(path, actor_filename + f"-{i}.pth")
+        filepath = os.path.join(path, actor_filename + iterepi + f"-{i}.pth")
         print("load actor model from", filepath)
         actor_model.load_state_dict(torch.load(filepath))
         actor_models.append(actor_model)
-        filepath = os.path.join(path, critic_filename + f"-{i}.pth")
+        filepath = os.path.join(path, critic_filename + iterepi + f"-{i}.pth")
         print("load critic model from", filepath)
         agents[-1].critic.load_state_dict(torch.load(filepath))
 
         # Set the initial policy to uniform and generate the distribution 
-        distrib_path = os.path.join(path, distrib_filename + f"-{i}.pth")
+        distrib_path = os.path.join(path, distrib_filename + iterepi + f"-{i}.pth")
         distribs.append(pkl.load(open(distrib_path, "rb")))
         ppo_policies.append(PPOpolicy(game, agents[-1], None, device))
         mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
@@ -291,7 +293,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         print(f'best traj ret{idx}: {best_traj[idx]["ep_ret"]}')
 
     for i in range(len(sample_trajs)):
-        fname = path + f'/expert-{num_trajs}tra-{i}.pkl'
+        fname = path + f'/expert-{iterepi}-{num_trajs}tra-{i}.pkl'
         pkl.dump(sample_trajs[i], open(fname,  'wb'))
         print(f'Saved {fname}')
 
@@ -299,18 +301,18 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         info_states[i] = np.array(info_states[i])
     final_dists = calc_distribution(envs, merge_dist, info_states, save=True, filename=path+f"/experts.gif")
 
-    save_path = os.path.join(path, f"expert_state_visitation_count-{num_trajs}.gif")
+    save_path = os.path.join(path, f"expert_state_visitation_count-{iterepi}-{num_trajs}.gif")
     multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
 
     state_visitation_count /= num_trajs
     diff_mu_svf = final_dists - state_visitation_count  
-    save_path = os.path.join(path, f"dif_mu-svf-{num_trajs}.gif")
+    save_path = os.path.join(path, f"dif_mu-svf-{iterepi}-{num_trajs}.gif")
     multi_render(diff_mu_svf, save_path, [f'Group{i}' for i in range(num_agent)], vmin=-1.0, vmax=1.0, cmap='seismic')
 
     for i in range(num_agent):
         for h in range(horizon):
             state_visitation_count[i][h] /= np.max(state_visitation_count[i][h])
-    save_path = os.path.join(path, f"expert_state_visitation_normalized-{num_trajs}.gif")
+    save_path = os.path.join(path, f"expert_state_visitation_normalized-{iterepi}-{num_trajs}.gif")
     multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
 
     svc_nottime = np.sum(state_visitation_count, axis=1) / num_trajs

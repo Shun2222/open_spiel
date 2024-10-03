@@ -119,28 +119,25 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/master_middle/multi_maze2_expert",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_airl_deltaxy_diffexpert",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_fixmu_1traj-dxyrew",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc_mastermiddle-rate0.9-0.8",
+            "/mnt/shunsuke/result/09xx/predator_prey_group0_s_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group1_s_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group2_s_mu-divided_value",
          ] 
 
 
 
 pathnames = [
-                "Expert",
-                "MFAirl",
-                "Only_dxyrew",
-                "Proposed_Method",
+                "MFAIRLG0min",
+                "MFAIRLG1min",
+                "MFAIRLG2min",
             ] 
 
 #"50_19",
 #"49_19",
 filenames = [
-                "50_19",
-                "49_19",
-                "49_19",
-                "49_19",
+                "200_1",
+                "200_1",
+                "200_1",
             ]
 weights = [[1.0, 1.0]]
 
@@ -163,8 +160,8 @@ combinations = [[0.9, 0.8]]
 for rate in combinations:
     p = f"/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_disc-learned-sametime-rate{np.round(rate[0], 1)}-{np.round(rate[1], 1)}"
     #pathes.append(p),
-    pathnames.append(f"Proposed_Method")
-    filenames.append("49_19")
+    #pathnames.append(f"Proposed_Method")
+    #filenames.append("49_19")
 
 if __name__ == "__main__":
     args = parse_args()
@@ -242,7 +239,7 @@ if __name__ == "__main__":
             fname = fname + f'-{i}.pth' 
             actor_path = os.path.join(target_path, fname)
             actor_model.load_state_dict(torch.load(actor_path))
-            actor_model.eval()
+            #actor_model.eval()
 
             fname = copy.deepcopy('critic'+filenames[ip])
             fname = fname + f'-{i}.pth' 
@@ -312,7 +309,7 @@ if __name__ == "__main__":
                         value = agents[idx].get_value(obs_input)
                         values[t, y, x] = value 
             
-            value_filename = f'ppo-values{idx}' 
+            value_filename = f'ppo-values-{pathnames[ip]}-{idx}' 
             save_path = os.path.join(target_path, f"{value_filename}.gif")
             multi_render([values], save_path, ['value'], use_kde=False)
 
@@ -385,18 +382,18 @@ if __name__ == "__main__":
         for i in range(num_agent):
             reward_np = np.array(rewards[i])
             print(f'cumulative reward {i}: {np.sum(reward_np)}')
-        save_path = os.path.join(target_path, f"{filename}k.mp4")
+        save_path = os.path.join(target_path, f"{pathnames[ip]}k.mp4")
         final_dists = calc_distribution(envs, merge_dist, info_state, save=False, filename=save_path)
 
         final_dists = np.array(final_dists)
-        save_path = os.path.join(target_path, f"{filename}.gif")
+        save_path = os.path.join(target_path, f"{pathnames[ip]}.gif")
         print(np.array(final_dists).shape)
         multi_render(final_dists[:, :, :], save_path, [f'Group {i}' for i in range(num_agent)])
 
         #multi_render(final_dists[:, 6:20, :], save_path, ['Group1', 'Gorup2', 'Group3']) # render from 6step to 20step
 
         #labels = [[f"Group {n} ()" for n in range(num_agent)] for i in range(len(final_dists[0]))] 
-        # save_path = os.path.join(target_path, f"test-{filename}.gif")
+        # save_path = os.path.join(target_path, f"test-{pathnames[ip]}.gif")
         # gifMaker.add_datas([[final_dists]])
         # gifMaker.make(save_path, titles)
 
@@ -406,7 +403,7 @@ if __name__ == "__main__":
 
 
 
-    #save_path = os.path.join(pathes[0], f"test-diff-{filename}.gif")
+    #save_path = os.path.join(pathes[0], f"test-diff-{pathnames[ip]}.gif")
     #titles = [[f"Group {n} (time={i})" for n in range(num_agent)] for i in range(len(final_dists[0]))] 
     #gifMaker.add_datas([res_final_dists])
     #gifMaker.make(save_path, titles, cmap='seismic', min_value=-1.0, max_value=1.0)

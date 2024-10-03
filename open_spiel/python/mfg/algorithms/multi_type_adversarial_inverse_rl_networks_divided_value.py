@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=None):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 1, 2]):
         self._game = game
         self._envs = envs
         self._device = device
@@ -51,19 +51,23 @@ class MultiTypeAIRL(object):
         inputs = get_input_shape(disc_type, env, self._num_agent)
         self._n_networks = len(inputs)
         if use_ppo_value:
-            if len(inputs)==2:
+            if len(inputs)==1:
+                self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
+            elif len(inputs)==2:
                 self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
             elif len(inputs)==3:
                 self._discriminator = [Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
             else:
                 assert False, 'Unknown number of nets'
         else:
-            if len(inputs)==2:
+            if len(inputs)==1:
+                self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
+            elif len(inputs)==2:
                 self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
             elif len(inputs)==3:
                 self._discriminator = [Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
             else:
-                assert False, 'Unknown number of nets'
+                assert False, f'Unknown number of nets {inputs}: num:{len(inputs)}'
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
 
@@ -342,6 +346,13 @@ class MultiTypeAIRL(object):
                         input2 = torch.from_numpy(d_mu)
                         input1_next = torch.from_numpy(d_ndxy)
                         input2_next = torch.from_numpy(d_nmu)
+                    elif self._disc_type=='mu':
+                        d_mu = np.concatenate([g_mu, e_mu], axis=0)
+                        d_nmu = np.concatenate([g_nmu, e_nmu], axis=0)
+
+                        inputs = [torch.from_numpy(d_mu)]
+                        input1 = torch.from_numpy(d_mu)
+                        input1_next = torch.from_numpy(d_nmu)
                                   
                                   
 
@@ -359,7 +370,15 @@ class MultiTypeAIRL(object):
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
-                    if self._n_networks==2:
+                    if self._n_networks==1:
+                        total_loss = self._discriminator[idx].train(
+                            input1, 
+                            input1_next, 
+                            self._optimizers[idx],
+                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                        )
+                    elif self._n_networks==2:
                         total_loss = self._discriminator[idx].train(
                             input1, 
                             input2, 

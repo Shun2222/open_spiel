@@ -100,7 +100,9 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
+            "/mnt/shunsuke/result/09xx/predator_prey_group0_s_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group1_s_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group2_s_mu-divided_value",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
@@ -120,7 +122,9 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AIRL"
+                "MF-AITL_s_mu-divided_value0",
+                "MF-AITL_s_mu-divided_value1",
+                "MF-AITL_s_mu-divided_value2",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -132,6 +136,7 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
+                "200_1",
                 "200_1",
                 "200_1",
               ]
