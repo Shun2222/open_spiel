@@ -775,12 +775,9 @@ if __name__ == "__main__":
         rew_indexes = [-1, -1]
         net_input = None
     else:
-        net_input = get_net_input(args.path0)
-        net_label = get_net_labels(net_input)
         is_divided = is_divided_value(args.path0)
         if not is_divided:
             from open_spiel.python.mfg.algorithms.discriminator_networks import * 
-        assert len(net_label)>=args.rew_index0 and len(net_label)>=args.rew_index1, 'rew_index is wrong'
         rew_indexes = [args.rew_index0, args.rew_index1]
 
     # Set the seed 
@@ -838,6 +835,7 @@ if __name__ == "__main__":
                 net_input = get_net_input(pathes[j])
                 inputs = get_input_shape(net_input, env, num_agent)
                 labels = get_net_labels(net_input)
+                assert len(labels)>=rew_indexes[j], f'rew_index is wrong. labels are {labels}, but rew_index is {rew_indexes[j]} '
                 num_hidden = get_num_hidden(pathes[j])
                 print(num_hidden)
                 if len(labels)==1:
