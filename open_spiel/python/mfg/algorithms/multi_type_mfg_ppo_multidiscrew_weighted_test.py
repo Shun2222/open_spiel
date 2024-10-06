@@ -826,6 +826,7 @@ if __name__ == "__main__":
     obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
     discriminators = []
     for i in range(num_agent):
+        discriminator = []
         for j in range(3):
             if single:
                 discriminator = Discriminator(nobs+1, nacs, False, device)
