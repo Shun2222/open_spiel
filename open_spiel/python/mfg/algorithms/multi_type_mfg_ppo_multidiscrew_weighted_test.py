@@ -827,7 +827,7 @@ if __name__ == "__main__":
     discriminators = []
     for i in range(num_agent):
         discriminator = []
-        for j in range(3):
+        for j in range(2):
             if single:
                 discriminator = Discriminator(nobs+1, nacs, False, device)
             elif notmu:
