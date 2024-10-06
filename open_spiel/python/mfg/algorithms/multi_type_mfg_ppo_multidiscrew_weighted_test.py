@@ -288,10 +288,11 @@ class MultiTypeMFGPPO(object):
                             only_value=False,
                             weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                        reward = weights0[0] * outputs0[0] + weights1[1] * outputs1[1]
+                        reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
                         gamma = 0.99
-                        value_fn = weights0[0] * disc_values0[0] + weights1[1] * disc_values1[1]
-                        value_fn_next = weights0[0] * disc_values_next0[0] + weights1[1] * disc_values_next1[1]
+                        value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
+                        value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
+                        disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
                         log_p_tau = reward + gamma * value_fn_next - value_fn
                         log_p_tau = log_p_tau.numpy()
                         tf = np.abs(log_p_tau)<5
