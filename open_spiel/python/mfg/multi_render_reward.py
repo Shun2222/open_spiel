@@ -60,10 +60,13 @@ def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs,
         for x in range(size):
             for y in range(size):
                 obs_input = inputs[f"{x}-{y}-{t}-{0}-m"]
-                value, divided_value = discriminator.get_value(obs_input, only_value=False, weighted_value=True)
-                values[t, y, x] = value 
-                for i in range(num_nets):
-                    divided_values[i][t, y, x] = divided_value[i]
+                try:
+                    value, divided_value = discriminator.get_value(obs_input, only_value=False, weighted_value=True)
+                    values[t, y, x] = value 
+                    for i in range(num_nets):
+                        divided_values[i][t, y, x] = divided_value[i]
+                except:
+                    print(f'cannot calc value')
                 for a in range(nacs):
 
                     rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
@@ -117,6 +120,42 @@ def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs,
 
 
     return rewards, output_rewards
+
+def multi_render_reward_nets_divided_value2(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
+
+    # this functions is used to generate an animated video of the distribuiton propagating throught the game 
+    num_nets = discriminator.get_num_nets()
+    labels = discriminator.get_net_labels()
+    rewards = np.zeros((horizon, size, size, nacs))
+    values = np.zeros((horizon, size, size))
+    divided_values = [np.zeros((horizon, size, size)) for _ in range(num_nets)]
+    output_rewards = [np.zeros((horizon, size, size, nacs)) for _ in range(num_nets)]
+
+    for t in range(horizon):
+        for x in range(size):
+            for y in range(size):
+                obs_input = inputs[f"{x}-{y}-{t}-{0}-m"]
+                for a in range(nacs):
+                    rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
+
+                    reward = discriminator.get_reward(
+                        rew_input,
+                        discrim_score=False,
+                        only_rew=False,
+                        weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                    rewards[t, y, x, a] = reward
+    for xy in dfp:
+        rewards[:, xy[1], xy[0], :] = None
+    if save:
+        datas = [rewards[:, :, :, a] for a in range(nacs)]
+        action_str = ["stop", "right", "down", "up", "left"]
+        path = filename + f'-all-action.gif' 
+        print(np.array(datas).shape)
+        multi_render(datas, path, action_str, use_kde=False)
+        print(f'Saved in {path}')
+
+    return rewards, output_rewards
 def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
@@ -131,10 +170,13 @@ def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discrimi
         for x in range(size):
             for y in range(size):
                 obs_input = inputs[f"{x}-{y}-{t}-{0}-m"]
-                value, divided_value = discriminator.get_value(obs_input, only_value=False, weighted_value=True)
-                values[t, y, x] = value 
-                for i in range(num_nets):
-                    divided_values[i][t, y, x] = divided_value[i]
+                try:
+                    value, divided_value = discriminator.get_value(obs_input, only_value=False, weighted_value=True)
+                    values[t, y, x] = value 
+                    for i in range(num_nets):
+                        divided_values[i][t, y, x] = divided_value[i]
+                except:
+                    print('cannot calc value')
                 for a in range(nacs):
                     rew_input = inputs[f"{x}-{y}-{t}-{a}-m"]
 

@@ -236,6 +236,7 @@ class Discriminator(nn.Module):
 
         self.n_networks = len(input_shapes)
         self.networks = []
+
         def create_net(input_shape, num_hidden):
             if num_hidden==1:
                 net = nn.Sequential(
@@ -261,7 +262,12 @@ class Discriminator(nn.Module):
                     nn.Linear(hidden_size, 1)
                 )
             return net
-        self.reward_net = create_net(input_shapes[0], num_hidden).to(self._device)
+
+        self.net1 = create_net(input_shapes[0], num_hidden).to(self._device)
+
+        self.reward_net = nn.Sequential(
+            nn.Linear(self.n_networks, 1, bias=False),
+        ).to(self._device)
 
         # Define layers for value function network
         self.value_net1 = create_net(input_shapes[0], num_hidden).to(self._device)
@@ -271,10 +277,15 @@ class Discriminator(nn.Module):
 
     def forward(self, input1, input1_next, path_probs):
         #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-        reward = self.reward_net(input1.to(torch.float32)) 
+        output = self.net1(input1.to(torch.float32)) 
+        reward = self.reward_net(output.to(torch.float32)) 
 
         value_fn = self.value_net1(input1.to(torch.float32))
         value_fn_next = self.value_next_net1(input1_next.to(torch.float32))
+
+        ws = self.get_weights()
+        value_fn = ws[0] * value_fn
+        value_fn_next = ws[0] * value_fn_next
 
         log_q_tau = path_probs
         log_p_tau = reward + self.gamma * value_fn_next - value_fn
@@ -307,14 +318,17 @@ class Discriminator(nn.Module):
                 return None
             else:
                 input1 = inputs[0]
-                score = self.reward_net(input1.to(torch.float32)) 
+                output = self.net1(input1.to(torch.float32)) 
+                score = self.reward_net(output.to(torch.float32)) 
         return score
 
     def get_value(self, inputs, only_value=True, weighted_value=False):
         with torch.no_grad():
-            input1 = inputs[0]
-            value = self.value_net1(input1.to(torch.float32))
-        return value
+            value_fn = self.value_net1(input1.to(torch.float32))
+
+            ws = self.get_weights()
+            value_fn = ws[0] * value_fn
+        return value_fn
 
     def get_num_nets(self):
         return self.n_networks
@@ -324,8 +338,10 @@ class Discriminator(nn.Module):
 
     def save(self, filename=""):
         fname = osp.join(logger.get_dir(), "disc_"+f"{self.labels[0]}"+filename+".pth")
-        torch.save(self.reward_net.state_dict(), fname)
+        torch.save(self.net1.state_dict(), fname)
 
+        fname = osp.join(logger.get_dir(), "disc_reward"+filename+".pth")
+        torch.save(self.reward_net.state_dict(), fname)
 
         fname = osp.join(logger.get_dir(), "disc_value_"+f"{self.labels[0]}"+filename+".pth")
         torch.save(self.value_net1.state_dict(), fname)
@@ -333,17 +349,22 @@ class Discriminator(nn.Module):
 
     def load(self, path, filename, use_eval=False):
         fname = osp.join(path, "disc_"+f"{self.labels[0]}"+filename+".pth")
+        self.net1.load_state_dict(torch.load(fname))
+
+        fname = osp.join(path, "disc_reward"+filename+".pth")
         self.reward_net.load_state_dict(torch.load(fname))
 
         fname = osp.join(path, "disc_value_"+f"{self.labels[0]}"+filename+".pth")
         self.value_net1.load_state_dict(torch.load(fname))
         if use_eval:
             # if you want to erase noise of output, you should do use_eval=True
+            self.net1.eval()
             self.reward_net.eval()
             self.value_net1.eval()
 
     def load_with_path(self, pathes, reward_path, value_pathes, use_eval=False):
-        self.reward_net.load_state_dict(torch.load(pathes[0]))
+        self.net1.load_state_dict(torch.load(pathes[0]))
+        self.reward_net.load_state_dict(torch.load(reward_path))
         self.value_net1.load_state_dict(torch.load(value_path[0]))
         if use_eval:
             # if you want to erase noise of output, you should do use_eval=True
@@ -353,23 +374,26 @@ class Discriminator(nn.Module):
     def savefig_weights(self, path):
         net = self.reward_net
         weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy()).reshape(1, self.n_networks)[0]
-        #bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].numpy()).reshape(1, 1)[0]
-        #data = list(weights)+list(bias)
         data = list(weights)
-        #label = self.labels + ['bias']
         label = self.labels
+
         plt.figure()
         plt.title('Weights')
         plt.bar(label, data)
         plt.savefig(path)
         plt.close()
+
         print(f'Saved as {path}')
+        print(f'Not exist weight.')
 
     def get_weights(self, only_rew=True):
         return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
 
     def print_weights(self, only_rew=True):
-        networks = [self.reward_net]
+        if only_rew:
+            networks = [self.reward_net]
+        else:
+            networks = [self.net1] + [self.reward_net]
 
         for net in networks:
             weights = net.state_dict()

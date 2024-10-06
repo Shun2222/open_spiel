@@ -41,9 +41,9 @@ from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value impor
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert/expert-40_19-1000tra", help="expert path")
-    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert/actor40_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value", help="log path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert/expert-25_19-1000tra", help="expert path")
+    parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert/actor25_19", help="expert actor path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group2_mu-divided_value2", help="log path")
     parser.add_argument("--net_input", type=str, default="mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")

@@ -100,9 +100,9 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/09xx/predator_prey_group0_s_mu-divided_value",
-            "/mnt/shunsuke/result/09xx/predator_prey_group1_s_mu-divided_value",
-            "/mnt/shunsuke/result/09xx/predator_prey_group2_s_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group2_mu-divided_value",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
@@ -122,9 +122,9 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_s_mu-divided_value0",
-                "MF-AITL_s_mu-divided_value1",
-                "MF-AITL_s_mu-divided_value2",
+                "MF-AITL_mu-divided_value0",
+                "MF-AITL_mu-divided_value1",
+                "MF-AITL_mu-divided_value2",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -160,11 +160,17 @@ if __name__ == "__main__":
     from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
     for ip, target_path in enumerate(pathes):
         for i in range(3):
+            net_input = get_net_input(pathnames[ip])
+            if net_input:
+                net_labels = get_net_labels(net_input)
             fname = reward_filename
             fname = fname + f'{update_infos[ip]}-{i}.pth' 
             fpath = osp.join(target_path, fname)
-            assert osp.isfile(fpath), f'isFileError: {fpath}'
-
+            if not net_input:
+                assert osp.isfile(fpath), f'isFileError: {fpath}'
+            else:
+                if len(net_labels)!=1:
+                    assert osp.isfile(fpath), f'isFileError: {fpath}'
 
             fname = actor_filename
             fname = fname + f'{update_infos[ip]}-{i}.pth' 
@@ -304,6 +310,9 @@ if __name__ == "__main__":
                 num_hidden = get_num_hidden(pathnames[p])
                 print(num_hidden)
                 #discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden, ppo_value_net=critic_models[i])
+                if len(labels)==1:
+                    from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import Discriminator 
+                    discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
                 if len(labels)==2:
                     discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
                 if len(labels)==3:
@@ -358,7 +367,10 @@ if __name__ == "__main__":
                     if args.use_rate:
                         rewards, output = multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
                     else:
-                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                        if len(net_labels)==1:
+                            rewards, output = multi_render_reward_nets_divided_value2(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                        else:
+                            rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 else:
                     rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):

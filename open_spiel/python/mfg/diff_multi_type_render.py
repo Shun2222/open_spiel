@@ -119,9 +119,9 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/09xx/predator_prey_group0_s_mu-divided_value",
-            "/mnt/shunsuke/result/09xx/predator_prey_group1_s_mu-divided_value",
-            "/mnt/shunsuke/result/09xx/predator_prey_group2_s_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/predator_prey_group2_mu-divided_value",
          ] 
 
 
