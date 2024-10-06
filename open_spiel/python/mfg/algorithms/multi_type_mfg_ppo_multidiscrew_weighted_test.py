@@ -829,21 +829,25 @@ if __name__ == "__main__":
     obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
     discriminators = []
     for i in range(num_agent):
-        if single:
-            discriminator = Discriminator(nobs+1, nacs, False, device)
-        elif notmu:
-            discriminator = Discriminator(nobs, nacs, False, device)
-        elif is_nets:
-            inputs = get_input_shape(net_input, env, num_agent)
-            labels = get_net_labels(net_input)
-            num_hidden = get_num_hidden(args.path0)
-            print(num_hidden)
-            if len(labels)==2:
-                discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden) for _ in range(2)]
-            if len(labels)==3:
-                discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
-        else:
-            discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
+        for j in range(3):
+            if single:
+                discriminator = Discriminator(nobs+1, nacs, False, device)
+            elif notmu:
+                discriminator = Discriminator(nobs, nacs, False, device)
+            elif is_nets:
+                net_input = get_net_input(pathes[j])
+                inputs = get_input_shape(net_input, env, num_agent)
+                labels = get_net_labels(net_input)
+                num_hidden = get_num_hidden(pathes[j])
+                print(num_hidden)
+                if len(labels)==1:
+                    discriminator.append(Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
+                elif len(labels)==2:
+                    discriminator.append(Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
+                elif len(labels)==3:
+                    discriminator.append(Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
+            else:
+                discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
 
         if is_nets:
             for j in range(2):
