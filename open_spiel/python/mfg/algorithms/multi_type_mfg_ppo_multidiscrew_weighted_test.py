@@ -316,16 +316,21 @@ class MultiTypeMFGPPO(object):
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     for rate in combinations:
                         if self._is_divided:
+                            inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[0], [obs_mu], acs, self._player_id)
+                            inputs_next, _, _ = create_disc_input(self._size, self._net_inputs[0], [obs_next_mu], acs, self._player_id)
                             disc_value0, disc_values0 = self._discriminator[0].get_value(
                                 inputs,
                                 only_value=False,
                                 weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                            disc_value1, disc_values1 = self._discriminator[1].get_value(
-                                inputs, 
-                                only_value=False,
-                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value_next0, disc_values_next0 = self._discriminator[0].get_value(
                                 inputs_next, 
+                                only_value=False,
+                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                            inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[1], [obs_mu], acs, self._player_id)
+                            inputs_next, _, _ = create_disc_input(self._size, self._net_inputs[1], [obs_next_mu], acs, self._player_id)
+                            disc_value1, disc_values1 = self._discriminator[1].get_value(
+                                inputs, 
                                 only_value=False,
                                 weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value_next1, disc_values_next1 = self._discriminator[1].get_value(
