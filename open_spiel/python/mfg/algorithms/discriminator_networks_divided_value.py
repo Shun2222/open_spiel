@@ -318,17 +318,101 @@ class Discriminator(nn.Module):
                 return None
             else:
                 input1 = inputs[0]
-                output = self.net1(input1.to(torch.float32)) 
-                score = self.reward_net(output.to(torch.float32)) 
-        return score
+                output1 = self.net1(input1.to(torch.float32)) 
+                if len(output1.shape)==1:
+                    output1 = output1.reshape(1, 1)
+                score = self.reward_net(output1.to(torch.float32))
+                outputs = [output1]
+        if weighted_rew:
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            outputs = [output1]
+            outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
+            return score, outputs 
+        elif only_rew:
+            return score
+        else:
+            return score, outputs 
+
 
     def get_value(self, inputs, only_value=True, weighted_value=False):
         with torch.no_grad():
-            value_fn = self.value_net1(input1.to(torch.float32))
+            input1 = inputs[0]
+            value_fn1 = self.value_net1(input1.to(torch.float32))
 
             ws = self.get_weights()
-            value_fn = ws[0] * value_fn
-        return value_fn
+            value = ws[0] * value_fn1 
+            if only_value:
+                return value 
+            elif weighted_value:
+                return value, [ws[0] * value_fn1]
+            else:
+                return value, [value_fn1]
+
+    def get_reward_weighted(self, inputs, rate=[0.1, 0.1]):
+        with torch.no_grad():
+            input1 = inputs[0]
+            output1 = self.net1(input1.to(torch.float32)) 
+            if len(output1.shape)==1:
+                output1 = output1.reshape(1, 1)
+            reward = self.reward_net(output1.to(torch.float32)).numpy()
+
+            outputs = output1.numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            for i in range(len(weights)):
+                weights[i] = weights[i]*np.array(rate[i])
+
+            #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
+            #reward2 = outputs @ weights.T + bias
+            reward2 = torch.from_numpy(outputs @ weights.T )
+            outputs = torch.from_numpy(outputs)
+            return reward, reward2, outputs
+
+
+    def get_reward_weighted_with_probs(self, inputs, inputs_next, rate=[0.1, 0.1], expert_prob=True):
+        with torch.no_grad():
+            input1 = inputs[0]
+            input1_next = inputs_next[0]
+            output1 = self.net1(input1.to(torch.float32)) 
+            if len(output1.shape)==1:
+                output1 = output1.reshape(1, 1)
+            reward = self.reward_net(output1.to(torch.float32)).numpy()
+
+            outputs = output1.numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            weights = weights*np.array(rate)
+
+            #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
+            #reward2 = outputs @ weights.T + bias
+            reward2 = outputs @ weights.T 
+
+            p_tau = None
+            p_tau2 = None
+            if expert_prob:
+                value_fn1 = self.value_net1(input1.to(torch.float32)).numpy()
+                value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32)).numpy()
+
+                ws = self.get_weights()
+                value_fn = ws[0] * value_fn1
+                value_fn_next = ws[0] * value_fn_next1
+
+                log_p_tau = reward + self.gamma * value_fn_next - value_fn
+                tf = np.abs(log_p_tau)<5
+                p_tau = np.zeros(log_p_tau.shape)
+                p_tau[tf] = np.exp(-np.abs(log_p_tau[tf]))
+                p_tau = p_tau.flatten()
+
+                ws = self.get_weights()
+                value_fn = weights[0] * value_fn1 + weights[1]
+                value_fn_next = weights[0] * value_fn_next1
+
+                log_p_tau2 = reward2 + self.gamma * value_fn_next - value_fn
+                tf = np.abs(log_p_tau2)<5
+                p_tau2 = np.zeros(log_p_tau2.shape)
+                p_tau2[tf] = np.exp(-np.abs(log_p_tau2[tf]))
+                p_tau2 = p_tau2.flatten()
+
+
+        return reward, reward2, p_tau, p_tau2 
 
     def get_num_nets(self):
         return self.n_networks

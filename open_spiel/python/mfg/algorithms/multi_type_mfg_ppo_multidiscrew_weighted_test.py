@@ -333,9 +333,9 @@ class MultiTypeMFGPPO(object):
                             weights1 = self._discriminator[1].get_weights() * rate[1]
                             gamma = 0.99
 
-                            value_fn = weights0[0] * disc_values0[0] + weights1[1] * disc_values1[1]
-                            value_fn_next = weights0[0] * disc_values_next0[0] + weights1[1] * disc_values_next1[1]
-                            disc_reward = weights0[0] * outputs0[0] + weights1[1] * outputs1[1] 
+                            value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
+                            value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
+                            disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
                             log_p_tau2 = disc_reward + gamma * value_fn_next - value_fn
                             log_p_tau2 = log_p_tau2.numpy()
                             tf = np.abs(log_p_tau2)<5
@@ -343,7 +343,7 @@ class MultiTypeMFGPPO(object):
                             p_tau2[tf] = np.exp(-np.abs(log_p_tau2[tf]))
                             p_tau2 = p_tau2.flatten()
                         else:
-                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted_with_probs(
                                 inputs,
                                 torch.from_numpy(obs_xym).to(self._device),
                                 torch.from_numpy(obs_next_xym).to(self._device),
@@ -737,13 +737,13 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu_weigted_test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu_weigted_test", help="logdir")
 
-    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="file path")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
-    parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--rew_index1", type=int, default=0, help="-1 is reward, 0 or more are output")
 
     parser.add_argument("--update_eps", type=str, default=r"200_1", help="file path")
 
