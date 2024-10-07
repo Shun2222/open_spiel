@@ -38,6 +38,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 from games.predator_prey import goal_distance, divide_obs
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import *
 
 
 
@@ -54,7 +55,6 @@ class MultiDiscriminatorLoader():
 
 
     def load(self, disc_path_update_info):
-        from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
         
         num_agent = nmu = 3 
         disc_path = [[disc_path_update_info[i][j][0] for j in range(len(disc_path_update_info[i]))] for i in range(num_agent)]
@@ -88,6 +88,7 @@ class MultiDiscriminatorLoader():
         obs_xym_size = nobs - 1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         discriminators = [[] for _ in range(num_agent)]
 
+        from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import Discriminator, Discriminator_2nets, Discriminator_3nets
         device = torch.device("cpu")
         for i in range(num_agent):
             for j in range(len(disc_path)):
