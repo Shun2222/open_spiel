@@ -155,7 +155,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, is_divided=True, net_input=None, rew_indexes=None):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, is_divided=True, net_inputs=None, rew_indexes=None):
         self._device = device
         self._rew_indexes = rew_indexes
 
@@ -172,7 +172,7 @@ class MultiTypeMFGPPO(object):
         self._discriminator = discriminator
         self._is_nets = is_nets
         self._is_divided = is_divided
-        self._net_input = net_input
+        self._net_inputs = net_inputs
 
         self._horizon = env.game.get_parameters()['horizon']
         self._size = env.game.get_parameters()['size']
@@ -208,13 +208,20 @@ class MultiTypeMFGPPO(object):
             vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
             combinations = np.vstack([grid.ravel() for grid in grids]).T
+            combinations2 = []
             for rate in combinations:
+                if rate[1]>1.0:
+                    continue
+                else:
+                    combinations2.append(rate)
+
                 rate_str = ''
                 for n in range(n_nets):
                     rate_str += f'{rate[n]} '
                 all_p_tau[rate_str] = []
                 all_p_tau2[rate_str] = []
                 all_rew2[rate_str] = []
+        combinations = combinations2
 
         size = self._size
         step = 0
@@ -248,37 +255,39 @@ class MultiTypeMFGPPO(object):
 
                 idx = self._player_id
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
-                inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
-                inputs_next, _, _ = create_disc_input(self._size, self._net_input, [obs_next_mu], acs, self._player_id)
 
                 if self._is_nets:
                     if self._is_divided:
                         weights0 = self._discriminator[0].get_weights()
                         weights1 = self._discriminator[1].get_weights()
 
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[0], [obs_mu], acs, self._player_id)
+                        inputs_next, _, _ = create_disc_input(self._size, self._net_inputs[0], [obs_next_mu], acs, self._player_id)
                         reward0, outputs0 = self._discriminator[0].get_reward(
                             inputs,
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                        disc_value0, disc_values0 = self._discriminator[0].get_value(
+                            inputs,
+                            only_value=False,
+                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        disc_value_next0, disc_values_next0 = self._discriminator[0].get_value(
+                            inputs_next, 
+                            only_value=False,
+                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[1], [obs_mu], acs, self._player_id)
+                        inputs_next, _, _ = create_disc_input(self._size, self._net_inputs[1], [obs_next_mu], acs, self._player_id)
                         reward1, outputs1 = self._discriminator[1].get_reward(
                             inputs,
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                        reward = weights0[0] * outputs0[0] + weights1[1] * outputs1[1]
-
-                        disc_value0, disc_values0 = self._discriminator[0].get_value(
-                            inputs,
-                            only_value=False,
-                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         disc_value1, disc_values1 = self._discriminator[1].get_value(
                             inputs, 
-                            only_value=False,
-                            weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                        disc_value_next0, disc_values_next0 = self._discriminator[0].get_value(
-                            inputs_next, 
                             only_value=False,
                             weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                         disc_value_next1, disc_values_next1 = self._discriminator[1].get_value(
@@ -287,9 +296,15 @@ class MultiTypeMFGPPO(object):
                             weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                         gamma = 0.99
-                        value_fn = weights0[0] * disc_values0[0] + weights1[1] * disc_values1[1]
-                        value_fn_next = weights0[0] * disc_values_next0[0] + weights1[1] * disc_values_next1[1]
-                        log_p_tau = reward + gamma * value_fn_next - value_fn
+                        #reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
+                        #value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
+                        #value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
+                        #disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
+
+                        reward = reward0
+                        value_fn = disc_value0
+                        value_fn_next = disc_value_next0
+                        log_p_tau = reward0 + gamma * value_fn_next - value_fn
                         log_p_tau = log_p_tau.numpy()
                         tf = np.abs(log_p_tau)<5
                         p_tau = np.zeros(log_p_tau.shape)
@@ -312,16 +327,21 @@ class MultiTypeMFGPPO(object):
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     for rate in combinations:
                         if self._is_divided:
+                            inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[0], [obs_mu], acs, self._player_id)
+                            inputs_next, _, _ = create_disc_input(self._size, self._net_inputs[0], [obs_next_mu], acs, self._player_id)
                             disc_value0, disc_values0 = self._discriminator[0].get_value(
                                 inputs,
                                 only_value=False,
                                 weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
-                            disc_value1, disc_values1 = self._discriminator[1].get_value(
-                                inputs, 
-                                only_value=False,
-                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value_next0, disc_values_next0 = self._discriminator[0].get_value(
                                 inputs_next, 
+                                only_value=False,
+                                weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                            inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[1], [obs_mu], acs, self._player_id)
+                            inputs_next, _, _ = create_disc_input(self._size, self._net_inputs[1], [obs_next_mu], acs, self._player_id)
+                            disc_value1, disc_values1 = self._discriminator[1].get_value(
+                                inputs, 
                                 only_value=False,
                                 weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                             disc_value_next1, disc_values_next1 = self._discriminator[1].get_value(
@@ -333,9 +353,9 @@ class MultiTypeMFGPPO(object):
                             weights1 = self._discriminator[1].get_weights() * rate[1]
                             gamma = 0.99
 
-                            value_fn = weights0[0] * disc_values0[0] + weights1[1] * disc_values1[1]
-                            value_fn_next = weights0[0] * disc_values_next0[0] + weights1[1] * disc_values_next1[1]
-                            disc_reward = weights0[0] * outputs0[0] + weights1[1] * outputs1[1] 
+                            value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
+                            value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
+                            disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
                             log_p_tau2 = disc_reward + gamma * value_fn_next - value_fn
                             log_p_tau2 = log_p_tau2.numpy()
                             tf = np.abs(log_p_tau2)<5
@@ -343,7 +363,7 @@ class MultiTypeMFGPPO(object):
                             p_tau2[tf] = np.exp(-np.abs(log_p_tau2[tf]))
                             p_tau2 = p_tau2.flatten()
                         else:
-                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted(
+                            rew, rew2, p_tau, p_tau2 = self._discriminator.get_reward_weighted_with_probs(
                                 inputs,
                                 torch.from_numpy(obs_xym).to(self._device),
                                 torch.from_numpy(obs_next_xym).to(self._device),
@@ -737,13 +757,13 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu_weigted_test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_weigted_test_group1", help="logdir")
 
-    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="file path")
+    parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value2", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
-    parser.add_argument("--rew_index1", type=int, default=1, help="-1 is reward, 0 or more are output")
+    parser.add_argument("--rew_index1", type=int, default=0, help="-1 is reward, 0 or more are output")
 
     parser.add_argument("--update_eps", type=str, default=r"200_1", help="file path")
 
@@ -757,31 +777,13 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 if __name__ == "__main__":
     args = parse_args()
 
-    pathes = [args.path0, args.path1]
-    single = args.single
-    notmu = args.notmu
-
-    update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
-    is_nets = is_networks(args.path0)
-    print(f'Is networks: {is_nets}')
-    if not is_nets:
-        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-        rew_indexes = [-1, -1]
-        net_input = None
-    else:
-        net_input = get_net_input(args.path0)
-        net_label = get_net_labels(net_input)
-        is_divided = is_divided_value(args.path0)
-        if not is_divided:
-            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
-        assert len(net_label)>=args.rew_index0 and len(net_label)>=args.rew_index1, 'rew_index is wrong'
-        rew_indexes = [args.rew_index0, args.rew_index1]
 
     # Set the seed 
     seed = args.seed
@@ -829,21 +831,27 @@ if __name__ == "__main__":
     obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
     discriminators = []
     for i in range(num_agent):
-        if single:
-            discriminator = Discriminator(nobs+1, nacs, False, device)
-        elif notmu:
-            discriminator = Discriminator(nobs, nacs, False, device)
-        elif is_nets:
-            inputs = get_input_shape(net_input, env, num_agent)
-            labels = get_net_labels(net_input)
-            num_hidden = get_num_hidden(args.path0)
-            print(num_hidden)
-            if len(labels)==2:
-                discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden) for _ in range(2)]
-            if len(labels)==3:
-                discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
-        else:
-            discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
+        discriminator = []
+        for j in range(2):
+            if single:
+                discriminator = Discriminator(nobs+1, nacs, False, device)
+            elif notmu:
+                discriminator = Discriminator(nobs, nacs, False, device)
+            elif is_nets:
+                net_input = net_inputs[j] 
+                inputs = get_input_shape(net_input, env, num_agent)
+                labels = get_net_labels(net_input)
+                assert len(labels)>=rew_indexes[j], f'rew_index is wrong. labels are {labels}, but rew_index is {rew_indexes[j]} '
+                num_hidden = get_num_hidden(pathes[j])
+                print(num_hidden)
+                if len(labels)==1:
+                    discriminator.append(Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
+                elif len(labels)==2:
+                    discriminator.append(Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
+                elif len(labels)==3:
+                    discriminator.append(Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
+            else:
+                discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
 
         if is_nets:
             for j in range(2):
@@ -871,7 +879,7 @@ if __name__ == "__main__":
     inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
     disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
     """
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_indexes=rew_indexes) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_inputs=net_inputs, rew_indexes=rew_indexes) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):
