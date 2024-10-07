@@ -160,7 +160,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_indexes=None):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_inputs=None, rew_indexes=None, rate=None):
         self._device = device
         self._rew_indexes = rew_indexes
 
@@ -176,7 +176,8 @@ class MultiTypeMFGPPO(object):
         self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
         self._discriminator = discriminator
         self._is_nets = is_nets
-        self._net_input = net_input
+        self._net_inputs = net_inputs
+        self._rate = rate
 
         self._size = env.game.get_parameters()['size']
 
@@ -242,19 +243,22 @@ class MultiTypeMFGPPO(object):
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
 
                 if self._is_nets:
-                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
                     if len(self._discriminator)==2:
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[0], [obs_mu], acs, self._player_id)
                         reward0, outputs0 = self._discriminator[0].get_reward(
                             inputs,
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[1], [obs_mu], acs, self._player_id)
                         reward1, outputs1 = self._discriminator[1].get_reward(
                             inputs,
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     else:
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_inputs[0], [obs_mu], acs, self._player_id)
                         reward, outputs = self._discriminator[0].get_reward(
                             inputs,
                             discrim_score=False,
@@ -281,11 +285,8 @@ class MultiTypeMFGPPO(object):
                 actions[step] = action
                 #rewards[step] = reward
                 if self._rew_indexes[0]>=0:
-                    rewards[step] = outputs0[self._rew_indexes[0]] + outputs1[self._rew_indexes[1]]
+                    rewards[step] = self._rate[0] * outputs0[self._rew_indexes[0]] + self._rate[1] * outputs1[self._rew_indexes[1]]
                     #reward_rate[step] = reward1/reward0
-                    print(f"reward0: {reward0}, output0{outputs0[0]}, output1: {outputs0[1]}")
-                    print(f"reward1: {reward1}, output1{outputs1[0]}, output1: {outputs1[1]}")
-                    input()
                     reward_rate[step] = (outputs1[1]/outputs1[0])/(outputs0[1]/outputs0[0])
                 else:
                     rewards[step] = reward
@@ -302,7 +303,7 @@ class MultiTypeMFGPPO(object):
         ret = np.array(ret)
         assert step==nsteps
         print(f' rate = reward1/reward0 = {np.mean(reward_rate)}')
-        input()
+        #input()
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
 
@@ -488,35 +489,19 @@ def parse_args():
     return args
 
 disc_path = [
-                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-0"],
-                 ["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-1"],
+                [["/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", "200_2-0"],
+                 ["/mnt/shunsuke/result/09xx/predator_prey_mu-divided_value_group0", "200_2-0"],
                 ],
-                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-1"]],
-                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-2"]],
+                [["/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", "200_2-1"]],
+                [["/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", "200_2-2"]],
             ]
-rew_indexes = [[0, 1], [-1], [-1]]
+rates = [[0.52, 0.2], None, None]
+rew_indexes = [[0, 0], [-1], [-1]]
+
 if __name__ == "__main__":
     args = parse_args()
 
-    single = args.single
-    notmu = args.notmu
-
-    update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
-
-    from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
-    is_nets = True 
-    print(f'Is networks: {is_nets}')
-    if not is_nets:
-        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-        rew_indexes = [-1, -1]
-        net_input = None
-    else:
-        net_input = "dxy_mu"
-        net_label = get_net_labels(net_input)
-        is_divided = True 
-        if not is_divided:
-            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
 
     # Set the seed 
     seed = args.seed
@@ -549,65 +534,16 @@ if __name__ == "__main__":
     for i in range(num_agent):
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(args.seed)
-    
     conv_dist = convert_distrib(envs, merge_dist)
+
     device = torch.device("cpu")
 
-    env = envs[0]
-    nacs = env.action_spec()['num_actions']
-    nobs = env.observation_spec()['info_state'][0]
-    horizon = env.game.get_parameters()['horizon']
+    from open_spiel.python.mfg.algorithms.multi_discriminator_loader import MultiDiscriminatorLoader 
+    mdl = MultiDiscriminatorLoader(envs[0])
+    discriminators = mdl.load(disc_path)
+    net_inputs = mdl.get_net_inputs()
 
-    nmu = num_agent
-    size = env.game.get_parameters()['size']
-    state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-    obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-    discriminators = []
-    for i in range(num_agent):
-        if single:
-            discriminator = Discriminator(nobs+1, nacs, False, device)
-        elif notmu:
-            discriminator = Discriminator(nobs, nacs, False, device)
-        elif is_nets:
-            inputs = get_input_shape(net_input, env, num_agent)
-            labels = get_net_labels(net_input)
-            num_hidden = 1
-            print(num_hidden)
-            if len(labels)==2:
-                discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden) for _ in range(len(disc_path[i]))]
-            if len(labels)==3:
-                discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
-        else:
-            discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
-
-        if is_nets:
-            for j in range(len(disc_path[i])):
-                print(f'jth disc of Agent i is loaded from {disc_path[i][j]}')
-                discriminator[j].load(disc_path[i][j], f'{update_eps_info}-{i}', use_eval=True)
-                discriminator[j].print_weights()
-        else:
-            #reward_path = osp.join(args.path0, args.reward_filename+update_eps_info + f'-{i}.pth')
-            #Jvalue_path = osp.join(args.path0, args.value_filename+update_eps_info + f'-{i}.pth')
-            #discriminator.load(reward_path, value_path, use_eval=True)
-            assert False
-        discriminators.append(discriminator)
-    
-    """
-    from multi_render_reward import multi_render_reward_nets_divided_value
-    mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
-    for k,v in merge_dist.distribution.items():
-        if "mu" in k:
-            tt = k.split(",")
-            pop = int(tt[0][-1])
-            t = int(tt[1].split('=')[1].split('_')[0])
-            xy = tt[2].split(" ")
-            x = int(xy[1].split("[")[-1])
-            y = int(xy[2].split("]")[0])
-            mu_dists[pop][t,y,x] = v
-    inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
-    disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
-    """
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_indexes=rew_indexes[i]) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=True, net_inputs=net_inputs, rew_indexes=rew_indexes[i], rate=rates[i]) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):

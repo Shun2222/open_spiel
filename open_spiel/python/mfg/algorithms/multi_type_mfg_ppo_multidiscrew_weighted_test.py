@@ -777,29 +777,13 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 if __name__ == "__main__":
     args = parse_args()
 
-    pathes = [args.path0, args.path1]
-    single = args.single
-    notmu = args.notmu
-
-    update_eps_info = f'{args.update_eps}'
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
     from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
-    is_nets = is_networks(args.path0)
-    print(f'Is networks: {is_nets}')
-    if not is_nets:
-        from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-        rew_indexes = [-1, -1]
-        net_input = None
-    else:
-        net_inputs = [get_net_input(pathes[0]), get_net_input(pathes[1])]
-        is_divided = is_divided_value(args.path0)
-        if not is_divided:
-            from open_spiel.python.mfg.algorithms.discriminator_networks import * 
-        rew_indexes = [args.rew_index0, args.rew_index1]
 
     # Set the seed 
     seed = args.seed
