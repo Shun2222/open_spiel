@@ -67,7 +67,7 @@ class MultiDiscriminatorLoader():
             return is_nets and is_divided and is_exist
 
         for i in range(num_agent):
-            for j in range(disc_path[i]):
+            for j in range(len(disc_path[i])):
                 assert self.check_path(disc_path[i][j]), f"Bad path: {disc_path[i][j]}"
 
 
@@ -91,7 +91,7 @@ class MultiDiscriminatorLoader():
         from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import Discriminator, Discriminator_2nets, Discriminator_3nets
         device = torch.device("cpu")
         for i in range(num_agent):
-            for j in range(len(disc_path)):
+            for j in range(len(disc_path[i])):
                 inputs = get_input_shape(net_inputs[i][j], self._env, num_agent)
                 labels = get_net_labels(net_inputs[i][j])
                 num_hidden = 1
