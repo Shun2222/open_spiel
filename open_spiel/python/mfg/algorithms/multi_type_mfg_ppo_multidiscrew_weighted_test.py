@@ -288,12 +288,15 @@ class MultiTypeMFGPPO(object):
                             only_value=False,
                             weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                        reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
                         gamma = 0.99
-                        value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
-                        value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
-                        disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
-                        log_p_tau = reward + gamma * value_fn_next - value_fn
+                        #reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
+                        #value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
+                        #value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
+                        #disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
+
+                        value_fn = disc_value0
+                        value_fn_next = disc_value_next0
+                        log_p_tau = reward0 + gamma * value_fn_next - value_fn
                         log_p_tau = log_p_tau.numpy()
                         tf = np.abs(log_p_tau)<5
                         p_tau = np.zeros(log_p_tau.shape)
@@ -746,7 +749,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu_weigted_test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_weigted_test_group0", help="logdir")
 
     parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", help="file path")
     parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2", help="file path")
