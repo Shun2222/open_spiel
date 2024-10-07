@@ -208,13 +208,20 @@ class MultiTypeMFGPPO(object):
             vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
             combinations = np.vstack([grid.ravel() for grid in grids]).T
+            combinations2 = []
             for rate in combinations:
+                if rate[1]>1.0:
+                    continue
+                else:
+                    combinations2.append(rate)
+
                 rate_str = ''
                 for n in range(n_nets):
                     rate_str += f'{rate[n]} '
                 all_p_tau[rate_str] = []
                 all_p_tau2[rate_str] = []
                 all_rew2[rate_str] = []
+        combinations = combinations2
 
         size = self._size
         step = 0
@@ -294,6 +301,7 @@ class MultiTypeMFGPPO(object):
                         #value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
                         #disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
 
+                        reward = reward0
                         value_fn = disc_value0
                         value_fn_next = disc_value_next0
                         log_p_tau = reward0 + gamma * value_fn_next - value_fn
@@ -749,10 +757,10 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_weigted_test_group0", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_weigted_test_group1", help="logdir")
 
     parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value2", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=0, help="-1 is reward, 0 or more are output")
