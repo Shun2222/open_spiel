@@ -119,25 +119,22 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value",
-            "/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value",
-            "/mnt/shunsuke/result/09xx/predator_prey_group2_mu-divided_value",
+            "/mnt/shunsuke/result/09xx/multi_maze2_ppo_maze-dxy",
+            "/mnt/shunsuke/result/09xx/multi_maze2_ppo_maze-dxy_mu",
          ] 
 
 
 
 pathnames = [
-                "MFAIRLG0min",
-                "MFAIRLG1min",
-                "MFAIRLG2min",
+                "PPOdxy",
+                "PPOdxy-mu",
             ] 
 
 #"50_19",
 #"49_19",
 filenames = [
-                "200_1",
-                "200_1",
-                "200_1",
+                "20_19",
+                "20_19",
             ]
 weights = [[1.0, 1.0]]
 

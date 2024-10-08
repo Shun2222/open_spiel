@@ -38,6 +38,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 from games.predator_prey import goal_distance, divide_obs
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import *
 
 def convert_distrib(envs, distrib):
     env = envs[0]
@@ -287,7 +288,7 @@ class MultiTypeMFGPPO(object):
                 if self._rew_indexes[0]>=0:
                     rewards[step] = self._rate[0] * outputs0[self._rew_indexes[0]] + self._rate[1] * outputs1[self._rew_indexes[1]]
                     #reward_rate[step] = reward1/reward0
-                    reward_rate[step] = (outputs1[1]/outputs1[0])/(outputs0[1]/outputs0[0])
+                    #reward_rate[step] = (outputs1[1]/outputs1[0])/(outputs0[1]/outputs0[0])
                 else:
                     rewards[step] = reward
                     
@@ -302,7 +303,7 @@ class MultiTypeMFGPPO(object):
             ret.append(rew)
         ret = np.array(ret)
         assert step==nsteps
-        print(f' rate = reward1/reward0 = {np.mean(reward_rate)}')
+        #print(f' rate = reward1/reward0 = {np.mean(reward_rate)}')
         #input()
         return info_state, actions, logprobs, rewards, true_rewards, dones, values, entropies,t_actions,t_logprobs, all_mu, ret
 
@@ -490,7 +491,7 @@ def parse_args():
 
 disc_path = [
                 [["/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", "200_2-0"],
-                 ["/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2", "200_2-0"],
+                 ["/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value2", "200_2-0"],
                 ],
                 [["/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", "200_2-1"]],
                 [["/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", "200_2-2"]],
@@ -543,7 +544,7 @@ if __name__ == "__main__":
     discriminators = mdl.load(disc_path)
     net_inputs = mdl.get_net_inputs()
 
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=True, net_inputs=net_inputs, rew_indexes=rew_indexes[i], rate=rates[i]) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=True, net_inputs=net_inputs[i], rew_indexes=rew_indexes[i], rate=rates[i]) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):

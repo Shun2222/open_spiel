@@ -202,18 +202,20 @@ class MultiTypeMFGPPO(object):
         ret = []
         weight_lower = 0.0 
         weight_upper = 2.0
-        weight_step = 0.01
+        weight_step = 0.05
         if self._is_nets:
-            n_nets = self._discriminator[0].get_num_nets()
+            #n_nets = self._discriminator[0].get_num_nets()
+            n_nets = len(self._discriminator)
             vs = np.arange(weight_lower, weight_upper, weight_step)
             grids = np.meshgrid(*[vs] * n_nets)
             combinations = np.vstack([grid.ravel() for grid in grids]).T
             combinations2 = []
             for rate in combinations:
-                if rate[1]>1.0:
-                    continue
-                else:
-                    combinations2.append(rate)
+                #if rate[1]>1.0:
+                #    continue
+                #rate[1] = -rate[1]
+
+                combinations2.append(rate)
 
                 rate_str = ''
                 for n in range(n_nets):
@@ -296,14 +298,23 @@ class MultiTypeMFGPPO(object):
                             weighted_value=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                         gamma = 0.99
+
+                        # Patturn1 r0 + r'1
                         #reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
                         #value_fn = weights0[self._rew_indexes[0]] * disc_values0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values1[self._rew_indexes[1]]
                         #value_fn_next = weights0[self._rew_indexes[0]] * disc_values_next0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * disc_values_next1[self._rew_indexes[1]]
                         #disc_reward = weights0[self._rew_indexes[0]] * outputs0[self._rew_indexes[0]] + weights1[self._rew_indexes[1]] * outputs1[self._rew_indexes[1]] 
 
+                        # Patturn2 r0 + r1
+                        #reward = reward0
+                        #value_fn = disc_value0
+                        #value_fn_next = disc_value_next0
+
+                        # Patturn3 r0
                         reward = reward0
-                        value_fn = disc_value0
-                        value_fn_next = disc_value_next0
+                        value_fn = weights0[0] * disc_values0[0]
+                        value_fn_next = weights0[0] * disc_values_next0[0]
+
                         log_p_tau = reward0 + gamma * value_fn_next - value_fn
                         log_p_tau = log_p_tau.numpy()
                         tf = np.abs(log_p_tau)<5
@@ -581,6 +592,7 @@ class MultiTypeMFGPPO(object):
         pkl.dump(cos_sims, open(osp.join(save_dir, f'cos_sim_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
         pkl.dump(spearmanrs, open(osp.join(save_dir, f'spearmanr_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
         pkl.dump(kl_divs, open(osp.join(save_dir, f'kl_div_{weight_lower}-{weight_upper}-{weight_step}.pkl'), 'wb'))
+        print(f"Saved in {save_dir}")
         print(f'Saved sampled state pkl agent{self._player_id}')
         input(f'program is completed. please close program with ctrl+c forcely')
         
@@ -757,15 +769,16 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=1, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_weigted_test_group1", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_weigted_test_group0", help="logdir")
 
     parser.add_argument("--path0", type=str, default="/mnt/shunsuke/result/09xx/multi_maze2_dxy_mu-divided_value", help="file path")
-    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value2", help="file path")
+    parser.add_argument("--path1", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2", help="file path")
+
+    parser.add_argument("--update_eps", type=str, default=r"200_1-0", help="file path")
 
     parser.add_argument("--rew_index0", type=int, default=0, help="-1 is reward, 0 or more are output")
     parser.add_argument("--rew_index1", type=int, default=0, help="-1 is reward, 0 or more are output")
 
-    parser.add_argument("--update_eps", type=str, default=r"200_1", help="file path")
 
     parser.add_argument("--single", action='store_true')
     parser.add_argument("--notmu", action='store_true')
@@ -780,6 +793,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    is_nets = True
 
     logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
 
@@ -820,66 +834,17 @@ if __name__ == "__main__":
     conv_dist = convert_distrib(envs, merge_dist)
     device = torch.device("cpu")
 
-    env = envs[0]
-    nacs = env.action_spec()['num_actions']
-    nobs = env.observation_spec()['info_state'][0]
-    horizon = env.game.get_parameters()['horizon']
+    from open_spiel.python.mfg.algorithms.multi_discriminator_loader import MultiDiscriminatorLoader 
+    pathes = [[[args.path0, args.update_eps], [args.path1, args.update_eps]]
+                , [[args.path0, args.update_eps]]
+                , [[args.path0, args.update_eps]]]
+    mdl = MultiDiscriminatorLoader(envs[0])
+    discriminators = mdl.load(pathes)
+    net_inputs = mdl.get_net_inputs()
 
-    nmu = num_agent
-    size = env.game.get_parameters()['size']
-    state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-    obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-    discriminators = []
-    for i in range(num_agent):
-        discriminator = []
-        for j in range(2):
-            if single:
-                discriminator = Discriminator(nobs+1, nacs, False, device)
-            elif notmu:
-                discriminator = Discriminator(nobs, nacs, False, device)
-            elif is_nets:
-                net_input = net_inputs[j] 
-                inputs = get_input_shape(net_input, env, num_agent)
-                labels = get_net_labels(net_input)
-                assert len(labels)>=rew_indexes[j], f'rew_index is wrong. labels are {labels}, but rew_index is {rew_indexes[j]} '
-                num_hidden = get_num_hidden(pathes[j])
-                print(num_hidden)
-                if len(labels)==1:
-                    discriminator.append(Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
-                elif len(labels)==2:
-                    discriminator.append(Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
-                elif len(labels)==3:
-                    discriminator.append(Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden))
-            else:
-                discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
+    rew_indexes = [[args.rew_index0, args.rew_index1], [-1], [-1]]
 
-        if is_nets:
-            for j in range(2):
-                discriminator[j].load(pathes[j], f'{update_eps_info}-{i}', use_eval=True)
-                discriminator[j].print_weights()
-        else:
-            reward_path = osp.join(args.path0, args.reward_filename+update_eps_info + f'-{i}.pth')
-            value_path = osp.join(args.path0, args.value_filename+update_eps_info + f'-{i}.pth')
-            discriminator.load(reward_path, value_path, use_eval=True)
-            print(f'')
-        discriminators.append(discriminator)
-    
-    """
-    from multi_render_reward import multi_render_reward_nets_divided_value
-    mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
-    for k,v in merge_dist.distribution.items():
-        if "mu" in k:
-            tt = k.split(",")
-            pop = int(tt[0][-1])
-            t = int(tt[1].split('=')[1].split('_')[0])
-            xy = tt[2].split(" ")
-            x = int(xy[1].split("[")[-1])
-            y = int(xy[2].split("]")[0])
-            mu_dists[pop][t,y,x] = v
-    inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
-    disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
-    """
-    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_inputs=net_inputs, rew_indexes=rew_indexes) for i in range(num_agent)]
+    mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, net_inputs=net_inputs[i], rew_indexes=rew_indexes[i]) for i in range(num_agent)]
 
     batch_step = args.batch_step
     for niter in tqdm(range(args.num_iterations)):

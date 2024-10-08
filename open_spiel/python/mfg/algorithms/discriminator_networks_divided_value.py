@@ -183,6 +183,8 @@ def create_disc_input(size, net_input, obs_mu, onehot_acs, player_id):
     elif net_input=='mu':
         x, y, t, mu = divide_obs(obs_mu, size, use_argmax=True)
         inputs = [torch.from_numpy(mu),]
+    else:
+        assert False, f"Unknown net input: {net_input}"
 
 
     x, y, t, mu = divide_obs(obs_mu, size, use_argmax=False)

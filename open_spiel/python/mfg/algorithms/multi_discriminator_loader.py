@@ -63,12 +63,17 @@ class MultiDiscriminatorLoader():
         def check_path(path):
             is_nets = is_networks(path) 
             is_divided = is_divided_value(path)
-            is_exist = osp.isfile(path)
+            is_exist = osp.isdir(path)
+
+            print(f"Checked path: {path}")
+            print(f"is nest: {is_nets}")
+            print(f"is divided: {is_divided}")
+            print(f"is exist: {is_exist}")
             return is_nets and is_divided and is_exist
 
         for i in range(num_agent):
             for j in range(len(disc_path[i])):
-                assert self.check_path(disc_path[i][j]), f"Bad path: {disc_path[i][j]}"
+                assert check_path(disc_path[i][j]), f"Bad path: {disc_path[i][j]}"
 
 
         net_inputs = []
@@ -103,10 +108,10 @@ class MultiDiscriminatorLoader():
                 if len(labels)==3:
                     discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
 
-                print(f'jth disc of Agent i is loaded from {disc_path[i][j]}')
-                discriminators[i][j].load(disc_path[i][j], update_eps_info[i][j], use_eval=True)
-                discriminators[i][j].print_weights()
-            discriminators[i].append(discriminator)
+                print(f'{j}th disc of Agent {i} is loaded from {disc_path[i][j]}')
+                discriminator.load(disc_path[i][j], update_eps_info[i][j], use_eval=True)
+                discriminator.print_weights()
+                discriminators[i].append(discriminator)
 
         self._discriminators = discriminators
         return discriminators 
