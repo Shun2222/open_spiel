@@ -291,9 +291,13 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         print(f'best traj ret{idx}: {best_traj[idx]["ep_ret"]}')
 
     for i in range(len(sample_trajs)):
-        fname = path + f'/expert-{num_trajs}tra-{i}.pkl'
+        fname = path + f'/expert-{num_trajs}traj-{i}.pkl'
         pkl.dump(sample_trajs[i], open(fname,  'wb'))
         print(f'Saved {fname}')
+
+    fname = path + f'/expert-{num_trajs}traj.pkl'
+    pkl.dump(sample_trajs, open(fname,  'wb'))
+    print(f'Saved {fname}')
 
     fname = path + f'/expert-conv_dists.pkl'
     pkl.dump(conv_dist, open(fname,  'wb'))

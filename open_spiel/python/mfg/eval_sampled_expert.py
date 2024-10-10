@@ -1,4 +1,5 @@
 import os
+import os.path as osp
 import click
 import time
 import numpy as np
@@ -14,8 +15,20 @@ from scipy.spatial import distance
 from open_spiel.python.mfg.games.predator_prey import calc_reward 
 
 
-expert_mu_pkl = r""
-sampled_expert_pkl = r""
+path = r"/mnt/shunsuke/result/0726/multi_maze2_expert"
+
+expert_mu_pkl = r"expert-{num_trajs}traj.pkl"
+expert_mu_pkl = osp.join(path, expert_mu_pkl)
+
+
+sampled_expert_pkl = r"expert-conv_dists.pkl"
+sampled_expert_pkl = osp.join(path, sampled_expert_pkl)
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num_trajs", type=int, default=1000, help="set a random seed")
+    args = parser.parse_args()
+    return args
 
 def load_pkl(path_pkl):
     return pkl.load(open(path_pkl, 'rb'))
@@ -53,11 +66,6 @@ def get_expected_return(trajs, mus, size=10):
 def cos_sim(a, b):
     return 1-distance.cosine(a, b)
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--num_trajs", type=int, default=1000, help="set a random seed")
-    args = parser.parse_args()
-    return args
 
 if __name__ == '__main__':
     args = parse_args()
