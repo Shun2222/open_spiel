@@ -41,9 +41,9 @@ from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value impor
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000---", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_15trajs-2", help="log path")
     parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
@@ -52,6 +52,7 @@ def parse_args():
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
     parser.add_argument('--skip_train', nargs='*', default=["false", "false", "false"])
 
+    parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate of the optimizer")
     parser.add_argument('--torch-deterministic', 
@@ -62,7 +63,6 @@ def parse_args():
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
-    parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
     parser.add_argument("--total_step", type=int, default=1.6e5, help="set a total step")
     parser.add_argument("--num_episode", type=int, default=100, help="")
     parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")

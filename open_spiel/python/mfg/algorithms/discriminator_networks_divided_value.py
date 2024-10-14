@@ -212,9 +212,16 @@ def is_divided_value(filename):
 def get_net_input(filename):
     net_inputs = get_net_inputs()
     detected_input = []
+    ignore_words = ["multi"]
+
+    for word in ignore_words:
+        filename = filename.replace(word, '')
+
+
     for net_input in net_inputs:
         if net_input in filename:
             detected_input.append(net_input)
+
     if len(detected_input)>0:
         num = [len(d) for d in detected_input]
         idx = np.argmax(num)

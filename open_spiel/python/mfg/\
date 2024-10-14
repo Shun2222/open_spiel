@@ -15,7 +15,6 @@ from scipy.spatial import distance
 from open_spiel.python.mfg.games.predator_prey import calc_reward 
 import matplotlib.pyplot as plt
 
-from gif_maker import *
 
 path = r"/mnt/shunsuke/result/0726/multi_maze2_expert"
 
@@ -23,8 +22,8 @@ expert_mu_pkl = rf"expert-conv_dists.pkl"
 expert_mu_pkl = osp.join(path, expert_mu_pkl)
 
 
-sampled_expert_pkl = [rf"expert-1000tra-{i}.pkl" for i in range(3)]
-sampled_expert_pkl = [osp.join(path, sampled_expert_pkl[i]) for i in range(3)]
+sampled_expert_pkl = rf"expert-1000traj.pkl"
+sampled_expert_pkl = osp.join(path, sampled_expert_pkl)
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -73,7 +72,7 @@ def cos_sim(a, b):
 
 def eval_sampled_expert(num_trajs):
     expert_mu = load_pkl(expert_mu_pkl)
-    sampled_expert = [load_pkl(sampled_expert_pkl[i]) for i in range(3)]
+    sampled_expert = load_pkl(sampled_expert_pkl)
 
     num_agent = len(expert_mu)
     sampled_svf = [state_visition_flequency(sampled_expert[i], num_trajs=num_trajs) for i in range(num_agent)]
@@ -127,46 +126,18 @@ def analysis_sampled_expert(num_trajs_list):
         print(f"saved in {savepath}")
     return
     
-def save_svf(num_trajs):
+def save_svf(num_trajs)
     expert_mu = load_pkl(expert_mu_pkl)
-    sampled_expert = [load_pkl(sampled_expert_pkl[i]) for i in range(3)]
+    sampled_expert = load_pkl(sampled_expert_pkl)
 
     num_agent = len(expert_mu)
     sampled_svf = [state_visition_flequency(sampled_expert[i], num_trajs=num_trajs) for i in range(num_agent)]
-
-    plt.figure()
-    n_datas = len(sampled_svf)
-    fig, axes = plt.subplots(1, n_datas, figsize = (4*n_datas, 4))
     for i in range(len(sampled_svf)):
-        axes[i].axis('off')
-        svf = np.mean(sampled_svf[i], axis=0)
-        axes[i].imshow(svf)
-    savepath = osp.join(path, f"svf-{num_trajs}trajs.png")
-    plt.savefig(savepath)
-    print(f"Saved as {savepath}")
-
-    savepath = osp.join(path, f"svf-{num_trajs}trajs.gif")
-    multi_render(sampled_svf, savepath, ["" for _ in range(len(sampled_svf))], use_kde=False)
-
-def save_dataset(num_trajs):
-    from dataset import MFGDataSet
-    mfgds = MFGDataSet(sampled_expert_pkl[0], traj_limitation=num_trajs)
-    trajs = mfgds.get_trajs()
-    sampled_svf = [state_visition_flequency(trajs, num_trajs=num_trajs)]
-
-    plt.figure()
-    n_datas = len(sampled_svf)
-    fig, ax = plt.subplots(1, 1, figsize = (4, 4))
-    ax.axis('off')
-    svf = np.mean(sampled_svf[0], axis=0)
-    ax.imshow(svf)
-    savepath = osp.join(path, f"dataset-svf-{num_trajs}trajs.png")
-    plt.savefig(savepath)
-    print(f"Saved as {savepath}")
-
-    savepath = osp.join(path, f"dataset-svf-{num_trajs}trajs.gif")
-    multi_render(sampled_svf, savepath, ["" for _ in range(len(sampled_svf))], use_kde=False)
-
+        svf = sampled_svf[i]
+        plt.figure()
+        plt.imshow(svf)
+        savepath = osp.join(path, f"svf-{num_trajs}trajs-{i}.png")
+        plt.savefig(savepath)
 
 
 if __name__ == '__main__':
@@ -183,6 +154,3 @@ if __name__ == '__main__':
     num_trajs_list = [1, 15, 50, 100]
     for num_trajs in num_trajs_list:
         save_svf(num_trajs)
-
-    # save dataset 
-    #save_dataset(1)
