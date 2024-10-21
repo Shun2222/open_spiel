@@ -223,7 +223,7 @@ def diff_render_distance_plot(datas, pathes, filenames, labels):
 def diff_render_distance_plot_with_target(datas, pathes, filenames, labels):
     num_agent = len(datas[0]) 
 
-    fig1 = plt.figure(figsize=(24, 16))
+    fig1 = plt.figure(figsize=(16, 16))
     axes = []
     for i in range(num_agent):
         ax = fig1.add_subplot(2, num_agent, i+1)

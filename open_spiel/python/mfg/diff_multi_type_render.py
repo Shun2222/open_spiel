@@ -119,7 +119,7 @@ filename = "actor"
 
 use_horizon = False 
 pathes = [
-            "/mnt/shunsuke/result/09xx/multi_maze2_ppo_conv_airl_1trajs-3",
+            "/mnt/shunsuke/result/0726/multi_maze2_expert",
          ] 
 
 

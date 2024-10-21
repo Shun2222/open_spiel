@@ -4,6 +4,7 @@ os.environ["OPENBLAS_NUM_THREADS"] = "4" # export OPENBLAS_NUM_THREADS=4
 os.environ["MKL_NUM_THREADS"] = "4" # export MKL_NUM_THREADS=6 Mainly controlles the number of spawned threateds 
 os.environ["VECLIB_MAXIMUM_THREADS"] = "4" # export VECLIB_MAXIMUM_THREADS=4
 os.environ["NUMEXPR_NUM_THREADS"] = "4" # export NUMEXPR_NUM_THREADS=6
+import os.path as osp
 
 import argparse
 from distutils.util import strtobool
@@ -42,7 +43,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/10xx/multi_maze2_airl_1trajs", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/10xx/multi_maze2_airl_1000trajs", help="log path")
 
     parser.add_argument("--dxy_input", action='store_true', help="commonalize reward")
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
