@@ -287,7 +287,7 @@ class MFGDataSet(object):
     def savefig(self, path, idx):
         import matplotlib.pyplot as plt
         plt.hist(self.rets)
-        savepath = osp.join(path, "histogram_rets-{idx}.png")
+        savepath = osp.join(path, f"histogram_rets-{idx}.png")
         plt.savefig(savepath)
         plt.close()
         print(f"Saved as {savepath}")
