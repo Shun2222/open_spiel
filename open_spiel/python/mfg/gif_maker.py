@@ -14,7 +14,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     n_datas = len(datas)
 
     if use_kde:
-        fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+        fig, axes = plt.subplots(1, n_datas+1, figsize = (4*n_datas, 4))
         if not vmin or not vmax:
             vmax = np.nanmax(datas)
             vmin = np.nanmin(datas)

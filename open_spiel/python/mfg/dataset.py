@@ -1,6 +1,9 @@
 import pickle as pkl
 import numpy as np
+import os 
+import os.path as osp 
 
+from eval_sampled_expert import *
 
 class Dset(object):
     def __init__(self, inputs, labels, nobs, all_obs, rews, randomize, num_agents, nobs_flag=False):
@@ -213,8 +216,9 @@ class MFGDataSet(object):
         all_obs = []
 
         num_agents = 1
-        np.random.shuffle(traj_data)
+        #np.random.shuffle(traj_data)
 
+        trajs = []
         for traj in traj_data:
             if len(lens) >= traj_limitation:
                 break
@@ -223,6 +227,8 @@ class MFGDataSet(object):
             rews.append(traj["rew"])
             rets.append(traj["ep_ret"])
             lens.append(len(traj["ob"]))
+            trajs.append(traj)
+        self.trajs = trajs
         self.num_traj = len(rets)
         self.avg_ret = np.sum(rets) / len(rets)
         self.avg_len = sum(lens) / len(lens)
@@ -259,6 +265,9 @@ class MFGDataSet(object):
                             nobs_flag=self.nobs_flag)
         self.log_info()
 
+    def get_trajs(self):
+        return self.trajs
+
     def log_info(self):
         print(f"Total trajectories: {self.num_traj}")
         print(f"Total transitions: {self.num_transition}")
@@ -275,12 +284,31 @@ class MFGDataSet(object):
         else:
             raise NotImplementedError
 
-    def plot(self):
+    def savefig(self, path, idx):
         import matplotlib.pyplot as plt
         plt.hist(self.rets)
-        plt.savefig("histogram_rets.png")
+        savepath = osp.join(path, f"histogram_rets-{idx}.png")
+        plt.savefig(savepath)
         plt.close()
+        print(f"Saved as {savepath}")
 
+        trajs = self.get_trajs()
+        num_trajs=len(trajs)
+        sampled_svf = [state_visition_flequency(trajs, num_trajs=num_trajs)]
+
+        plt.figure()
+        n_datas = len(sampled_svf)
+        if n_datas==1:
+            fig, ax = plt.subplots(1, 1, figsize = (4, 4))
+            ax.axis('off')
+            svf = np.mean(sampled_svf[0], axis=0)
+            ax.imshow(svf)
+            savepath = osp.join(path, f"dataset-svf-{num_trajs}trajs-{idx}.png")
+            plt.savefig(savepath)
+            print(f"Saved as {savepath}")
+
+            savepath = osp.join(path, f"dataset-svf-{num_trajs}trajs-{idx}.gif")
+            multi_render(sampled_svf, savepath, ["" for _ in range(len(sampled_svf))], use_kde=False)
 
 def test(expert_path, ret_threshold, traj_limitation):
     dset = MFGDataSet(expert_path, ret_threshold=ret_threshold, traj_limitation=traj_limitation)

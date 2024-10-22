@@ -4,6 +4,7 @@ os.environ["OPENBLAS_NUM_THREADS"] = "4" # export OPENBLAS_NUM_THREADS=4
 os.environ["MKL_NUM_THREADS"] = "4" # export MKL_NUM_THREADS=6 Mainly controlles the number of spawned threateds 
 os.environ["VECLIB_MAXIMUM_THREADS"] = "4" # export VECLIB_MAXIMUM_THREADS=4
 os.environ["NUMEXPR_NUM_THREADS"] = "4" # export NUMEXPR_NUM_THREADS=6
+import os.path as osp
 
 import argparse
 from distutils.util import strtobool
@@ -40,9 +41,9 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1tra", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-10000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/10xx/multi_maze2_airl_10000trajs", help="log path")
 
     parser.add_argument("--dxy_input", action='store_true', help="commonalize reward")
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
@@ -56,9 +57,10 @@ def parse_args():
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
     parser.add_argument("--seed", type=int, default=42, help="set a random seed")
+    parser.add_argument("--num_seed", type=int, default=10, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
-    parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
-    parser.add_argument("--total_step", type=int, default=1.6e7, help="set a total step")
+    parser.add_argument("--traj_limitation", type=int, default=10000, help="set a traj limitation")
+    parser.add_argument("--total_step", type=int, default=5e5, help="set a total step")
     parser.add_argument("--num_episode", type=int, default=100, help="")
     parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")
     args = parser.parse_args()
@@ -78,72 +80,75 @@ if __name__ == "__main__":
     else:
         from open_spiel.python.mfg.algorithms.multi_type_adversarial_inverse_rl_dxy import MultiTypeAIRL
 
-    # Set the seed 
-    seed = args.seed
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    print(f"Random seed set as {seed}")
+    seeds = np.arange(args.seed, args.seed+args.num_seed)
+    for seed in seeds:
+        # Set the seed 
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        os.environ["PYTHONHASHSEED"] = str(seed)
+        print(f"Random seed set as {seed}")
 
-    #device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    print(f'device: {device}')
-    #batch_step = args.batch_step
-    #update_generator_until = batch_step * 10
-    expert_path = args.expert_path
-    expert_actor_path = args.expert_actor_path
-    traj_limitation = args.traj_limitation
+        #device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+        print(f'device: {device}')
+        #batch_step = args.batch_step
+        #update_generator_until = batch_step * 10
+        expert_path = args.expert_path
+        expert_actor_path = args.expert_actor_path
+        traj_limitation = args.traj_limitation
 
-    logger.configure(args.logdir, format_strs=['stdout', 'log', 'json'])
+        logdir = osp.join(args.logdir, f"seed-{seed}")
+        logger.configure(logdir, format_strs=['stdout', 'log', 'json'])
 
-    # Create the game instance 
-    game = pyspiel.load_game('python_mfg_predator_prey')
-    states = game.new_initial_state()
+        # Create the game instance 
+        game = pyspiel.load_game('python_mfg_predator_prey')
+        states = game.new_initial_state()
 
-    num_agent = game.num_players() 
+        num_agent = game.num_players() 
 
 
-    mfg_dists = []
-    for i in range(num_agent):
-        uniform_policy = policy_std.UniformRandomPolicy(game)
-        mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
-        mfg_dists.append(mfg_dist)
-    merge_dist = distribution.MergeDistribution(game, mfg_dists)
+        mfg_dists = []
+        for i in range(num_agent):
+            uniform_policy = policy_std.UniformRandomPolicy(game)
+            mfg_dist = distribution.DistributionPolicy(game, uniform_policy)
+            mfg_dists.append(mfg_dist)
+        merge_dist = distribution.MergeDistribution(game, mfg_dists)
 
-    envs = []
-    for i in range(num_agent):
-        envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
-        envs[-1].seed(args.seed)
+        envs = []
+        for i in range(num_agent):
+            envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
+            envs[-1].seed(args.seed)
 
-    num_obs = envs[0].observation_spec()['info_state'][0]
-    num_acs = envs[0].action_spec()['num_actions']
+        num_obs = envs[0].observation_spec()['info_state'][0]
+        num_acs = envs[0].action_spec()['num_actions']
 
-    expert_actor_pathes = [expert_actor_path + f'-{i}.pth' for i in range(num_agent)]
-    ppo_policies = []
-    for i in range(num_agent):
-        agent =  Agent(num_obs, num_acs).to(device)
-        #actor_model = agent.actor
-        filepath = os.path.join(expert_actor_pathes[i])
-        #print("load actor model from", filepath)
-        #actor_model.load_state_dict(torch.load(filepath))
+        expert_actor_pathes = [expert_actor_path + f'-{i}.pth' for i in range(num_agent)]
+        ppo_policies = []
+        for i in range(num_agent):
+            agent =  Agent(num_obs, num_acs).to(device)
+            #actor_model = agent.actor
+            filepath = os.path.join(expert_actor_pathes[i])
+            #print("load actor model from", filepath)
+            #actor_model.load_state_dict(torch.load(filepath))
 
-        # Set the initial policy to uniform and generate the distribution 
-        #ppo_policies.append(PPOpolicy(game, agent, None, device))
+            # Set the initial policy to uniform and generate the distribution 
+            #ppo_policies.append(PPOpolicy(game, agent, None, device))
 
-    conv_dist = convert_distrib(envs, merge_dist)
-    device = torch.device("cpu")
+        conv_dist = convert_distrib(envs, merge_dist)
+        device = torch.device("cpu")
 
-    experts = []
-    for i in range(num_agent):
-        if args.differ_expert:
-            fname = differ_expert_path[i] + f'-{i}.pkl'
-        else:
-            fname = expert_path + f'-{i}.pkl'
-        expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
-        experts.append(expert)
-        print(f'expert load from {fname}')
-    airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies)
-    airl.run(args.total_step, None, \
-        args.num_episode, args.batch_step, args.save_interval)
-
+        experts = []
+        for i in range(num_agent):
+            if args.differ_expert:
+                fname = differ_expert_path[i] + f'-{i}.pkl'
+            else:
+                fname = expert_path + f'-{i}.pkl'
+            expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
+            expert.savefig(args.logdir, i)
+            experts.append(expert)
+            print(f'expert load from {fname}')
+        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies)
+        airl.run(args.total_step, None, \
+            args.num_episode, args.batch_step, args.save_interval)
+        logger.reset()
