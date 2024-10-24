@@ -59,7 +59,7 @@ class MultiTypeAIRL(object):
                     if common_index==1:
                         discriminator = Discriminator_2nets_SharedReward(self._shared_reward, inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic)
                     else:
-                        discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic)
+                        discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) 
                     self._discriminator.append(discriminator)
             else:
                 assert False, 'Unknown number of nets'
