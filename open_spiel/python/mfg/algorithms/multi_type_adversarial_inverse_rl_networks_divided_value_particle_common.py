@@ -56,7 +56,7 @@ class MultiTypeAIRL(object):
                 self._shared_reward = SharedReward(inputs[1], disc_num_hidden) 
                 self._discriminator = []
                 for i in range(self._num_agent):
-                    if common_index==1:
+                    if common_index[i]==1:
                         discriminator = Discriminator_2nets_SharedReward(self._shared_reward, inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic)
                     else:
                         discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) 
@@ -64,10 +64,20 @@ class MultiTypeAIRL(object):
             else:
                 assert False, 'Unknown number of nets'
         else:
+            print('enter')
             if len(inputs)==2:
-                self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
+                self._shared_reward = SharedReward(inputs[1], disc_num_hidden) 
+                self._discriminator = []
+                for i in range(self._num_agent):
+                    if common_index[i]==1:
+                        print('shared reward')
+                        discriminator = Discriminator_2nets_SharedReward(self._shared_reward, inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden)
+                    else:
+                        print('not shared reward')
+                        discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) 
+                    self._discriminator.append(discriminator)
             else:
-                assert False, f'Unknown number of nets {inputs}: num:{len(inputs)}'
+                assert False, 'Unknown number of nets'
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
@@ -402,6 +412,7 @@ class MultiTypeAIRL(object):
                     else:
                         assert False, 'Unknown number of networks'
 
+                    self._discriminator[idx].print_weights()
                     pear = ""
                     spear = ""
                     try:

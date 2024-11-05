@@ -59,7 +59,7 @@ class MultiTypeAIRL(object):
         self._state_size = state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         obs_xym_size = state_size + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
-        inputs = get_input_shape(disc_type, env, self._num_agent)
+ _discriminator-10epiPerTrain       inputs = get_input_shape(disc_type, env, self._num_agent)
         self._n_networks = len(inputs)
         if use_ppo_value:
             assert False, 'use ppo value is True, but same ppo value is not existance'

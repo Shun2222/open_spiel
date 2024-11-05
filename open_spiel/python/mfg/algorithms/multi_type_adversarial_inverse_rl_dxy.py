@@ -187,53 +187,55 @@ class MultiTypeAIRL(object):
                             torch.from_numpy(np.array([g_obs_mu_input])).to(torch.float32).to(self._device), 
                             torch.from_numpy(np.array([g_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())
 
-                    e_log_prob = np.array([e_log_prob])
-                    g_log_prob = np.array([g_log_prob])
+                    #if True:
+                    if neps%10==0:
+                        e_log_prob = np.array([e_log_prob])
+                        g_log_prob = np.array([g_log_prob])
 
-                    e_x, e_y, e_t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
-                    e_mx, e_my, _, _ = divide_obs(e_obs_mu[0], self._size, use_argmax=True)
-                    e_dx, e_dy = goal_distance(e_mx, e_my, idx)
-                    e_mu = (e_mu.T[0].T).reshape(e_dx.shape)
-                    e_dxym = np.concatenate([e_dx, e_dy, e_mu], axis=1)
+                        e_x, e_y, e_t, e_mu = divide_obs(e_obs_mu[0], self._size, use_argmax=False)
+                        e_mx, e_my, _, _ = divide_obs(e_obs_mu[0], self._size, use_argmax=True)
+                        e_dx, e_dy = goal_distance(e_mx, e_my, idx)
+                        e_mu = (e_mu.T[0].T).reshape(e_dx.shape)
+                        e_dxym = np.concatenate([e_dx, e_dy, e_mu], axis=1)
 
-                    g_x, g_y, g_t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
-                    g_mx, g_my, _, _ = divide_obs(g_obs_mu[0], self._size, use_argmax=True)
-                    g_dx, g_dy = goal_distance(g_mx, g_my, idx)
-                    g_mu = (g_mu.T[0].T).reshape(g_dx.shape)
-                    g_dxym = np.concatenate([g_dx, g_dy, g_mu], axis=1)
+                        g_x, g_y, g_t, g_mu = divide_obs(g_obs_mu[0], self._size, use_argmax=False)
+                        g_mx, g_my, _, _ = divide_obs(g_obs_mu[0], self._size, use_argmax=True)
+                        g_dx, g_dy = goal_distance(g_mx, g_my, idx)
+                        g_mu = (g_mu.T[0].T).reshape(g_dx.shape)
+                        g_dxym = np.concatenate([g_dx, g_dy, g_mu], axis=1)
 
-                    d_dxym = np.concatenate([g_dxym, e_dxym], axis=0)
+                        d_dxym = np.concatenate([g_dxym, e_dxym], axis=0)
 
-                    e_nx, e_ny, e_nt, e_nmu = divide_obs(e_nobs[0], self._size, use_argmax=False)
-                    e_mnx, e_mny, _, _ = divide_obs(e_nobs[0], self._size, use_argmax=True)
-                    e_ndx, e_ndy = goal_distance(e_mnx, e_mny, idx)
-                    e_nmu = (e_nmu.T[0].T).reshape(e_ndx.shape)
-                    e_ndxym = np.concatenate([e_ndx, e_ndy, e_nmu], axis=1)
+                        e_nx, e_ny, e_nt, e_nmu = divide_obs(e_nobs[0], self._size, use_argmax=False)
+                        e_mnx, e_mny, _, _ = divide_obs(e_nobs[0], self._size, use_argmax=True)
+                        e_ndx, e_ndy = goal_distance(e_mnx, e_mny, idx)
+                        e_nmu = (e_nmu.T[0].T).reshape(e_ndx.shape)
+                        e_ndxym = np.concatenate([e_ndx, e_ndy, e_nmu], axis=1)
 
-                    g_nx, g_ny, g_nt, g_nmu = divide_obs(g_nobs[0], self._size, use_argmax=False)
-                    g_mnx, g_mny, _, _ = divide_obs(g_nobs[0], self._size, use_argmax=True)
-                    g_ndx, g_ndy = goal_distance(g_mnx, g_mny, idx)
-                    g_nmu = (g_nmu.T[0].T).reshape(g_ndx.shape)
-                    g_ndxym = np.concatenate([g_ndx, g_ndy, e_nmu], axis=1)
+                        g_nx, g_ny, g_nt, g_nmu = divide_obs(g_nobs[0], self._size, use_argmax=False)
+                        g_mnx, g_mny, _, _ = divide_obs(g_nobs[0], self._size, use_argmax=True)
+                        g_ndx, g_ndy = goal_distance(g_mnx, g_mny, idx)
+                        g_nmu = (g_nmu.T[0].T).reshape(g_ndx.shape)
+                        g_ndxym = np.concatenate([g_ndx, g_ndy, e_nmu], axis=1)
 
-                    d_ndxym = np.concatenate([g_ndxym, e_ndxym], axis=0)
+                        d_ndxym = np.concatenate([g_ndxym, e_ndxym], axis=0)
 
-                    d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
-                    #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
-                    #d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
-                    d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
-                    d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
+                        d_acs = np.concatenate([g_actions[0], e_actions[0]], axis=0)
+                        #d_nobs = np.concatenate([np.array(g_nobs[0])[:, :self._nobs], np.array(e_nobs[0])[:, :self._nobs]], axis=0)
+                        #d_nobs = np.concatenate([g_nobs, e_nobs], axis=0)
+                        d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
+                        d_labels = np.concatenate([np.zeros([g_obs_mu[0].shape[0], 1]), np.ones([e_obs_mu[0].shape[0], 1])], axis=0)
 
-                    #self._discriminator[idx].train_mode()
-                    total_loss = self._discriminator[idx].train(
-                        self._optimizers[idx],
-                        torch.from_numpy(d_dxym).to(torch.float32).to(self._device),
-                        torch.from_numpy(d_acs).to(torch.int64).to(self._device),
-                        torch.from_numpy(d_ndxym).to(torch.float32).to(self._device),
-                        torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                        torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                    )
-                    #self._discriminator[idx].eval_mode()
+                        #self._discriminator[idx].train_mode()
+                        total_loss = self._discriminator[idx].train(
+                            self._optimizers[idx],
+                            torch.from_numpy(d_dxym).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_acs).to(torch.int64).to(self._device),
+                            torch.from_numpy(d_ndxym).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                        )
+                        #self._discriminator[idx].eval_mode()
 
                     pear = ""
                     spear = ""

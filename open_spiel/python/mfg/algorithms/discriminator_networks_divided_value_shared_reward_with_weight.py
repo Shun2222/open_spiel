@@ -224,38 +224,38 @@ def get_net_input(filename):
         return None
 
 class SharedReward(nn.Module):
-    def __init__(self, input_shape, num_hidden, device="cpu"):
+    def __init__(self, input_shape, num_hidden):
         super(SharedReward, self).__init__()
 
         def create_net(input_shape, num_hidden):
             if num_hidden==1:
                 net = nn.Sequential(
-                    nn.Linear(input_shape, num_hidden),
+                    nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, 1)
+                    nn.Linear(hidden_size, 1)
                 )
             elif num_hidden==2:
                 net = nn.Sequential(
-                    nn.Linear(input_shape, num_hidden),
+                    nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, num_hidden),
+                    nn.Linear(hidden_size, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, 1)
+                    nn.Linear(hidden_size, 1)
                 )
             elif num_hidden==3:
                 net = nn.Sequential(
-                    nn.Linear(input_shape, num_hidden),
-                    nn.Linear(input_shape, num_hidden),
+                    nn.Linear(input_shape, hidden_size),
+                    nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, num_hidden),
+                    nn.Linear(hidden_size, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, 1)
+                    nn.Linear(hidden_size, 1)
                 )
             return net
-        self.net = create_net(input_shape, num_hidden).to(device)
+        self.net = create_net(input_shape, num_hidden).to(self._device)
 
 class Discriminator_2nets_SharedReward(nn.Module):
-    def __init__(self, shared_reward, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1, weight_learning=False):
+    def __init__(self, shared_reward, input_shapes, obs_shape, labels, device, discount=0.99, hidden_size=128, l2_loss_ratio=0.01, num_hidden=1):
         super(Discriminator_2nets_SharedReward, self).__init__()
         assert len(input_shapes)<=len(labels), f'not enough labels'
 
@@ -294,21 +294,13 @@ class Discriminator_2nets_SharedReward(nn.Module):
             return net
         self.net1 = create_net(input_shapes[0], num_hidden).to(self._device)
 
-        self.shared_reward = shared_reward
+        self.shared_reward
         self.net2 = shared_reward.net
 
 
         self.reward_net = nn.Sequential(
             nn.Linear(self.n_networks, 1, bias=False),
         ).to(self._device)
-
-        if not weight_learning:
-            with torch.no_grad():
-                for layer in self.reward_net:
-                    if isinstance(layer, nn.Linear):
-                        layer.weight.requires_grad = False
-                        layer.weight.fill_(1.0)
-        self.print_weights()
 
         # Define layers for value function network
         self.value_net1 = create_net(input_shapes[0], num_hidden).to(self._device)
