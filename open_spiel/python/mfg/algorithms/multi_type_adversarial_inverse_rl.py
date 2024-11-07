@@ -69,8 +69,12 @@ class MultiTypeAIRL(object):
                     mus.append(mu_pth)
                 merge_mu = []
                 for step in range(len(mus[0])):
-                    x, y, t, _ = divide_obs(obs_mu, self._size, num_mu=1, use_argmax=False)
-                    merge_mu.append([self._svf[i][t, y, x] for i in range(self._num_agent)])
+                    mu = []
+                    for idx in range(self._num_agent):
+                        obs = rollouts[idx][0]
+                        x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=False)
+                        mu.append(self._svf[idx][t, y, x])
+                    merge_mu.append(mu)
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
