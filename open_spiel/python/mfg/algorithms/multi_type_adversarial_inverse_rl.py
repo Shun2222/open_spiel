@@ -72,7 +72,7 @@ class MultiTypeAIRL(object):
                     mu = []
                     for idx in range(self._num_agent):
                         obs = rollouts[idx][0]
-                        x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=False)
+                        x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=True)
                         mu.append(self._svf[idx][t, y, x])
                     merge_mu.append(mu)
 
