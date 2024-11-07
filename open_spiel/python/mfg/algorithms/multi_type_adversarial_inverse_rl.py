@@ -68,13 +68,25 @@ class MultiTypeAIRL(object):
                     rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
                     mus.append(mu_pth)
                 merge_mu = []
-                for step in range(len(mus[0])):
-                    mu = []
-                    for idx in range(self._num_agent):
-                        obs = rollouts[idx][0]
+                for idx in range(self._num_agent):
+                    obs_pth = rollouts[idx][0]
+                    obs_numpy = obs_pth.cpu().detach().numpy()
+                    mu_step = []
+                    for step in range(len(mus[0])):
+                        mu = []
+                        obs = obs_numpy[step]
                         x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=True)
+                        t = t[0][0]
+                        x = x[0][0]
+                        y = y[0][0]
                         mu.append(self._svf[idx][t, y, x])
-                    merge_mu.append(mu)
+                        for idx2 in range(self._num_agent):
+                            if idx!=idx2:
+                                mu.append(self._svf[idx2][t, y, x])
+                        assert len(mu)==self._num_agent, f"Not match mu length: length = {len(mu)}"
+                        mu_step.append(mu)
+                    merge_mu.append(mu_step)
+                assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -98,7 +110,7 @@ class MultiTypeAIRL(object):
                     obs_mu = []
                     for step in range(batch_step):
                         obs_list = list(obs[step][:-1])
-                        obs_mu.append(obs_list + list(merge_mu[step]))
+                        obs_mu.append(obs_list + list(merge_mu[idx][step]))
                     obs_mu = np.array(obs_mu)
 
                     nobs = obs_mu.copy()
@@ -148,15 +160,20 @@ class MultiTypeAIRL(object):
                     g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[idx].get_next_batch(batch_step)
 
                     g_obs_svf = []
-                    for ob_mu in g_obs_mu: 
+                    for ob_mu in g_obs_mu[0]: 
                         x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
+                        x = x[0][0]
+                        y = y[0][0]
+                        t = t[0][0]
                         svf_xyt = [self._svf[idx][t, y, x]] 
                         for k in range(self._num_agent):
                             if k!=idx:
                                 svf_xyt.append(self._svf[idx][t, y, x])
-                        ob_svf = ob_mu[:-3] + svf_xyt
+                        assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
+                        ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
+                        assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
                         g_obs_svf.append(ob_svf)
-                    g_obs_mu = g_obs_svf
+                    g_obs_mu = [g_obs_svf]
 
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]
@@ -239,8 +256,8 @@ class MultiTypeAIRL(object):
             for i in range(self._num_agent):
                 nashc_ppo = self._generator[i].update_iter(self._game, self._envs[i], merge_dist, conv_dist, nashc=True, population=i)
                 logger.record_tabular(f"nashc_ppo{i}", nashc_ppo)
-                nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=True, population=i)
-                logger.record_tabular(f"nashc_expert{i}", nashc_expert)
+                #nashc_expert = self._generator[i].calc_nashc(self._game, merge_dist, use_expert_policy=True, population=i)
+                #logger.record_tabular(f"nashc_expert{i}", nashc_expert)
             logger.dump_tabular()
             num_update_iter += 1
 

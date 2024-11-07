@@ -43,7 +43,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/10xx/multi_maze2_airl_1000trajs_discriminator-10epiPerTrain", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_airl_test", help="log path")
 
     parser.add_argument("--dxy_input", action='store_true', help="commonalize reward")
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")

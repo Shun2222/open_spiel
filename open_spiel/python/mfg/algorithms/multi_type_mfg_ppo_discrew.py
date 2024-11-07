@@ -38,6 +38,7 @@ from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 from games.predator_prey import goal_distance, divide_obs
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import create_disc_input
 
 def convert_distrib(envs, distrib):
     env = envs[0]
