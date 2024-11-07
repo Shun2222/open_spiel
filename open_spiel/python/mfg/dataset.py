@@ -228,6 +228,7 @@ class MFGDataSet(object):
             rets.append(traj["ep_ret"])
             lens.append(len(traj["ob"]))
             trajs.append(traj)
+
         self.trajs = trajs
         self.num_traj = len(rets)
         self.avg_ret = np.sum(rets) / len(rets)
@@ -242,6 +243,9 @@ class MFGDataSet(object):
         self.acs = [np.concatenate(self.acs)]
         self.rews = [np.concatenate(self.rews)]
         self.all_obs = self.obs[0]
+
+        from open_spiel.python.mfg.eval_sampled_expert import state_visition_flequency
+        self.svf = svf = state_visition_flequency(trajs)
 
         # get next observation
         nobs = self.obs[0].copy()

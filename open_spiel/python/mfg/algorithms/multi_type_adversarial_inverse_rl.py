@@ -15,6 +15,7 @@ import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
 from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 from games.predator_prey import divide_obs
+from open_spiel.python.mfg.eval_sampled_expert import state_visition_flequency
 
 
 class MultiTypeAIRL(object):
@@ -31,6 +32,9 @@ class MultiTypeAIRL(object):
         self._nobs = env.observation_spec()['info_state'][0]
         self._horizon = env.game.get_parameters()['horizon']
         self._nmu  = self._num_agent 
+
+        # svf(s_t) = svf[agent_idx, t, y, x]
+        self._svf = [experts[i].svf for i in range(self._num_agent)]
 
         #self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i) for i in range(self._num_agent)]
@@ -65,7 +69,8 @@ class MultiTypeAIRL(object):
                     mus.append(mu_pth)
                 merge_mu = []
                 for step in range(len(mus[0])):
-                    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
+                    x, y, t, _ = divide_obs(obs_mu, self._size, num_mu=1, use_argmax=False)
+                    merge_mu.append([self._svf[i][t, y, x] for i in range(self._num_agent)])
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -138,14 +143,25 @@ class MultiTypeAIRL(object):
                     e_obs_mu, e_actions, e_nobs, e_all_obs, _ = self._experts[idx].get_next_batch(batch_step)
                     g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[idx].get_next_batch(batch_step)
 
+                    g_obs_svf = []
+                    for ob_mu in g_obs_mu: 
+                        x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
+                        svf_xyt = [self._svf[idx][t, y, x]] 
+                        for k in range(self._num_agent):
+                            if k!=idx:
+                                svf_xyt.append(self._svf[idx][t, y, x])
+                        ob_svf = ob_mu[:-3] + svf_xyt
+                        g_obs_svf.append(ob_svf)
+                    g_obs_mu = g_obs_svf
+
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]
 
                     e_log_prob = [] 
                     g_log_prob = [] 
                     for i in range(len(e_obs_mu[0])):
-                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent-idx)]])
-                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent-idx)]])
+                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent)]])
+                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent)]])
                         e_log_prob.append(self._generator[idx].get_log_action_prob(
                             torch.from_numpy(np.array([e_obs_mu_input])).to(torch.float32).to(self._device), 
                             torch.from_numpy(np.array([e_a[0][i]])).to(torch.int64).to(self._device)).cpu().detach().numpy())

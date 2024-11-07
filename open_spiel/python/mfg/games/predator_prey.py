@@ -106,7 +106,7 @@ def obs_xytm_to_obs_xym(obs, size, one_vec=False):
 
     return np.concatenate([obs_x, obs_y, obs_mu], axis=1)
 
-def divide_obs(obs, size, one_vec=False, use_argmax=True):
+def divide_obs(obs, size, num_mu=3, one_vec=False, use_argmax=True):
     obs = np.array(obs)
     if len(obs.shape)==1:
       one_vec = True
@@ -114,7 +114,7 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
       if use_argmax:
         obs_x = np.argmax(obs[:size])
         obs_y = np.argmax(obs[size:2*size])
-        obs_t = np.argmax(obs[2*size:-3])
+        obs_t = np.argmax(obs[2*size:-num_mu])
 
         obs_x = obs_x.reshape(1, 1)
         obs_y = obs_y.reshape(1, 1)
@@ -123,39 +123,39 @@ def divide_obs(obs, size, one_vec=False, use_argmax=True):
       else:
         obs_x = obs[:size]
         obs_y = obs[size:2*size]
-        obs_t = obs[2*size:-3]
+        obs_t = obs[2*size:-num_mu]
 
         #obs_x = obs_x.reshape(size, 1)
         #obs_y = obs_y.reshape(size, 1)
         obs_x = obs_x.reshape(1, size)
         obs_y = obs_y.reshape(1, size)
-        obs_t = obs_t.reshape(1, len(obs)-3-2*size)
+        obs_t = obs_t.reshape(1, len(obs)-num_mu-2*size)
         #error forcely 
         obs_x = obs_x.reshape(1, size+2)
         
-      obs_mu = obs[-3:]
+      obs_mu = obs[-num_mu:]
 
-      obs_mu = obs_mu.reshape(1, 3)
+      obs_mu = obs_mu.reshape(1, num_mu)
 
     else:
         obs = obs.T
         if use_argmax:
           obs_x = np.argmax(obs[:size].T, axis=1)
           obs_y = np.argmax(obs[size:2*size].T, axis=1)
-          obs_t = np.argmax(obs[2*size:-3].T, axis=1)
+          obs_t = np.argmax(obs[2*size:-num_mu].T, axis=1)
           obs_x = obs_x.reshape(len(obs_x), 1)
           obs_y = obs_y.reshape(len(obs_y), 1)
           obs_t = obs_t.reshape(len(obs_t), 1)
         else:
           obs_x = obs[:size].T
           obs_y = obs[size:2*size].T
-          obs_t = obs[2*size:-3].T
+          obs_t = obs[2*size:-num_mu].T
           obs_x = obs_x.reshape(len(obs_x), size)
           obs_y = obs_y.reshape(len(obs_y), size)
-          obs_t = obs_t.reshape(len(obs_t), len(obs)-3-2*size)
-        obs_mu = obs[-3:].T
+          obs_t = obs_t.reshape(len(obs_t), len(obs)-num_mu-2*size)
+        obs_mu = obs[-num_mu:].T
 
-        obs_mu = obs_mu.reshape(len(obs_mu), 3)
+        obs_mu = obs_mu.reshape(len(obs_mu), num_mu)
     return obs_x, obs_y, obs_t, obs_mu
 
 def get_param(param_name, params):
