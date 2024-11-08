@@ -41,9 +41,9 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-15trajs", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_airl_deltaxy_15trajs", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_airl_deltaxy_1000tra", help="log path")
 
     parser.add_argument("--dxy_input", action='store_true', help="commonalize reward")
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument("--num_seed", type=int, default=10, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
     parser.add_argument("--traj_limitation", type=int, default=10000, help="set a traj limitation")
-    parser.add_argument("--total_step", type=int, default=5e50, help="set a total step")
+    parser.add_argument("--total_step", type=int, default=5e5, help="set a total step")
     parser.add_argument("--num_episode", type=int, default=100, help="")
     parser.add_argument("--save_interval", type=float, default=10, help="save models  per save_interval")
     args = parser.parse_args()
