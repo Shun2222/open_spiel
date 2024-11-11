@@ -271,12 +271,12 @@ def diff_render_distance_plot_with_target(datas, pathes, filenames, labels):
     for i in range(num_agent):
         plt.rcParams["font.size"] = 16 
         axes[i*2].set_xlabel('Time')
-        axes[i*2].set_ylabel(r"Corr")
+        axes[i*2].set_ylabel(r"Corr (cos sim)")
         axes[i*2].legend()
 
         plt.rcParams["font.size"] = 16 
         axes[i*2+1].set_xlabel('Time')
-        axes[i*2+1].set_ylabel(r"Corr")
+        axes[i*2+1].set_ylabel(r"Corr (spearman)")
         axes[i*2+1].legend()
 
         save_path = os.path.join(pathes[0], f'corr-{i}-plots.png')
