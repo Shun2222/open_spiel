@@ -173,7 +173,7 @@ class MultiTypeAIRL(object):
                         ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
                         assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
                         g_obs_svf.append(ob_svf)
-                    g_obs_mu = [g_obs_svf]
+                    g_obs_mu = [np.array(g_obs_svf)]
 
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]
