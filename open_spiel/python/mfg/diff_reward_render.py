@@ -100,9 +100,11 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_1trajs-2",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_15trajs-2",
-            "/mnt/shunsuke/result/master_middle/multi_maze2_airl_1trajs-3",
+            "/mnt/shunsuke/result/10xx/multi_maze2_airl_1trajs/seed-42",
+            "/mnt/shunsuke/result/10xx/multi_maze2_airl_15trajs/seed-42",
+            "/mnt/shunsuke/result/10xx/multi_maze2_airl_50trajs/seed-42",
+            "/mnt/shunsuke/result/10xx/multi_maze2_airl_100trajs/seed-42",
+            "/mnt/shunsuke/result/10xx/multi_maze2_airl_1000trajs/seed-42",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
@@ -122,9 +124,11 @@ pathes = [
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
 pathnames = [
-                "MF-AITL_dxy_mu-divided_value_1trajs",
-                "MF-AITL_dxy_mu-divided_value_15trajs",
-                "MF-AIRL_1trajs"
+                "MF-AITL_1trajs",
+                "MF-AITL_15trajs",
+                "MF-AITL_50trajs",
+                "MF-AITL_100trajs",
+                "MF-AITL_1000trajs",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -136,10 +140,12 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "200_1",
-                "200_1",
-                "200_1",
-                "200_1",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
               ]
 rates = [[0.9, 0.8]]
 
@@ -308,7 +314,7 @@ if __name__ == "__main__":
                 if len(labels)==2:
                     discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
                 if len(labels)==3:
-                    discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                    discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, kum_hidden=num_hidden)
             else:
                 #discriminator = Discriminator(nobs+num_agent-horizon-1, nacs, False, device)
                 discriminator = Discriminator(3, nacs, True, device)

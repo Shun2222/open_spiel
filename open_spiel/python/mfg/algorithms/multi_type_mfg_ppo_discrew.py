@@ -621,6 +621,6 @@ if __name__ == "__main__":
 
                 fname = f'{niter}_{neps}-{i}'
                 mfgppo[i].save(game, fname)
-            logger.dump_tabular()
+                logger.dump_tabular()
         logger.reset()
             

@@ -224,32 +224,32 @@ def get_net_input(filename):
         return None
 
 class SharedReward(nn.Module):
-    def __init__(self, input_shape, num_hidden, device="cpu"):
+    def __init__(self, input_shape, num_hidden, hidden_size=128, device="cpu"):
         super(SharedReward, self).__init__()
 
         def create_net(input_shape, num_hidden):
             if num_hidden==1:
                 net = nn.Sequential(
-                    nn.Linear(input_shape, num_hidden),
+                    nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
                     nn.Linear(num_hidden, 1)
                 )
             elif num_hidden==2:
                 net = nn.Sequential(
-                    nn.Linear(input_shape, num_hidden),
+                    nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, num_hidden),
+                    nn.Linear(num_hidden, hidden_size),
                     nn.ReLU(),
                     nn.Linear(num_hidden, 1)
                 )
             elif num_hidden==3:
                 net = nn.Sequential(
-                    nn.Linear(input_shape, num_hidden),
-                    nn.Linear(input_shape, num_hidden),
+                    nn.Linear(input_shape, hidden_size),
+                    nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, num_hidden),
+                    nn.Linear(hidden_size, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, 1)
+                    nn.Linear(hidden_size, 1)
                 )
             return net
         self.net = create_net(input_shape, num_hidden).to(device)

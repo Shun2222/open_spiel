@@ -120,12 +120,22 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
+            "/mnt/shunsuke/result/1112/multi_maze2_airl_test/seed-42",
+            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_1trajs/seed-4",
+            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_15trajs/seed-4/",
+            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_100trajs/seed-4/",
+            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_1000trajs/seed-4/",
          ] 
 
 
 
 pathnames = [
-                "MFPPO1traj",
+                "Expert",
+                "MFAIRL",
+                "MFAIRL_1traj",
+                "MFAIRL_15trajs",
+                "MFAIRL_100trajs",
+                "MFAIRL_1000trajs",
             ] 
 #"Expert",
 #"MFAirl",
@@ -136,6 +146,7 @@ pathnames = [
 #"49_19",
 filenames = [
                 "49_19",
+                "23700_236",
                 "49_19",
                 "49_19",
                 "49_19",
