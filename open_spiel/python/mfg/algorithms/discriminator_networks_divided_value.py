@@ -588,6 +588,7 @@ class Discriminator_2nets(nn.Module):
                     nn.Linear(hidden_size, 1)
                 )
             return net
+        #hidden_size = 1
         self.net1 = create_net(input_shapes[0], num_hidden).to(self._device)
         self.net2 = create_net(input_shapes[1], num_hidden).to(self._device)
 
