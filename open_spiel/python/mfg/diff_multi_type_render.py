@@ -120,7 +120,6 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/1112/multi_maze2_airl_test/seed-42",
             "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_1trajs/seed-4",
             "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_15trajs/seed-4/",
             "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_100trajs/seed-4/",
@@ -131,12 +130,18 @@ pathes = [
 
 pathnames = [
                 "Expert",
-                "MFAIRL",
                 "MFAIRL_1traj",
                 "MFAIRL_15trajs",
                 "MFAIRL_100trajs",
                 "MFAIRL_1000trajs",
             ] 
+
+# diff corr labels
+names = ["Expert",
+         "AIRL",
+         "Only dxy reward",
+         "Proposed Method"]
+
 #"Expert",
 #"MFAirl",
 #"Only_dxyrew",
@@ -146,7 +151,6 @@ pathnames = [
 #"49_19",
 filenames = [
                 "49_19",
-                "23700_236",
                 "49_19",
                 "49_19",
                 "49_19",
@@ -421,8 +425,7 @@ if __name__ == "__main__":
     #gifMaker.make(save_path, titles, cmap='seismic', min_value=-1.0, max_value=1.0)
 
     labels = [f"Group {n}" for n in range(num_agent)] 
-    names = ["Expert",
-             "AIRL",
-             "Only dxy reward",
-             "Proposed Method"]
+    if len(names)<len(pathes):
+        names = pathnames
+
     diff_render_distance_plot_with_target(res_final_dists, pathes, names, labels)

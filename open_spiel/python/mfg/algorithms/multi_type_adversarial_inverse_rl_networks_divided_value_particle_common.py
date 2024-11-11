@@ -19,7 +19,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[1, 1, 1], use_svf=True):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[1, 1, 1], use_svf=False):
         self._game = game
         self._envs = envs
         self._device = device
@@ -33,7 +33,7 @@ class MultiTypeAIRL(object):
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
-        self._use_svf = True
+        self._use_svf = use_svf 
         mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
         for k,v in merge_dist.distribution.items():
             if "mu" in k:
@@ -154,7 +154,7 @@ class MultiTypeAIRL(object):
                     t_logprobs = t_logprobs_pth.cpu().detach().numpy()
 
 
-                    if self._use_ppo:
+                    if self._use_svf:
                         obs_mu = []
                         for step in range(batch_step):
                             obs_list = list(obs[step][:-1])

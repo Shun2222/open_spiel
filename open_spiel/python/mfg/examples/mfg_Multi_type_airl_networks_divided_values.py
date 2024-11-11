@@ -51,6 +51,7 @@ def parse_args():
     parser.add_argument('--select_common', nargs='*', type=int, default=[0, 1, 2])
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
     parser.add_argument('--skip_train', nargs='*', default=["false", "false", "false"])
+    parser.add_argument("--use_svf", action='store_true', help="svf or mf")
 
     parser.add_argument("--traj_limitation", type=int, default=1000, help="set a traj limitation")
     parser.add_argument("--exp-name", type=str, default=".py", help="Set the name of this experiment")
@@ -180,7 +181,7 @@ if __name__ == "__main__":
             expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
             experts.append(expert)
             print(f'expert load from {fname}')
-        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, common_index=args.select_common)
+        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, common_index=args.select_common, use_svf=args.use_svf)
         airl.run(args.total_step, None, \
             args.num_episode, args.batch_step, args.save_interval)
         logger.reset()
