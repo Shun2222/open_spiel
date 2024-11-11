@@ -43,11 +43,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000traj", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_notUpdateWeight", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1125/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF", help="log path")
     parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")
 
+    parser.add_argument("--use_svf", action='store_true', help="use svf")
     parser.add_argument('--select_common', nargs='*', type=int, default=[1, 1, 1])
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
     parser.add_argument('--skip_train', nargs='*', default=["false", "false", "false"])
@@ -173,7 +174,7 @@ if __name__ == "__main__":
             expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
             experts.append(expert)
             print(f'expert load from {fname}')
-        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, common_index=args.select_common)
+        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, common_index=args.select_common, use_svf=args.use_svf)
         airl.run(args.total_step, None, \
             args.num_episode, args.batch_step, args.save_interval)
         logger.reset()

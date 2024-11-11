@@ -232,15 +232,15 @@ class SharedReward(nn.Module):
                 net = nn.Sequential(
                     nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, 1)
+                    nn.Linear(hidden_size, 1)
                 )
             elif num_hidden==2:
                 net = nn.Sequential(
                     nn.Linear(input_shape, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, hidden_size),
+                    nn.Linear(hidden_size, hidden_size),
                     nn.ReLU(),
-                    nn.Linear(num_hidden, 1)
+                    nn.Linear(hidden_size, 1)
                 )
             elif num_hidden==3:
                 net = nn.Sequential(
