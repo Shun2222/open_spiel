@@ -146,25 +146,27 @@ class MultiTypeAIRL(object):
                     t_actions = t_actions_pth.cpu().detach().numpy()
                     t_logprobs = t_logprobs_pth.cpu().detach().numpy()
 
-                    #obs_mu = []
-                    #for step in range(batch_step):
-                    #    obs_list = list(obs[step])
-                    #    x = np.argmax(obs[step][:self._size])
-                    #    y = np.argmax(obs[step][self._size:2*self._size])
-                    #    t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
-                    #    #mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
-                    #    mu = [self._mu_dists[idx][t, y, x]]
-                    #    for pop in range(self._num_agent):
-                    #        if pop!=idx:
-                    #            mu.append(self._mu_dists[pop][t, y, x])
-                    #    obs_mu.append(obs_list + mu)
-                    #obs_mu = np.array(obs_mu)
 
-                    obs_mu = []
-                    for step in range(batch_step):
-                        obs_list = list(obs[step][:-1])
-                        obs_mu.append(obs_list + list(merge_mu[idx][step]))
-                    obs_mu = np.array(obs_mu)
+                    if self._use_svf:
+                        obs_mu = []
+                        for step in range(batch_step):
+                            obs_list = list(obs[step][:-1])
+                            obs_mu.append(obs_list + list(merge_mu[idx][step]))
+                        obs_mu = np.array(obs_mu)
+                    else:
+                        obs_mu = []
+                        for step in range(batch_step):
+                            obs_list = list(obs[step][:-1])
+                            x = np.argmax(obs[step][:self._size])
+                            y = np.argmax(obs[step][self._size:2*self._size])
+                            t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
+                            #mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
+                            mu = [self._mu_dists[idx][t, y, x]]
+                            for pop in range(self._num_agent):
+                                if pop!=idx:
+                                    mu.append(self._mu_dists[pop][t, y, x])
+                            obs_mu.append(obs_list + mu)
+                        obs_mu = np.array(obs_mu)
 
                     nobs = obs_mu.copy()
                     nobs[:-1] = obs_mu[1:]
