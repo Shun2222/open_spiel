@@ -18,7 +18,7 @@ from games.predator_prey import goal_distance, divide_obs
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 1, 2]):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 1, 2], use_svf=False):
         self._game = game
         self._envs = envs
         self._device = device
@@ -32,6 +32,8 @@ class MultiTypeAIRL(object):
         self._nacs = env.action_spec()['num_actions']
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
+        self._use_svf = use_svf
+
         mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
         for k,v in merge_dist.distribution.items():
             if "mu" in k:
@@ -44,8 +46,9 @@ class MultiTypeAIRL(object):
                 mu_dists[pop][t,y,x] = v
         self._mu_dists = mu_dists
 
-        # svf(s_t) = svf[agent_idx, t, y, x]
-        self._svf = [experts[i].svf for i in range(self._num_agent)]
+        if use_svf:
+            # svf(s_t) = svf[agent_idx, t, y, x]
+            self._svf = [experts[i].svf for i in range(self._num_agent)]
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         self._state_size = state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
@@ -97,30 +100,32 @@ class MultiTypeAIRL(object):
                         = self._generator[i].rollout(self._envs[i], batch_step)
                     rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
                     mus.append(mu_pth)
-                #merge_mu = []
-                #for step in range(len(mus[0])):
-                #    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
-                merge_mu = []
-                for idx in range(self._num_agent):
-                    obs_pth = rollouts[idx][0]
-                    obs_numpy = obs_pth.cpu().detach().numpy()
-                    mu_step = []
+                if self._use_svf:
+                    merge_mu = []
+                    for idx in range(self._num_agent):
+                        obs_pth = rollouts[idx][0]
+                        obs_numpy = obs_pth.cpu().detach().numpy()
+                        mu_step = []
+                        for step in range(len(mus[0])):
+                            mu = []
+                            obs = obs_numpy[step]
+                            x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=True)
+                            t = t[0][0]
+                            x = x[0][0]
+                            y = y[0][0]
+                            mu.append(self._svf[idx][t, y, x])
+                            for idx2 in range(self._num_agent):
+                                if idx!=idx2:
+                                    mu.append(self._svf[idx2][t, y, x])
+                            assert len(mu)==self._num_agent, f"Not match mu length: length = {len(mu)}"
+                            mu_step.append(mu)
+                        merge_mu.append(mu_step)
+                    assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
+                else:
+                    merge_mu = []
                     for step in range(len(mus[0])):
-                        mu = []
-                        obs = obs_numpy[step]
-                        x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=True)
-                        t = t[0][0]
-                        x = x[0][0]
-                        y = y[0][0]
-                        mu.append(self._svf[idx][t, y, x])
-                        for idx2 in range(self._num_agent):
-                            if idx!=idx2:
-                                mu.append(self._svf[idx2][t, y, x])
-                        assert len(mu)==self._num_agent, f"Not match mu length: length = {len(mu)}"
-                        mu_step.append(mu)
-                    merge_mu.append(mu_step)
-                assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
+                        merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -197,21 +202,22 @@ class MultiTypeAIRL(object):
                     e_obs_mu, e_actions, e_nobs, e_all_obs, _ = self._experts[idx].get_next_batch(batch_step)
                     g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[idx].get_next_batch(batch_step)
 
-                    g_obs_svf = []
-                    for ob_mu in g_obs_mu[0]: 
-                        x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
-                        x = x[0][0]
-                        y = y[0][0]
-                        t = t[0][0]
-                        svf_xyt = [self._svf[idx][t, y, x]] 
-                        for k in range(self._num_agent):
-                            if k!=idx:
-                                svf_xyt.append(self._svf[idx][t, y, x])
-                        assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
-                        ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
-                        assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
-                        g_obs_svf.append(ob_svf)
-                    g_obs_mu = [np.array(g_obs_svf)]
+                    if self._use_svf:
+                        g_obs_svf = []
+                        for ob_mu in g_obs_mu[0]: 
+                            x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
+                            x = x[0][0]
+                            y = y[0][0]
+                            t = t[0][0]
+                            svf_xyt = [self._svf[idx][t, y, x]] 
+                            for k in range(self._num_agent):
+                                if k!=idx:
+                                    svf_xyt.append(self._svf[idx][t, y, x])
+                            assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
+                            ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
+                            assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
+                            g_obs_svf.append(ob_svf)
+                        g_obs_mu = [np.array(g_obs_svf)]
 
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]

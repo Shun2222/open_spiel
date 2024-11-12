@@ -120,10 +120,12 @@ filename = "actor"
 use_horizon = False 
 pathes = [
             "/mnt/shunsuke/result/0726/multi_maze2_expert",
-            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_1trajs/seed-4",
-            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_15trajs/seed-4/",
-            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_100trajs/seed-4/",
-            "/mnt/shunsuke/result/10xx/multi_maze2_ppo_eval_airl_1000trajs/seed-4/",
+            "/mnt/shunsuke/result/icaart/conventional_method/multi_maze2_airl_deltaxy_15trajs/seed-42/",
+            "/mnt/shunsuke/result/icaart/conventional_method/multi_maze2_airl_deltaxy_1000trajs/seed-42/",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_airl_dxy_mu-divided_value_15trajs/seed-42/",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_airl_dxy_mu-divided_value_1000trajs/seed-42/",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_airl_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-42/",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_airl_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-42/",
          ] 
 
 
