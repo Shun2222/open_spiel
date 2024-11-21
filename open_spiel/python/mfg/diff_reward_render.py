@@ -100,12 +100,24 @@ def parse_args():
 
 filename = "disc_actor"
 pathes = [
-            "/mnt/shunsuke/result/10xx/multi_maze2_airl_1trajs/seed-42",
-            "/mnt/shunsuke/result/10xx/multi_maze2_airl_15trajs/seed-42",
-            "/mnt/shunsuke/result/10xx/multi_maze2_airl_50trajs/seed-42",
-            "/mnt/shunsuke/result/10xx/multi_maze2_airl_100trajs/seed-42",
-            "/mnt/shunsuke/result/10xx/multi_maze2_airl_1000trajs/seed-42",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-49",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-50",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-45",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-51",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-48",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-43",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-45",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-44",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-48",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_svf/seed-46",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-43",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_svf/seed-44",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-44",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-46",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-50",
+            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-45",
          ] 
+            #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_1000trajs/seed-42",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
             #"/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
@@ -123,12 +135,27 @@ pathes = [
             #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_episode1",
             #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
            #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
+                #"MF-AIRL_15trajs-best",
+                #"MF-AIRL_1000trajs-best",
+                #"MF-AIRL_15trajs-worst",
+                #"MF-AIRL_1000trajs-worst",
 pathnames = [
-                "MF-AITL_1trajs",
-                "MF-AITL_15trajs",
-                "MF-AITL_50trajs",
-                "MF-AITL_100trajs",
-                "MF-AITL_1000trajs",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-best",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-best",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-worst",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-worst",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-best",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-best",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-worst",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-worst",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF-best",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_SVF-best",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF-worst",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_SVF-worst",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-best",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-best",
+                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-worst",
+                "MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-worst",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -140,6 +167,27 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
+                "500_5",
                 "500_5",
                 "500_5",
                 "500_5",
@@ -165,6 +213,8 @@ if __name__ == "__main__":
     args = parse_args()
 
     from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
+    print(f'len pathes = {len(pathes)}')
+    print(f'len pathnames = {len(pathnames)}')
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename

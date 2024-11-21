@@ -122,10 +122,6 @@ class MultiTypeAIRL(object):
                             mu_step.append(mu)
                         merge_mu.append(mu_step)
                     assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
-                else:
-                    merge_mu = []
-                    for step in range(len(mus[0])):
-                        merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
