@@ -99,15 +99,15 @@ def parse_args():
     return args
 
 filename = "disc_actor"
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-49",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-50",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-45",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-51",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-48",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-43",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-45",
+            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-44",
 pathes = [
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-49",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-50",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-45",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-51",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-48",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-43",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-45",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-44",
             "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-48",
             "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_svf/seed-46",
             "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-43",
@@ -139,15 +139,15 @@ pathes = [
                 #"MF-AIRL_1000trajs-best",
                 #"MF-AIRL_15trajs-worst",
                 #"MF-AIRL_1000trajs-worst",
+                #"MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-best",
+                #"MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-best",
+                #"MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-worst",
+                #"MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-worst",
+                #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-best",
+                #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-best",
+                #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-worst",
+                #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-worst",
 pathnames = [
-                "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-best",
-                "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-best",
-                "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-worst",
-                "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-worst",
-                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-best",
-                "MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-best",
-                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-worst",
-                "MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-worst",
                 "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF-best",
                 "MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_SVF-best",
                 "MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF-worst",
@@ -197,9 +197,9 @@ update_infos = [
               ]
 rates = [[0.9, 0.8]]
 
-is_single = [False, False, False, False, False, False, False, False, False]
-is_notmu = [False, False, False, False, False, False, False, False, False]
-is_1hiddens = [False, False, False, False, False, False, False, False, False]
+is_single = [False for _ in range(len(pathes))]
+is_notmu = [False for _ in range(len(pathes))]
+is_1hiddens = [False for _ in range(len(pathes))]
 all_nets = False
 
 
