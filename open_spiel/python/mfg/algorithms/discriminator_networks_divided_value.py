@@ -291,7 +291,7 @@ class Discriminator(nn.Module):
         value_fn = self.value_net1(input1.to(torch.float32))
         value_fn_next = self.value_next_net1(input1_next.to(torch.float32))
 
-        ws = self.get_weights()
+        ws = self.get_
         value_fn = ws[0] * value_fn
         value_fn_next = ws[0] * value_fn_next
 
@@ -596,6 +596,12 @@ class Discriminator_2nets(nn.Module):
         self.reward_net = nn.Sequential(
             nn.Linear(self.n_networks, 1, bias=False),
         ).to(self._device)
+
+        #with torch.no_grad():
+        #    for layer in self.reward_net:
+        #        if isinstance(layer, nn.Linear):
+        #            layer.weight.requires_grad = False
+        #            layer.weight.fill_(1.0)
 
         # Define layers for value function network
         self.value_net1 = create_net(input_shapes[0], num_hidden).to(self._device)

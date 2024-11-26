@@ -147,6 +147,7 @@ def save_svf(num_trajs):
 
     savepath = osp.join(path, f"svf-{num_trajs}trajs.gif")
     multi_render(sampled_svf, savepath, ["" for _ in range(len(sampled_svf))], use_kde=False)
+    return sampled_svf
 
 def save_dataset(num_trajs):
     from dataset import MFGDataSet
@@ -180,9 +181,29 @@ if __name__ == '__main__':
     #analysis_sampled_expert(num_trajs_list)
 
     # save svf
-    num_trajs_list = [1, 15, 50, 100]
-    for num_trajs in num_trajs_list:
-        save_svf(num_trajs)
+    #num_trajs_list = [1, 15, 50, 100]
+    #for num_trajs in num_trajs_list:
+    #    svf = save_svf(num_trajs)
 
-    # save dataset 
-    #save_dataset(1)
+    num_trajs_list = [15,1000]
+    sampled_svfs = []
+    for num_trajs in num_trajs_list:
+        svf = save_svf(num_trajs)
+        mean_svfs = []
+        for i in range(len(svf)):
+            mean_svf = np.mean(svf[i], axis=0)
+            mean_svfs.append(mean_svf)
+        sampled_svfs.append(mean_svfs)
+
+    
+
+    fig, axes = plt.subplots(1, 3, figsize = (12, 4))
+    for i in range(len(sampled_svfs[0])):
+        axes[i].axis('off')
+        data = sampled_svfs[0][i]-sampled_svfs[1][i]
+        max_num = np.max([np.max(data), np.abs(np.min(data))])
+        axes[i].imshow(data, cmap='seismic', vmin=-max_num, vmax=max_num)
+    savepath = osp.join(path, f"svf_{num_trajs_list[0]}-{num_trajs_list[1]}trajs.png")
+    plt.savefig(savepath)
+    print(f"Saved as {savepath}")
+
