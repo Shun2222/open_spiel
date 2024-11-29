@@ -46,11 +46,18 @@ _DEFAULT_HORIZON = 40
 _NUM_ACTIONS = 5
 _DEFAULT_NUM_PLAYERS = 3
 
+_MODE = "Predator-Prey" # Maze or Predator-Prey
+
 #_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
 #_DEFAULT_GOAL_POSITION = np.array([[_DEFAULT_SIZE, _DEFAULT_SIZE], [0, 0], [_DEFAULT_SIZE//2, _DEFAULT_SIZE//2]])
-_DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+if _MODE=="Predator_Prey":
+    _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
+    _DEFAULT_FORBIDDEN_POSITION = np.array([])
+else:
+    _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+    _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
 _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
-_DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+
 #_DEFAULT_REWARD_MATRIX = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
 _NUM_CHANCE = 5
@@ -248,9 +255,14 @@ def calc_reward(pos, densities, reward_matrix=_DEFAULT_REWARD_MATRIX):
     eps = 1e-25
     goal_pos = _DEFAULT_GOAL_POSITION
 
-    r_mu = -1.0 * np.log(densities + eps) + np.dot(reward_matrix, densities)
-    r_xy = np.array([-np.sum(np.abs(goal_pos[i] - pos)) for i in range(len(goal_pos))])
-    rew = r_mu + r_xy
+    if _MODE=="Predator-Prey":
+        r_mu = -1.0 * np.log(densities + eps) + 10 * np.dot(reward_matrix, densities)
+        rew = r_mu
+    else:
+        r_mu = -1.0 * np.log(densities + eps) + np.dot(reward_matrix, densities)
+        r_xy = np.array([-np.sum(np.abs(goal_pos[i] - pos)) for i in range(len(goal_pos))])
+        rew = r_mu + r_xy
+
     #print(f'---------------------')
     #print(f'goal pos {goal_pos}')
     #print(f'pos {self._pos}')

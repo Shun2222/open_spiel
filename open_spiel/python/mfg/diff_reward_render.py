@@ -116,8 +116,9 @@ filename = "disc_actor"
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_svf/seed-50",
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs_svf/seed-45",
 pathes = [
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_retry/seed-48",
-            "/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_retry/seed-45",
+            "/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2",
+            "/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value2",
+            "/mnt/shunsuke/result/09xx/predator_prey_group2_mu-divided_value2",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_1000trajs/seed-42",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
@@ -158,8 +159,9 @@ pathes = [
                 #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-worst",
                 #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-worst",
 pathnames = [
-                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-best",
-                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-worst",
+                "MF-AIRL_mu-divided_value_group0",
+                "MF-AIRL_mu-divided_value_group1",
+                "MF-AIRL_mu-divided_value_group2",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -171,9 +173,9 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "500_5",
-                "500_5",
-                "500_5",
+                "200_2",
+                "200_2",
+                "200_2",
                 "500_5",
                 "500_5",
                 "500_5",
@@ -276,7 +278,7 @@ if __name__ == "__main__":
             is_divided = is_divided_value(pathnames[p])
             if not is_divided:
                 from open_spiel.python.mfg.algorithms.discriminator_networks import * 
-        if is_1hidden:
+        elif is_1hidden:
             from open_spiel.python.mfg.algorithms.discriminator_1hidden import Discriminator
         else:
             from open_spiel.python.mfg.algorithms.discriminator import Discriminator
@@ -365,6 +367,8 @@ if __name__ == "__main__":
                 num_hidden = get_num_hidden(pathnames[p])
                 print(num_hidden)
                 #discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden, ppo_value_net=critic_models[i])
+                if len(labels)==1:
+                    discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
                 if len(labels)==2:
                     discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
                 if len(labels)==3:
