@@ -566,6 +566,7 @@ class Discriminator_2nets(nn.Module):
         self.l2_loss_ratio = l2_loss_ratio
         self._device = device
         self.labels = labels
+        self._alpha = 0.5
 
         self.n_networks = len(input_shapes)
         self.networks = []
@@ -597,9 +598,15 @@ class Discriminator_2nets(nn.Module):
         #hidden_size = 1
         self.net1 = create_net(input_shapes[0], num_hidden).to(self._device)
         self.net2 = create_net(input_shapes[1], num_hidden).to(self._device)
+        self.svf_net1 = create_net(input_shapes[0], num_hidden).to(self._device)
+        self.svf_net2 = create_net(input_shapes[1], num_hidden).to(self._device)
 
 
         self.reward_net = nn.Sequential(
+            nn.Linear(self.n_networks, 1, bias=False),
+        ).to(self._device)
+
+        self.svf_reward_net = nn.Sequential(
             nn.Linear(self.n_networks, 1, bias=False),
         ).to(self._device)
 
@@ -617,12 +624,21 @@ class Discriminator_2nets(nn.Module):
 
         self.l2_loss = nn.MSELoss()
 
+    def set_alpha(self, alpha):
+        self._alpha = alpha
+
     def forward(self, input1, input2, input1_next, input2_next, path_probs):
         #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
         output1 = self.net1(input1.to(torch.float32)) 
         output2 = self.net2(input2.to(torch.float32)) 
         outputs = torch.cat((output1, output2), dim=1)
         reward = self.reward_net(outputs.to(torch.float32))
+
+        svf_output1 = self.svf_net1(input1.to(torch.float32)) 
+        svf_output2 = self.svf_net2(input2.to(torch.float32)) 
+        svf_outputs = torch.cat((svf_output1, svf_output2), dim=1)
+        svf_reward = self.reward_net(svf_outputs.to(torch.float32))
+        loss2 = reward - svf_reward
 
         value_fn1 = self.value_net1(input1.to(torch.float32))
         value_fn2 = self.value_net2(input2.to(torch.float32))
@@ -638,16 +654,16 @@ class Discriminator_2nets(nn.Module):
         log_pq = torch.logsumexp(torch.stack([log_p_tau, log_q_tau]), dim=0).to(self._device)
         discrim_output = torch.exp(log_p_tau - log_pq)
 
-        return log_q_tau, log_p_tau, log_pq, discrim_output
+        return log_q_tau, log_p_tau, log_pq, discrim_output, loss2
 
     def calculate_loss(self, input1, input2, input1_next, input2_next, path_probs, labels):
-        log_q_tau, log_p_tau, log_pq, discrim_output = self.forward(input1, input2, input1_next, input2_next, path_probs)
+        log_q_tau, log_p_tau, log_pq, discrim_output, loss2 = self.forward(input1, input2, input1_next, input2_next, path_probs)
         loss = -torch.mean(labels * (log_p_tau - log_pq) + (1 - labels) *  (log_q_tau - log_pq)).to(self._device)
 
         # Calculate L2 loss on model parameters
         l2_loss = 0.01 * sum(self.l2_loss(p, torch.zeros_like(p)) for p in self.parameters())
 
-        return loss + self.l2_loss_ratio * l2_loss
+        return (1-self._alpha)*(loss + self.l2_loss_ratio * l2_loss) + self._alpha*loss2
 
     def train(self, input1, input2, input1_next, input2_next, optimizer, path_probs, labels):
         optimizer.zero_grad()
@@ -834,6 +850,20 @@ class Discriminator_2nets(nn.Module):
             self.net2.eval()
             self.reward_net.eval()
             self.value_net.eval()
+
+    def svf_model_load(self, path, filename):
+        fname = osp.join(path, "disc_"+f"{self.labels[0]}"+filename+".pth")
+        self.svf_net1.load_state_dict(torch.load(fname))
+        fname = osp.join(path, "disc_"+f"{self.labels[1]}"+filename+".pth")
+        self.svf_net2.load_state_dict(torch.load(fname))
+
+        fname = osp.join(path, "disc_reward"+filename+".pth")
+        self.svf_reward_net.load_state_dict(torch.load(fname))
+
+        # if you want to erase noise of output, you should do use_eval=True
+        self.svf_net1.eval()
+        self.svf_net2.eval()
+        self.svf_reward_net.eval()
 
     def savefig_weights(self, path):
         net = self.reward_net

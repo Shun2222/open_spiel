@@ -35,7 +35,7 @@ from open_spiel.python.mfg import value
 from open_spiel.python.mfg.algorithms import best_response_value
 
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib, Agent, PPOpolicy
-from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value_svf_mf import * 
 
 ### python3 examples/mfg_Multi_type_airl_networks_divided_values.py --select_common 0 1 1 --differ_expert
 def parse_args():
@@ -86,6 +86,14 @@ skip_agent_actor = [
                         {},
                         {},
                    ]
+svf_model_pathes = [
+                        "/mnt/shunsuke/result/xxx_svf",
+                        "500_5"
+                   ]
+
+static_alpha = {"Mode":"Static", "alpha":0.5}
+dynamic_alpha = {"Mode":"Dynamic", "k":5, "b":0.2}
+alpha_setting = static_alpha 
 
 if __name__ == "__main__":
     args = parse_args()
@@ -185,7 +193,11 @@ if __name__ == "__main__":
             expert = MFGDataSet(fname, traj_limitation=traj_limitation, nobs_flag=True)
             experts.append(expert)
             print(f'expert load from {fname}')
-        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type=args.net_input, disc_num_hidden=args.num_hidden, use_ppo_value=args.use_ppo_value, skip_train=skip_train, skip_agents=skip_agents, common_index=args.select_common, use_svf=args.use_svf)
+        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies
+                             , disc_type=args.net_input, disc_num_hidden=args.num_hidden
+                             , use_ppo_value=args.use_ppo_value, skip_train=skip_train
+                             , skip_agents=skip_agents, common_index=args.select_common
+                             , use_svf=args.use_svf, alpha_setting=alpha_setting)
         airl.run(args.total_step, None, \
             args.num_episode, args.batch_step, args.save_interval)
         logger.reset()

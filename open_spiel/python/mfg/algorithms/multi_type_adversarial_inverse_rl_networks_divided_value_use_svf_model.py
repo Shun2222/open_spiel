@@ -1,4 +1,4 @@
-import os.path as osp
+#import os.path as osp
 import random
 import time
 
@@ -13,19 +13,29 @@ from scipy.stats import pearsonr, spearmanr
 
 import torch.optim as optim
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import MultiTypeMFGPPO, convert_distrib
-from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value_use_svf_model import * 
 from games.predator_prey import goal_distance, divide_obs
 
 
+def get_alpha(alpha_setting, timestep, max_timestep):
+    if alpha_setting["Mode"]=="Static":
+        alpha = alpha_setting["alpha"]
+    else:
+        k = alpha_setting["k"]
+        b = alpha_setting["b"]
+        alpha = b + (1-b)*(1-np.exp(-k*timestep/max_timestep))
+    return alpha
+
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 1, 2], use_svf=False):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, svf_model_pathes, disc_type='s_mu_a', disc_num_hidden=1, use_ppo_value=False, skip_train=[False, False, False], skip_agents=[None, None, None], common_index=[0, 1, 2], use_svf=False, alpha_setting={"Mode":"Static", "alpha":"0.5"}):
         self._game = game
         self._envs = envs
         self._device = device
         self._num_agent = len(envs)
         self._size = game.get_parameters()['size']
         self._disc_type = disc_type
-        self._common_idx = common_index
+        self._ppo_policies = ppo_policies
+        self._alpha_setting = alpha_setting
 
         env = envs[0]
         self._horizon = env.game.get_parameters()['horizon']
@@ -34,12 +44,6 @@ class MultiTypeAIRL(object):
         self._nobs = env.observation_spec()['info_state'][0]
         self._nmu  = self._num_agent 
         self._use_svf = use_svf
-
-        self._skip_train = skip_train
-        if len(skip_train)!=self._num_agent:
-            print(f'skip train is not match the size of num agent. ((skip_train num, num agent) = {len(skip_train)}, {self._num_agent})')
-            self._skip_train = [False for _ in range(self._num_agent)]
-            print(f'Set skip train to {self._skip_train}')
 
         mu_dists= [np.zeros((self._horizon,self._size,self._size)) for _ in range(self._num_agent)]
         for k,v in merge_dist.distribution.items():
@@ -53,35 +57,41 @@ class MultiTypeAIRL(object):
                 mu_dists[pop][t,y,x] = v
         self._mu_dists = mu_dists
 
-        if use_svf:
-            # svf(s_t) = svf[agent_idx, t, y, x]
-            self._svf = [experts[i].svf for i in range(self._num_agent)]
+        # svf(s_t) = svf[agent_idx, t, y, x]
+        self._svf = [experts[i].svf for i in range(self._num_agent)]
 
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
-        for i in range(self._num_agent): 
-            if skip_train[i]:
-                self._generator[i].set_agent(skip_agents[i])
         self._state_size = state_size = self._nobs -1 - self._horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         obs_xym_size = state_size + self._nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
         labels = get_net_labels(disc_type)
         inputs = get_input_shape(disc_type, env, self._num_agent)
         self._n_networks = len(inputs)
         if use_ppo_value:
-            assert False, 'use ppo value is True, but same ppo value is not existance'
-            if len(inputs)==2:
+            if len(inputs)==1:
+                assert False, 'Not adapt 1net'
+                self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
+            elif len(inputs)==2:
                 self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
             elif len(inputs)==3:
+                assert False, 'Not adapt 3net'
                 self._discriminator = [Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden, ppo_value_net=self._generator[i]._eps_agent.critic) for i in range(self._num_agent)]
             else:
                 assert False, 'Unknown number of nets'
         else:
-            if len(inputs)==2:
-                self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for _ in range(np.max(common_index)+1)]
+            if len(inputs)==1:
+                assert False, 'Not adapt 1net'
+                self._discriminator = [Discriminator(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
+            elif len(inputs)==2:
+                self._discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
             elif len(inputs)==3:
-                self._discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden)
+                assert False, 'Not adapt 3net'
+                self._discriminator = [Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=disc_num_hidden) for i in range(self._num_agent)]
             else:
-                assert False, 'Unknown number of nets'
-        self._optimizer = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(np.max(common_index)+1)]
+                assert False, f'Unknown number of nets {inputs}: num:{len(inputs)}'
+        self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
+
+        for pop in range(self._num_agentj):
+            self._discriminator[pop].svf_model_load(svf_model_pathes[0], svf_model_pathes[1])
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
         logger.record_tabular("total_step", total_step)
@@ -106,9 +116,6 @@ class MultiTypeAIRL(object):
                         = self._generator[i].rollout(self._envs[i], batch_step)
                     rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
                     mus.append(mu_pth)
-                #merge_mu = []
-                #for step in range(len(mus[0])):
-                #    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
                 if self._use_svf:
                     merge_mu = []
@@ -131,11 +138,6 @@ class MultiTypeAIRL(object):
                             mu_step.append(mu)
                         merge_mu.append(mu_step)
                     assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
-                else:
-                    merge_mu = []
-                    for step in range(len(mus[0])):
-                        merge_mu.append([mus[i][step] for i in range(self._num_agent)])
-
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -155,6 +157,7 @@ class MultiTypeAIRL(object):
                     entropies = entropies_pth.cpu().detach().numpy()
                     t_actions = t_actions_pth.cpu().detach().numpy()
                     t_logprobs = t_logprobs_pth.cpu().detach().numpy()
+
 
                     if self._use_svf:
                         obs_mu = []
@@ -186,17 +189,15 @@ class MultiTypeAIRL(object):
                     onehot_acs = np.array(multionehot(actions, self._nacs))
                     inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._disc_type, obs_mu, onehot_acs, idx)
 
-                    disc_idx = self._common_idx[idx]
-                    disc_rewards_pth = self._discriminator[disc_idx].get_reward(
+                    disc_rewards_pth = self._discriminator[idx].get_reward(
                         inputs, 
                         discrim_score=False) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
                     disc_rewards = disc_rewards_pth.cpu().detach().numpy().reshape(batch_step)
                     disc_rewards_pth = torch.from_numpy(disc_rewards).to(self._device)
 
-                    if not self._skip_train[idx]:
-                        adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
-                        v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
+                    adv_pth, returns = self._generator[idx].cal_Adv(disc_rewards_pth, values_pth, dones_pth)
+                    v_loss = self._generator[idx].update_eps(obs_pth, logprobs_pth, actions_pth, adv_pth, returns, t_actions_pth, t_logprobs_pth)
 
                     mh_obs = [np.array(obs)]
                     mh_actions = [np.array(multionehot(actions, self._nacs))]
@@ -215,23 +216,21 @@ class MultiTypeAIRL(object):
                     e_obs_mu, e_actions, e_nobs, e_all_obs, _ = self._experts[idx].get_next_batch(batch_step)
                     g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[idx].get_next_batch(batch_step)
 
-                    if self._use_svf:
-                        g_obs_svf = []
-                        for ob_mu in g_obs_mu[0]: 
-                            x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
-                            x = x[0][0]
-                            y = y[0][0]
-                            t = t[0][0]
-                            svf_xyt = [self._svf[idx][t, y, x]] 
-                            for k in range(self._num_agent):
-                                if k!=idx:
-                                    svf_xyt.append(self._svf[idx][t, y, x])
-                            assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
-                            ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
-                            assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
-                            g_obs_svf.append(ob_svf)
-                        g_obs_mu = [np.array(g_obs_svf)]
-
+                    g_obs_svf = []
+                    for ob_mu in g_obs_mu[0]: 
+                        x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
+                        x = x[0][0]
+                        y = y[0][0]
+                        t = t[0][0]
+                        svf_xyt = [self._svf[idx][t, y, x]] 
+                        for k in range(self._num_agent):
+                            if k!=idx:
+                                svf_xyt.append(self._svf[idx][t, y, x])
+                        assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
+                        ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
+                        assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
+                        g_obs_svf.append(ob_svf)
+                    g_obs_mu = [np.array(g_obs_svf)]
 
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]
@@ -239,8 +238,8 @@ class MultiTypeAIRL(object):
                     e_log_prob = [] 
                     g_log_prob = [] 
                     for i in range(len(e_obs_mu[0])):
-                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent-idx)]])
-                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent-idx)]])
+                        e_obs_mu_input = list(e_obs_mu[0][i][0:2*self._size])+list([e_obs_mu[0][i][-(self._num_agent)]])
+                        g_obs_mu_input = list(g_obs_mu[0][i][0:2*self._size])+list([g_obs_mu[0][i][-(self._num_agent)]])
                         e_log_prob.append(self._generator[idx].get_log_action_prob(
                             torch.from_numpy(np.array(e_obs_mu_input)).to(torch.float32).to(self._device), 
                             torch.from_numpy(onehot(e_a[0][i], self._nacs)).to(torch.float32).to(self._device)).cpu().detach().numpy())
@@ -259,7 +258,6 @@ class MultiTypeAIRL(object):
                     g_dx, g_dy = goal_distance(g_mx, g_my, idx)
                     g_dxy = np.concatenate([g_dx, g_dy], axis=1)
                     g_dxy_abs = np.abs(g_dxy) 
-                    g_dist = np.sqrt(g_dx**2 + g_dy**2)
 
                     g_dx2 = copy.deepcopy(g_dx)
                     g_dy2 = copy.deepcopy(g_dy)
@@ -276,8 +274,6 @@ class MultiTypeAIRL(object):
                     g_ndx, g_ndy = goal_distance(g_mnx, g_mny, idx)
                     g_ndxy = np.concatenate([g_ndx, g_ndy], axis=1)
                     g_ndxy_abs = np.abs(g_dxy) 
-                    g_ndist = np.sqrt(g_ndx**2 + g_ndy**2)
-
                     g_ndx2 = copy.deepcopy(g_ndx)
                     g_ndy2 = copy.deepcopy(g_ndy)
                     g_ndx2[g_ndx<0] = np.abs(g_ndx[g_ndx<0])+self._size
@@ -295,7 +291,6 @@ class MultiTypeAIRL(object):
                     e_dx, e_dy = goal_distance(e_mx, e_my, idx)
                     e_dxy = np.concatenate([e_dx, e_dy], axis=1)
                     e_dxy_abs = np.abs(e_dxy) 
-                    e_dist = np.sqrt(e_dx**2 + e_dy**2)
 
                     e_dx2 = copy.deepcopy(e_dx)
                     e_dy2 = copy.deepcopy(e_dy)
@@ -312,7 +307,6 @@ class MultiTypeAIRL(object):
                     e_ndx, e_ndy = goal_distance(e_mnx, e_mny, idx)
                     e_ndxy = np.concatenate([e_ndx, e_ndy], axis=1)
                     e_ndxy_abs = np.abs(e_ndxy) 
-                    e_ndist = np.sqrt(e_ndx**2 + e_ndy**2)
 
                     e_ndx2 = copy.deepcopy(e_ndx)
                     e_ndy2 = copy.deepcopy(e_ndy)
@@ -417,19 +411,13 @@ class MultiTypeAIRL(object):
                         input2 = torch.from_numpy(d_mu)
                         input1_next = torch.from_numpy(d_ndxy)
                         input2_next = torch.from_numpy(d_nmu)
-                    elif self._disc_type=='dist_mu':
-                        d_dist = np.concatenate([g_dist, e_dist], axis=0)
-                        d_ndist = np.concatenate([g_ndist, e_ndist], axis=0)
-
+                    elif self._disc_type=='mu':
                         d_mu = np.concatenate([g_mu, e_mu], axis=0)
                         d_nmu = np.concatenate([g_nmu, e_nmu], axis=0)
 
-                        inputs = [torch.from_numpy(d_dist), 
-                                  torch.from_numpy(d_mu)]
-                        input1 = torch.from_numpy(d_dist)
-                        input2 = torch.from_numpy(d_mu)
-                        input1_next = torch.from_numpy(d_ndist)
-                        input2_next = torch.from_numpy(d_nmu)
+                        inputs = [torch.from_numpy(d_mu)]
+                        input1 = torch.from_numpy(d_mu)
+                        input1_next = torch.from_numpy(d_nmu)
                                   
                                   
 
@@ -447,31 +435,38 @@ class MultiTypeAIRL(object):
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
-                    if self._n_networks==2:
-                        if not self._skip_train[idx]:
-                            disc_idx = self._common_idx[idx]
-                            total_loss = self._discriminator[disc_idx].train(
-                                input1, 
-                                input2, 
-                                input1_next, 
-                                input2_next, 
-                                self._optimizer[disc_idx],
-                                torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                                torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                            )
+                    alpha = get_alpha(self_alpha_setting, t_step, total_step)
+                    self._discriminator[idx].set_alpha(alpha)
+                    if self._n_networks==1:
+                        total_loss = self._discriminator[idx].train(
+                            input1, 
+                            input1_next, 
+                            self._optimizers[idx],
+                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                        )
+                    elif self._n_networks==2:
+                        total_loss = self._discriminator[idx].train(
+                            input1, 
+                            input2, 
+                            input1_next, 
+                            input2_next, 
+                            self._optimizers[idx],
+                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                        )
                     elif self._n_networks==3:
-                        if not self._skip_train[idx]:
-                            total_loss = self._discriminator.train(
-                                input1, 
-                                input2, 
-                                input3, 
-                                input1_next, 
-                                input2_next, 
-                                #input3_next, 
-                                self._optimizer,
-                                torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
-                                torch.from_numpy(d_labels).to(torch.int64).to(self._device),
-                            )
+                        total_loss = self._discriminator[idx].train(
+                            input1, 
+                            input2, 
+                            input3, 
+                            input1_next, 
+                            input2_next, 
+                            input3_next, 
+                            self._optimizers[idx],
+                            torch.from_numpy(d_lprobs).to(torch.float32).to(self._device),
+                            torch.from_numpy(d_labels).to(torch.int64).to(self._device),
+                        )
                     else:
                         assert False, 'Unknown number of networks'
 
@@ -483,8 +478,7 @@ class MultiTypeAIRL(object):
                     except:
                         pass
 
-                    if not self._skip_train[idx]:
-                        logger.record_tabular(f"generator_loss{idx}", v_loss.item())
+                    logger.record_tabular(f"generator_loss{idx}", v_loss.item())
                     logger.record_tabular(f"discriminator_loss{idx}", total_loss)
                     logger.record_tabular(f"mean_ret{idx}", np.mean(ret))
                     logger.record_tabular(f"pearsonr{idx}", pear)
@@ -497,8 +491,7 @@ class MultiTypeAIRL(object):
                     for i in range(self._num_agent):
                         fname = f"{num_update_eps}_{num_update_iter}-{i}"
                         self._generator[i].save(self._game, filename=fname)
-                        disc_idx = self._common_idx[i]
-                        self._discriminator[disc_idx].save(filename=fname)
+                        self._discriminator[i].save(filename=fname)
 
 
             #if t_step < total_step_gen:
@@ -527,11 +520,12 @@ class MultiTypeAIRL(object):
                     y = int(xy[2].split("]")[0])
                     mu_dists[pop][t,y,x] = v
             self._mu_dists = mu_dists
+            if num_update_iter%30==0:
+                self._generator = [MultiTypeMFGPPO(self._game, self._envs[i], merge_dist, conv_dist, 'cpu', player_id=i, expert_policy=self._ppo_policies[i]) for i in range(self._num_agent)]
             logger.dump_tabular()
             num_update_iter += 1
 
         for i in range(self._num_agent):
             fname = f"{num_update_eps}_{num_update_iter}-{i}"
             self._generator[i].save(self._game, filename=fname)
-            disc_idx = self._common_idx[i]
-            self._discriminator[disc_idx].save(filename=fname)
+            self._discriminator[i].save(filename=fname)

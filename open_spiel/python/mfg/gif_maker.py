@@ -14,7 +14,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
     n_datas = len(datas)
 
     if use_kde:
-        fig, axes = plt.subplots(1, n_datas+1, figsize = (4*n_datas, 4))
+        fig, axes = plt.subplots(1, n_datas+1, figsize = (3*n_datas, 3))
         if not vmin or not vmax:
             vmax = np.nanmax(datas)
             vmin = np.nanmin(datas)
@@ -62,7 +62,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
         plt.close()
         print(f"Save {path}")
 
-        fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+        fig, axes = plt.subplots(1, n_datas+1, figsize = (3*n_datas, 3))
         vmax = np.nanmax(datas)
         vmin = np.nanmin(datas)
 
@@ -104,7 +104,7 @@ def multi_render(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', 
 
 
 
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+    fig, axes = plt.subplots(1, n_datas+1, figsize = (3*n_datas, 3))
     vmax = np.nanmax(datas)
     vmin = np.nanmin(datas)
 
@@ -155,7 +155,7 @@ def multi_render2(datas, filename, labels, vmin=None, vmax=None, cmap='viridis',
 
     n_datas = len(datas)
 
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+    fig, axes = plt.subplots(1, n_datas+1, figsize = (3*n_datas, 3))
     ims = []
     if not vmin or not vmax:
         vmax = np.nanmax(datas)
@@ -183,7 +183,7 @@ def multi_render2(datas, filename, labels, vmin=None, vmax=None, cmap='viridis',
     plt.close()
     print(f"Save {path}")
 
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
+    fig, axes = plt.subplots(1, n_datas+1, figsize = (3*n_datas, 3))
     ims = []
     for t in range(len(datas[0])):
         imt = []
