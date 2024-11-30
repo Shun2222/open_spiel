@@ -90,8 +90,8 @@ class MultiTypeAIRL(object):
                 assert False, f'Unknown number of nets {inputs}: num:{len(inputs)}'
         self._optimizers = [optim.Adam(self._discriminator[i].parameters(), lr=0.01) for i in range(self._num_agent)]
 
-        for pop in range(self._num_agentj):
-            self._discriminator[pop].svf_model_load(svf_model_pathes[0], svf_model_pathes[1])
+        for pop in range(self._num_agent):
+            self._discriminator[pop].svf_model_load(svf_model_pathes[0], svf_model_pathes[1]+f"-{pop}")
 
     def run(self, total_step, total_step_gen, num_episodes, batch_step, save_interval=1000):
         logger.record_tabular("total_step", total_step)
@@ -435,7 +435,7 @@ class MultiTypeAIRL(object):
                     d_lprobs = np.concatenate([g_log_prob.reshape([-1, 1]), e_log_prob.reshape([-1, 1])], axis=0)
                     d_labels = np.concatenate([np.zeros([g_obs_xym.shape[0], 1]), np.ones([e_obs_xym.shape[0], 1])], axis=0)
 
-                    alpha = get_alpha(self_alpha_setting, t_step, total_step)
+                    alpha = get_alpha(self._alpha_setting, t_step, total_step)
                     self._discriminator[idx].set_alpha(alpha)
                     if self._n_networks==1:
                         total_loss = self._discriminator[idx].train(

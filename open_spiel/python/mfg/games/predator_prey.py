@@ -46,7 +46,8 @@ _DEFAULT_HORIZON = 40
 _NUM_ACTIONS = 5
 _DEFAULT_NUM_PLAYERS = 3
 
-_MODE = "Predator-Prey" # Maze or Predator-Prey
+#_MODE = "Predator-Prey" # Maze or Predator-Prey
+_MODE = "Maze" # Maze or Predator-Prey
 
 #_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
 #_DEFAULT_GOAL_POSITION = np.array([[_DEFAULT_SIZE, _DEFAULT_SIZE], [0, 0], [_DEFAULT_SIZE//2, _DEFAULT_SIZE//2]])

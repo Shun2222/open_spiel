@@ -214,7 +214,7 @@ class MultiTypeAIRL(object):
                         svf_xyt = [self._svf[idx][t, y, x]] 
                         mu = []
                         mu_svf = []
-                        alpha = get_alpha(self._alha_setting)
+                        alpha = get_alpha(self._alpha_setting, t_step, total_step)
                         for k in range(self._num_agent):
                             if k!=idx:
                                 svf_xyt.append(self._svf[idx][t, y, x])

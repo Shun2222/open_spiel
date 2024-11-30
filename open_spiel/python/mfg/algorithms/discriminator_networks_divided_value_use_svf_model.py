@@ -659,11 +659,12 @@ class Discriminator_2nets(nn.Module):
     def calculate_loss(self, input1, input2, input1_next, input2_next, path_probs, labels):
         log_q_tau, log_p_tau, log_pq, discrim_output, loss2 = self.forward(input1, input2, input1_next, input2_next, path_probs)
         loss = -torch.mean(labels * (log_p_tau - log_pq) + (1 - labels) *  (log_q_tau - log_pq)).to(self._device)
+        mean_loss2 = -torch.mean(loss2).to(self._device)
 
         # Calculate L2 loss on model parameters
         l2_loss = 0.01 * sum(self.l2_loss(p, torch.zeros_like(p)) for p in self.parameters())
 
-        return (1-self._alpha)*(loss + self.l2_loss_ratio * l2_loss) + self._alpha*loss2
+        return (1-self._alpha)*(loss + self.l2_loss_ratio * l2_loss) + self._alpha*mean_loss2
 
     def train(self, input1, input2, input1_next, input2_next, optimizer, path_probs, labels):
         optimizer.zero_grad()
