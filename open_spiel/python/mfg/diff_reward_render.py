@@ -47,20 +47,42 @@ plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 def calc_true_reward(obs_shape, horizon, mu_dists):
     inputs = [{} for _ in range(len(mu_dists))]
-    rew = [np.zeros((horizon, obs_shape[0], obs_shape[1])) for _ in range(idx)]
+    rew = [np.zeros((horizon, obs_shape[0], obs_shape[1])) for _ in range(len(mu_dists))]
+    rew_xy = [np.zeros((horizon, obs_shape[0], obs_shape[1])) for _ in range(len(mu_dists))]
+    rew_mu = [np.zeros((horizon, obs_shape[0], obs_shape[1])) for _ in range(len(mu_dists))]
     for x in range(obs_shape[1]):
-        x_onehot = onehot(x, obs_shape[1]).tolist()
         for y in range(obs_shape[0]):
             for t in range(horizon):
                 for idx in range(len(mu_dists)):
                     mu = np.array([mu_dists[idx][t, y, x] for idx in range(len(mu_dists))])
                     pos = np.array([x, y])
-                    rew[idx][t, y, x] = true_reward(pos, mu)[idx]
-    return rew 
+                    r, r_xy, r_mu = true_reward(pos, mu)
+                    rew[idx][t, y, x] = r[idx]
+                    rew_xy[idx][t, y, x] = r_xy[idx]
+                    rew_mu[idx][t, y, x] = r_mu[idx]
+    return rew, rew_xy, rew_mu 
 
 def true_reward(pos, densities):
+
+    _MODE = "Maze" # Maze or Predator-Prey
+
+    if _MODE=="Predator_Prey":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([])
+    else:
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+    _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+
     eps = 1e-25
     goal_pos = _DEFAULT_GOAL_POSITION
+    reward_matrix = _DEFAULT_REWARD_MATRIX
+    forbidden_pos = _DEFAULT_FORBIDDEN_POSITION
+    tf = pos==forbidden_pos
+    tf = [tf2[0] and tf2[1] for tf2 in tf]
+    if True in tf: 
+        nans = [np.nan for _ in range(len(densities))]
+        return nans, nans, nans
 
     if _MODE=="Predator-Prey":
         r_mu = -1.0 * np.log(densities + eps) + 10 * np.dot(reward_matrix, densities)
@@ -69,7 +91,8 @@ def true_reward(pos, densities):
         r_mu = -1.0 * np.log(densities + eps) + np.dot(reward_matrix, densities)
         r_xy = np.array([-np.sum(np.abs(goal_pos[i] - pos)) for i in range(len(goal_pos))])
         rew = r_mu + r_xy
-    return rew
+
+    return rew, r_xy, r_mu
 
 
 def create_rew_input(obs_shape, nacs, horizon, mu_dists, single, notmu, state_only=False):
@@ -437,10 +460,17 @@ if __name__ == "__main__":
 
         save_path = os.path.join(pathes[p], filename+str(update_info))
 
-        true_reward = calc_true_reward([size, size], horizon, mu_dists)
+        true_reward, true_reward_xy, true_reward_mu = calc_true_reward([size, size], horizon, mu_dists)
+
         path = osp.join(save_path + f'-true_reward.gif')
         labels = [f'Group {i}' for i in range(num_agent)]
         multi_render(true_reward, path, labels, use_kde=False)
+
+        path = osp.join(save_path + f'-true_reward_xy.gif')
+        multi_render(true_reward_xy, path, labels, use_kde=False)
+
+        path = osp.join(save_path + f'-true_reward_mu.gif')
+        multi_render(true_reward_mu, path, labels, use_kde=False)
 
         datas = []
         outs = []

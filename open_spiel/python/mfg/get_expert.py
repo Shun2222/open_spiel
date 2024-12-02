@@ -18,7 +18,8 @@ from utils import onehot, multionehot
 #from render import render
 from Multi_type_render import calc_distribution 
 from gif_maker import *
-
+from open_spiel.python.mfg.diff_reward_render import * 
+from games.predator_prey import *
 
 @click.command()
 @click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/mtmfgppo")
@@ -143,6 +144,7 @@ def expert_generator(path, distrib_filename, actor_filename, critic_filename, nu
 
 @click.command()
 @click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/0726/multi_maze2_expert")
+#@click.option('--path', type=click.STRING, default="/mnt/shunsuke/result/1112/multi_type_maze_expert_convergence")
 @click.option('--game_setting', type=click.STRING, default="crowd_modelling_2d_four_rooms")
 @click.option('--distrib_filename', type=click.STRING, default="distrib50_19")
 @click.option('--actor_filename', type=click.STRING, default="actor50_19")
@@ -201,6 +203,31 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
     num_actions = env.action_spec()["num_actions"]
     size = env.game.get_parameters()['size']
     print(horizon)
+
+    mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
+
+    for k,v in merge_dist.distribution.items():
+        if "mu" in k:
+            tt = k.split(",")
+            pop = int(tt[0][-1])
+            t = int(tt[1].split('=')[1].split('_')[0])
+            xy = tt[2].split(" ")
+            x = int(xy[1].split("[")[-1])
+            y = int(xy[2].split("]")[0])
+            mu_dists[pop][t,y,x] = v
+
+
+    true_reward, true_reward_xy, true_reward_mu = calc_true_reward([size, size], horizon, mu_dists)
+
+    save_path = osp.join(path, f'true_reward.gif')
+    labels = [f'Group {i}' for i in range(num_agent)]
+    multi_render(true_reward, save_path, labels, use_kde=False)
+
+    save_path = osp.join(path, f'true_reward_xy.gif')
+    multi_render(true_reward_xy, save_path, labels, use_kde=False)
+
+    save_path = osp.join(path, f'true_reward_mu.gif')
+    multi_render(true_reward_mu, save_path, labels, use_kde=False)
 
 
     conv_dist = convert_distrib(envs, merge_dist)
@@ -305,7 +332,7 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
 
     for i in range(num_agent):
         info_states[i] = np.array(info_states[i])
-    final_dists = calc_distribution(envs, merge_dist, info_states, save=True, filename=path+f"/experts.gif")
+    final_dists = calc_distribution(envs, merge_dist, info_states, save=True, filename=path+f"/experts")
 
     save_path = os.path.join(path, f"expert_state_visitation_count-{num_trajs}.gif")
     multi_render(state_visitation_count, save_path, [f'Group{i}' for i in range(num_agent)])
@@ -329,6 +356,8 @@ def multi_type_expert_generator(path, distrib_filename, actor_filename, critic_f
         save_path = os.path.join(path, f"expert_state_visitation_timemean-{num_trajs}-{i}.png")
         plt.savefig(save_path)
         plt.close()
+
+
     
     #print(f"Saved expert trajs and best expert mp4 in {path}")
 
