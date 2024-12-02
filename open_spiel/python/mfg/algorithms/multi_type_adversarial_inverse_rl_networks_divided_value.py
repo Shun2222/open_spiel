@@ -504,8 +504,8 @@ class MultiTypeAIRL(object):
                     y = int(xy[2].split("]")[0])
                     mu_dists[pop][t,y,x] = v
             self._mu_dists = mu_dists
-            if num_update_iter%30==0:
-                self._generator = [MultiTypeMFGPPO(self._game, self._envs[i], merge_dist, conv_dist, 'cpu', player_id=i, expert_policy=self._ppo_policies[i]) for i in range(self._num_agent)]
+            #if num_update_iter%30==0:
+            #    self._generator = [MultiTypeMFGPPO(self._game, self._envs[i], merge_dist, conv_dist, 'cpu', player_id=i, expert_policy=self._ppo_policies[i]) for i in range(self._num_agent)]
             logger.dump_tabular()
             num_update_iter += 1
 
