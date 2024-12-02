@@ -116,9 +116,10 @@ filename = "disc_actor"
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_svf/seed-50",
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs_svf/seed-45",
 pathes = [
-            "/mnt/shunsuke/result/09xx/predator_prey_group0_mu-divided_value2",
-            "/mnt/shunsuke/result/09xx/predator_prey_group1_mu-divided_value2",
-            "/mnt/shunsuke/result/09xx/predator_prey_group2_mu-divided_value2",
+            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_svf_mf/seed-42",
+            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_svf_mf_dynamic_alpha/seed-42",
+            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_use_svf_model/seed-42",
+            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_use_svf_model_dynamic_alpha/seed-42",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_1000trajs/seed-42",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
@@ -159,9 +160,10 @@ pathes = [
                 #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-worst",
                 #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-worst",
 pathnames = [
-                "MF-AIRL_mu-divided_value_group0",
-                "MF-AIRL_mu-divided_value_group1",
-                "MF-AIRL_mu-divided_value_group2",
+                "MF-AIRL_dxy_mu-divided_value_svf_mf",
+                "MF-AIRL_dxy_mu-divided_value_svf_mf_dynamic_alpha",
+                "MF-AIRL_dxy_mu-divided_value_use_svf_model",
+                "MF-AIRL_dxy_mu-divided_value_use_svf_model_dynamic_alpha",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -173,17 +175,11 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "200_2",
-                "200_2",
-                "200_2",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
+
+                "500_4",
+                "500_4",
+                "500_4",
+                "500_4",
                 "500_5",
                 "500_5",
                 "500_5",

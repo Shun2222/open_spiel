@@ -88,6 +88,7 @@ skip_agent_actor = [
 
 static_alpha = {"Mode":"Static", "alpha":0.5}
 dynamic_alpha = {"Mode":"Dynamic", "k":5, "b":0.2}
+#alpha_setting = static_alpha 
 alpha_setting = static_alpha 
 
 if __name__ == "__main__":
