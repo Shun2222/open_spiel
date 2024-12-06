@@ -49,9 +49,9 @@ _DEFAULT_NUM_PLAYERS = 3
 #_DEFAULT_FORBIDDEN_POSITION = np.array([[5, i] for i in [0, 1, 2, 3, 6, 7, 8, 9]])
 #_DEFAULT_GOAL_POSITION = np.array([[_DEFAULT_SIZE, _DEFAULT_SIZE], [0, 0], [_DEFAULT_SIZE//2, _DEFAULT_SIZE//2]])
 
-_MODE = "Predator-Prey" 
+#_MODE = "Predator-Prey" 
 #_MODE = "4rooms" 
-#_MODE = "Maze" 
+_MODE = "Maze" 
 
 if _MODE=="Predator_Prey":
     _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
