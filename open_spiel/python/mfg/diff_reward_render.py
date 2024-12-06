@@ -63,16 +63,26 @@ def calc_true_reward(obs_shape, horizon, mu_dists):
     return rew, rew_xy, rew_mu 
 
 def true_reward(pos, densities):
-
-    _MODE = "Maze" # Maze or Predator-Prey
+    #_MODE = "Predator-Prey" 
+    _MODE = "4rooms" 
+    #_MODE = "Maze" 
 
     if _MODE=="Predator_Prey":
         _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
         _DEFAULT_FORBIDDEN_POSITION = np.array([])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]]) 
+    elif _MODE=="4rooms":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION = np.array(_DEFAULT_FORBIDDEN_POSITION) 
+
+        _DEFAULT_GOAL_POSITION = np.array([[8, 8], [1, 8], [8, 1]])
     else:
         _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
         _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
-    _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
 
     eps = 1e-25
     goal_pos = _DEFAULT_GOAL_POSITION
@@ -86,6 +96,7 @@ def true_reward(pos, densities):
 
     if _MODE=="Predator-Prey":
         r_mu = -1.0 * np.log(densities + eps) + 10 * np.dot(reward_matrix, densities)
+        r_xy = np.array([0, 0, 0])
         rew = r_mu
     else:
         r_mu = -1.0 * np.log(densities + eps) + np.dot(reward_matrix, densities)
@@ -166,10 +177,9 @@ filename = "disc_actor"
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_svf/seed-50",
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs_svf/seed-45",
 pathes = [
-            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_svf_mf/seed-42",
-            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_svf_mf_dynamic_alpha/seed-42",
-            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_use_svf_model/seed-42",
-            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu_use_svf_model_dynamic_alpha/seed-42",
+            "/mnt/shunsuke/result/1209/predator_prey_group0_mu/seed-42",
+            "/mnt/shunsuke/result/1209/predator_prey_group1_mu/seed-42",
+            "/mnt/shunsuke/result/1209/predator_prey_group2_mu/seed-42",
          ] 
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_1000trajs/seed-42",
             #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
@@ -210,10 +220,9 @@ pathes = [
                 #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-worst",
                 #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-worst",
 pathnames = [
-                "MF-AIRL_dxy_mu-divided_value_svf_mf",
-                "MF-AIRL_dxy_mu-divided_value_svf_mf_dynamic_alpha",
-                "MF-AIRL_dxy_mu-divided_value_use_svf_model",
-                "MF-AIRL_dxy_mu-divided_value_use_svf_model_dynamic_alpha",
+                "MF-AIRL_mu-divided_value_group0",
+                "MF-AIRL_mu-divided_value_group1",
+                "MF-AIRL_mu-divided_value_group2",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -225,27 +234,11 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-
+                "8220_82",
+                "8220_82",
+                "8220_82",
                 "500_4",
                 "500_4",
-                "500_4",
-                "500_4",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
-                "500_5",
               ]
 rates = [[0.9, 0.8]]
 
