@@ -20,7 +20,7 @@ from open_spiel.python.mfg.multi_render_reward import multi_render_reward
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, use_mf=False):
         self._game = game
         self._envs = envs
         self._device = device
@@ -60,6 +60,7 @@ class MultiTypeAIRL(object):
 
         # svf(s_t) = svf[agent_idx, t, y, x]
         self._svf = [experts[i].svf for i in range(self._num_agent)]
+        self._use_mf = use_mf
 
         self._goalrew_log = [[] for _ in range(self._num_agent)]
 
@@ -91,30 +92,28 @@ class MultiTypeAIRL(object):
                         = self._generator[i].rollout(self._envs[i], batch_step)
                     rollouts.append([obs_pth, actions_pth, logprobs_pth, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu_pth, ret])
                     mus.append(mu_pth)
-                #merge_mu = []
-                #for step in range(len(mus[0])):
-                #    merge_mu.append([mus[i][step] for i in range(self._num_agent)])
 
-                merge_mu = []
-                for idx in range(self._num_agent):
-                    obs_pth = rollouts[idx][0]
-                    obs_numpy = obs_pth.cpu().detach().numpy()
-                    mu_step = []
-                    for step in range(len(mus[0])):
-                        mu = []
-                        obs = obs_numpy[step]
-                        x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=True)
-                        t = t[0][0]
-                        x = x[0][0]
-                        y = y[0][0]
-                        mu.append(self._svf[idx][t, y, x])
-                        for idx2 in range(self._num_agent):
-                            if idx!=idx2:
-                                mu.append(self._svf[idx2][t, y, x])
-                        assert len(mu)==self._num_agent, f"Not match mu length: length = {len(mu)}"
-                        mu_step.append(mu)
-                    merge_mu.append(mu_step)
-                assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
+                if not self._use_mf:
+                    merge_mu = []
+                    for idx in range(self._num_agent):
+                        obs_pth = rollouts[idx][0]
+                        obs_numpy = obs_pth.cpu().detach().numpy()
+                        mu_step = []
+                        for step in range(len(mus[0])):
+                            mu = []
+                            obs = obs_numpy[step]
+                            x, y, t, _ = divide_obs(obs, self._size, num_mu=1, use_argmax=True)
+                            t = t[0][0]
+                            x = x[0][0]
+                            y = y[0][0]
+                            mu.append(self._svf[idx][t, y, x])
+                            for idx2 in range(self._num_agent):
+                                if idx!=idx2:
+                                    mu.append(self._svf[idx2][t, y, x])
+                            assert len(mu)==self._num_agent, f"Not match mu length: length = {len(mu)}"
+                            mu_step.append(mu)
+                        merge_mu.append(mu_step)
+                    assert len(merge_mu)==self._num_agent, f"Not match mu length: length = {len(merge_mu)}"
 
                 logger.record_tabular(f"timestep", t_step)
                 for idx, rout in enumerate(rollouts):
@@ -148,11 +147,26 @@ class MultiTypeAIRL(object):
                     #    obs_mu.append(obs_list + mu)
                     #obs_mu = np.array(obs_mu)
 
-                    obs_mu = []
-                    for step in range(batch_step):
-                        obs_list = list(obs[step][:-1])
-                        obs_mu.append(obs_list + list(merge_mu[idx][step]))
-                    obs_mu = np.array(obs_mu)
+                    if not self._use_mf:
+                        obs_mu = []
+                        for step in range(batch_step):
+                            obs_list = list(obs[step][:-1])
+                            obs_mu.append(obs_list + list(merge_mu[idx][step]))
+                        obs_mu = np.array(obs_mu)
+                    else:
+                        obs_mu = []
+                        for step in range(batch_step):
+                            obs_list = list(obs[step][:-1])
+                            x = np.argmax(obs[step][:self._size])
+                            y = np.argmax(obs[step][self._size:2*self._size])
+                            t = np.argmax(obs[step][2*self._size:self._size*2+self._horizon])
+                            #mu = [self._mu_dists[pop][t, y, x] for pop in range(self._num_agent)]
+                            mu = [self._mu_dists[idx][t, y, x]]
+                            for pop in range(self._num_agent):
+                                if pop!=idx:
+                                    mu.append(self._mu_dists[pop][t, y, x])
+                            obs_mu.append(obs_list + mu)
+                        obs_mu = np.array(obs_mu)
 
                     nobs = obs_mu.copy()
                     nobs[:-1] = obs_mu[1:]

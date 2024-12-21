@@ -41,13 +41,13 @@ from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value impor
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000tra", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000traj", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
 
     #parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert/expert-25_19-1000tra", help="expert path")
     #parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/09xx/predator_prey_expert/actor25_19", help="expert actor path")
 
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1223/multi_type_maze2_dxy_mu-divided_value-1000traj", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu-divided_value_1000trajs_svf", help="log path")
     parser.add_argument("--net_input", type=str, default="dxy_mu", help="log path")
     parser.add_argument("--num_hidden", type=int, default=1, help="log path")
     parser.add_argument("--use_ppo_value", action='store_true', help="cpu or cuda")

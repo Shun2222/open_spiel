@@ -41,9 +41,10 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000traj", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-15traj", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_airl_1000trajs", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1209/multi_maze2_airl_15trajs_mf_dxdy", help="log path")
+    parser.add_argument("--use_mf", action='store_true')
 
     parser.add_argument("--dxy_input", action='store_true', help="commonalize reward")
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")
@@ -148,7 +149,7 @@ if __name__ == "__main__":
             expert.savefig(args.logdir, i)
             experts.append(expert)
             print(f'expert load from {fname}')
-        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies)
+        airl = MultiTypeAIRL(game, envs, merge_dist, conv_dist, device, experts, ppo_policies, args.use_mf)
         airl.run(args.total_step, None, \
             args.num_episode, args.batch_step, args.save_interval)
         logger.reset()
