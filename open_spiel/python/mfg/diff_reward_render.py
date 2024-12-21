@@ -56,15 +56,15 @@ def calc_true_reward(obs_shape, horizon, mu_dists):
                 for idx in range(len(mu_dists)):
                     mu = np.array([mu_dists[idx][t, y, x] for idx in range(len(mu_dists))])
                     pos = np.array([x, y])
-                    r, r_xy, r_mu = true_reward(pos, mu)
+                    r, r_xy, r_mu = get_true_reward(pos, mu)
                     rew[idx][t, y, x] = r[idx]
                     rew_xy[idx][t, y, x] = r_xy[idx]
                     rew_mu[idx][t, y, x] = r_mu[idx]
     return rew, rew_xy, rew_mu 
 
-def true_reward(pos, densities):
-    #_MODE = "Predator-Prey" 
-    _MODE = "4rooms" 
+def get_true_reward(pos, densities):
+    _MODE = "Predator-Prey" 
+    #_MODE = "4rooms" 
     #_MODE = "Maze" 
 
     if _MODE=="Predator_Prey":
@@ -234,9 +234,9 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
-                "8220_82",
-                "8220_82",
-                "8220_82",
+                "16700_167",
+                "16700_167",
+                "16700_167",
                 "500_4",
                 "500_4",
               ]

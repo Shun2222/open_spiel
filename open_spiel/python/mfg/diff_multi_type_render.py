@@ -139,14 +139,23 @@ use_horizon = False
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_svf/seed-50",
             #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs_svf/seed-45",
 pathes = [
-            "/mnt/shunsuke/result/1209/4rooms_maze_expert_low_collision/",
+            "/mnt/shunsuke/result/1209/multi_maze2_airl_1000trajs/seed-42",
+            "/mnt/shunsuke/result/1209/multi_maze2_airl_15trajs/seed-42",
+            "/mnt/shunsuke/result/1209/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_svf/seed-42",
+            "/mnt/shunsuke/result/1209/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-42",
+            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu-divided_value_1000trajs_svf/seed-42",
+            "/mnt/shunsuke/result/1209/multi_type_maze2_dxy_mu-divided_value_15trajs_svf/seed-42",
          ] 
 
 
 
 pathnames = [
-                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-best",
-                "MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-worst",
+                "MF-AIRL_1000trajs",
+                "MF-AIRL_15trajs",
+                "SVF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_SVF",
+                "SVF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF",
+                "SVF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF",
+                "SVF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF",
             ] 
                 #"MF-AIRL_15trajs-best",
                 #"MF-AIRL_1000trajs-best",
@@ -171,6 +180,12 @@ pathnames = [
 
 # diff corr labels
 names = [
+         "MFAIRL1000"
+         "MFAIRL15"
+         "MFAIRL1000-Sharing-SVF"
+         "MFAIRL15-Sharing-SVF"
+         "MFAIRL1000-SVF"
+         "MFAIRL15-SVF"
          "Expert_low_collision",
          "Expert",
          "Expert_low_density",
@@ -186,8 +201,12 @@ names = [
 #"50_19",
 #"49_19",
 filenames = [
-                "399_19",
-                "140_19",
+                "16700_167",
+                "16700_167",
+                "16700_167",
+                "16700_167",
+                "16700_167",
+                "16700_167",
                 "500_5",
                 "500_5",
                 "49_19",
