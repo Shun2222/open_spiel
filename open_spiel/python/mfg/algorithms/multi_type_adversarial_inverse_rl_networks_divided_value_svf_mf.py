@@ -212,13 +212,13 @@ class MultiTypeAIRL(object):
                         y = y[0][0]
                         t = t[0][0]
                         svf_xyt = [self._svf[idx][t, y, x]] 
-                        mu = []
+                        mu = [self._mu_dists[idx][t, y, x]]
                         mu_svf = []
                         alpha = get_alpha(self._alpha_setting, t_step, total_step)
                         for k in range(self._num_agent):
                             if k!=idx:
-                                svf_xyt.append(self._svf[idx][t, y, x])
-                                mu.append(self._mu_dists[pop][t, y, x])
+                                svf_xyt.append(self._svf[k][t, y, x])
+                                mu.append(self._mu_dists[k][t, y, x])
                                 mu_svf.append((1-alpha)*svf_xyt[-1] + alpha*mu[-1])
                         assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
                         # エキスパートの平均場はエキスパートに近いものであるべき（エージェントの平均場に近づける意味がない）

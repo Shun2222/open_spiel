@@ -220,7 +220,7 @@ class MultiTypeAIRL(object):
                         svf_xyt = [self._svf[idx][t, y, x]] 
                         for k in range(self._num_agent):
                             if k!=idx:
-                                svf_xyt.append(self._svf[idx][t, y, x])
+                                svf_xyt.append(self._svf[k][t, y, x])
                         assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
                         ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
                         assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"

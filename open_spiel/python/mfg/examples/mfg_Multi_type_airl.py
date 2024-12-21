@@ -41,9 +41,9 @@ from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import convert_distrib,
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-100traj", help="expert path")
+    parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/expert-1000traj", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/0726/multi_maze2_expert/actor50_19", help="expert actor path")
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_airl_100trajs", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1112/multi_maze2_airl_1000trajs", help="log path")
 
     parser.add_argument("--dxy_input", action='store_true', help="commonalize reward")
     parser.add_argument("--differ_expert", action='store_true', help="commonalize reward")

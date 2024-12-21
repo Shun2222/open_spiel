@@ -23,7 +23,9 @@ expert_mu_pkl = rf"expert-conv_dists.pkl"
 expert_mu_pkl = osp.join(path, expert_mu_pkl)
 
 
-sampled_expert_pkl = [rf"expert-1000tra-{i}.pkl" for i in range(3)]
+#sampled_expert_pkl = [rf"expert-1000tra-{i}.pkl" for i in range(3)]
+#sampled_expert_pkl = [rf"expert-15traj-{i}.pkl" for i in range(3)]
+sampled_expert_pkl = [rf"expert-selected-1traj-{i}.pkl" for i in range(3)]
 sampled_expert_pkl = [osp.join(path, sampled_expert_pkl[i]) for i in range(3)]
 
 def parse_args():
@@ -149,6 +151,31 @@ def save_svf(num_trajs):
     multi_render(sampled_svf, savepath, ["" for _ in range(len(sampled_svf))], use_kde=False)
     return sampled_svf
 
+def save_svf_onetraj(num_trajs):
+    expert_mu = load_pkl(expert_mu_pkl)
+    sampled_expert = [load_pkl(sampled_expert_pkl[i]) for i in range(3)]
+
+    num_agent = len(expert_mu)
+    sampled_svfs = []
+    for traj in range(num_trajs):
+        sampled_svf = [state_visition_flequency([sampled_expert[i][traj]], num_trajs=1) for i in range(num_agent)]
+
+        plt.figure()
+        n_datas = len(sampled_svf)
+        fig, axes = plt.subplots(1, n_datas, figsize = (4*n_datas, 4))
+        for i in range(len(sampled_svf)):
+            axes[i].axis('off')
+            svf = np.mean(sampled_svf[i], axis=0)
+            axes[i].imshow(svf)
+        savepath = osp.join(path, f"onetraj-svf-{traj}.png")
+        plt.savefig(savepath)
+        print(f"Saved as {savepath}")
+
+        savepath = osp.join(path, f"onetraj-svf-{traj}.gif")
+        multi_render(sampled_svf, savepath, ["" for _ in range(len(sampled_svf))], use_kde=False)
+        sampled_svfs.append(sampled_svf)
+    return sampled_svf
+
 def save_dataset(num_trajs):
     from dataset import MFGDataSet
     mfgds = MFGDataSet(sampled_expert_pkl[0], traj_limitation=num_trajs)
@@ -185,25 +212,44 @@ if __name__ == '__main__':
     #for num_trajs in num_trajs_list:
     #    svf = save_svf(num_trajs)
 
-    num_trajs_list = [15,1000]
-    sampled_svfs = []
-    for num_trajs in num_trajs_list:
-        svf = save_svf(num_trajs)
-        mean_svfs = []
-        for i in range(len(svf)):
-            mean_svf = np.mean(svf[i], axis=0)
-            mean_svfs.append(mean_svf)
-        sampled_svfs.append(mean_svfs)
+    # save diff svf
+    #num_trajs_list = [15,1000]
+    #sampled_svfs = []
+    #for num_trajs in num_trajs_list:
+    #    svf = save_svf(num_trajs)
+    #    mean_svfs = []
+    #    for i in range(len(svf)):
+    #        mean_svf = np.mean(svf[i], axis=0)
+    #        mean_svfs.append(mean_svf)
+    #    sampled_svfs.append(mean_svfs)
+
+
+    # print one traj
+    #svf = save_svf_onetraj(10)
+
+    # create new expert pkl
+    #se = [load_pkl(sampled_expert_pkl[i]) for i in range(3)]
+    #se0 = [se[0][0]]
+    #savepath = osp.join(path, f"expert-selected-1traj-0.pkl")
+    #pkl.dump(se0, open(savepath, 'wb'))
+    #se1 = [se[1][3]]
+    #savepath = osp.join(path, f"expert-selected-1traj-1.pkl")
+    #pkl.dump(se1, open(savepath, 'wb'))
+    #se2 = [se[2][3]]
+    #savepath = osp.join(path, f"expert-selected-1traj-2.pkl")
+    #pkl.dump(se2, open(savepath, 'wb'))
+
+    svf = save_svf(1)
 
     
 
-    fig, axes = plt.subplots(1, 3, figsize = (12, 4))
-    for i in range(len(sampled_svfs[0])):
-        axes[i].axis('off')
-        data = sampled_svfs[0][i]-sampled_svfs[1][i]
-        max_num = np.max([np.max(data), np.abs(np.min(data))])
-        axes[i].imshow(data, cmap='seismic', vmin=-max_num, vmax=max_num)
-    savepath = osp.join(path, f"svf_{num_trajs_list[0]}-{num_trajs_list[1]}trajs.png")
-    plt.savefig(savepath)
-    print(f"Saved as {savepath}")
+    #fig, axes = plt.subplots(1, 3, figsize = (12, 4))
+    #for i in range(len(sampled_svfs[0])):
+    #    axes[i].axis('off')
+    #    data = sampled_svfs[0][i]-sampled_svfs[1][i]
+    #    max_num = np.max([np.max(data), np.abs(np.min(data))])
+    #    axes[i].imshow(data, cmap='seismic', vmin=-max_num, vmax=max_num)
+    #savepath = osp.join(path, f"svf_{num_trajs_list[0]}-{num_trajs_list[1]}trajs.png")
+    #plt.savefig(savepath)
+    #print(f"Saved as {savepath}")
 
