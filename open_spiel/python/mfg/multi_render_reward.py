@@ -46,7 +46,24 @@ plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 _DEFAULT_FORBIDDEN_POSITION = dfp = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
 
-def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, rate, save=False, filename="agent_dist"):
+def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, rate, save=False, filename="agent_dist", mode="Maze"):
+    _MODE = mode 
+    if _MODE=="Predator_Prey":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]]) 
+    elif _MODE=="4rooms":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION = np.array(_DEFAULT_FORBIDDEN_POSITION) 
+
+        _DEFAULT_GOAL_POSITION = np.array([[8, 8], [1, 8], [8, 1]])
+    else:
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_nets = discriminator.get_num_nets()
@@ -117,7 +134,25 @@ def multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs,
 
 
     return rewards, output_rewards
-def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist"):
+def multi_render_reward_nets_divided_value(size, nacs, horizon, inputs, discriminator, save=False, filename="agent_dist", mode="Maze"):
+    _MODE = mode 
+    if _MODE=="Predator_Prey":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]]) 
+    elif _MODE=="4rooms":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION = np.array(_DEFAULT_FORBIDDEN_POSITION) 
+
+        _DEFAULT_GOAL_POSITION = np.array([[8, 8], [1, 8], [8, 1]])
+    else:
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+    dfp = _DEFAULT_FORBIDDEN_POSITION
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
     num_nets = discriminator.get_num_nets()

@@ -243,19 +243,22 @@ class MultiTypeMFGPPO(object):
                 acs = onehot(action, self._nacs).reshape(1, self._nacs)
 
                 if self._is_nets:
-                    inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input, [obs_mu], acs, self._player_id)
                     if len(self._discriminator)==2:
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input[0], [obs_mu], acs, self._player_id)
                         reward0, outputs0 = self._discriminator[0].get_reward(
                             inputs,
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
+                        if self._net_input[0]!=self._net_input[1]:
+                            inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input[1], [obs_mu], acs, self._player_id)
                         reward1, outputs1 = self._discriminator[1].get_reward(
                             inputs,
                             discrim_score=False,
                             only_rew=False,
                             weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
                     else:
+                        inputs, obs_xym, obs_next_xym = create_disc_input(self._size, self._net_input[0], [obs_mu], acs, self._player_id)
                         reward, outputs = self._discriminator[0].get_reward(
                             inputs,
                             discrim_score=False,
@@ -466,9 +469,9 @@ def parse_args():
     
     parser.add_argument("--batch_step", type=int, default=200, help="set the number of episodes of to collect per rollout")
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
-    parser.add_argument("--num_iterations", type=int, default=50, help="Set the number of global update steps of the outer loop")
+    parser.add_argument("--num_iterations", type=int, default=1000, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/master_middle/multi_maze2_ppo_dxy_mu_test", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/multi_maze2_ppo_dxy_mu-1trajs", help="logdir")
 
     parser.add_argument("--save_disc_reward", action='store_true')
     parser.add_argument("--single", action='store_true')
@@ -482,28 +485,34 @@ def parse_args():
     return args
 
 disc_path = [
-                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-0"],
-                 ["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-1"],
+                [
+                 [ "/mnt/shunsuke/result/share_master_185/1209/multi_type_maze2_dxy_mu-divided_value_selected_1trajs/seed-42", "16700_167-0"],
                 ],
-                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-1"]],
-                [["/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2", "200_2-2"]],
+                [
+                 [ "/mnt/shunsuke/result/share_master_185/1209/multi_type_maze2_dxy_mu-divided_value_selected_1trajs/seed-42", "16700_167-1"],
+                ],
+                [
+                 [ "/mnt/shunsuke/result/share_master_185/1209/multi_type_maze2_dxy_mu-divided_value_selected_1trajs/seed-42", "16700_167-2"],
+                ],
             ]
+                 #[ "/mnt/shunsuke/result/share_master_185/1209/multi_type_maze2_dxy_mu-divided_value_selected_1-1000-1000trajs/seed-42", "16700_167-2"],
+                 #[ "/mnt/shunsuke/result/1209/predator_prey_mu-divided_value_group2/seed-42", "14000_139-2"]
 
-rew_indexes = [[0, 1], [-1], [-1]]
+rew_indexes = [[-1], [-1], [-1]]
 
 if __name__ == "__main__":
 
     args = parse_args()
     seed = args.seed
-    weight_lower = 0.5 
-    weight_upper = 1.5
-    weight_step = 0.1
-    vs = np.arange(weight_lower, weight_upper, weight_step)
-    grids = np.meshgrid(*[vs] * 2)
+    #weight_lower = 0.5 
+    #weight_upper = 1.5
+    #weight_step = 0.1
+    #vs = np.arange(weight_lower, weight_upper, weight_step)
+    #grids = np.meshgrid(*[vs] * 2)
     #combinations = np.vstack([grid.ravel() for grid in grids]).T
     #print(combinations.shape)
     #for seed in range(30):
-    combinations = [[1.0, 2], [0.9, 0.8], [0.8, 0.9]]
+    combinations = [[1.0, 1.0], [1.0, 0.8], [1.0, 0.6]]
     for rate in combinations:
         rates = [rate, [1.0, 1.0], [1.0, 1.0]]
         logger.reset()
@@ -521,8 +530,6 @@ if __name__ == "__main__":
             rew_indexes = [-1, -1]
             net_input = None
         else:
-            net_input = "dxy_mu"
-            net_label = get_net_labels(net_input)
             is_divided = True 
             if not is_divided:
                 from open_spiel.python.mfg.algorithms.discriminator_networks import * 
@@ -577,14 +584,21 @@ if __name__ == "__main__":
             elif notmu:
                 discriminator = Discriminator(nobs, nacs, False, device)
             elif is_nets:
-                inputs = get_input_shape(net_input, env, num_agent)
-                labels = get_net_labels(net_input)
                 num_hidden = 1
-                print(num_hidden)
-                if len(labels)==2:
-                    discriminator = [Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden) for _ in range(len(disc_path[i]))]
-                if len(labels)==3:
-                    discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                discriminator = []
+                all_net_input = []
+                for j in range(len(disc_path[i])):
+                    net_input = get_net_input(disc_path[i][j][0])
+                    all_net_input.append(net_input)
+                    inputs = get_input_shape(net_input, env, num_agent)
+                    labels = get_net_labels(net_input)
+                    if len(inputs)==1:
+                        disc = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                    elif len(labels)==2:
+                        disc = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                    elif len(labels)==3:
+                        disc = Discriminator_3nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                    discriminator.append(disc)
             else:
                 discriminator = Discriminator(nobs-1+num_agent-horizon, nacs, False, device)
 
@@ -731,7 +745,7 @@ if __name__ == "__main__":
         inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
         disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
         """
-        mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=net_input, rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
+        mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=all_net_input, rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
 
         batch_step = args.batch_step
         for niter in tqdm(range(args.num_iterations)):

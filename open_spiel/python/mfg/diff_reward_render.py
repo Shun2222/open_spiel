@@ -63,26 +63,7 @@ def calc_true_reward(obs_shape, horizon, mu_dists):
     return rew, rew_xy, rew_mu 
 
 def get_true_reward(pos, densities):
-    _MODE = "Predator-Prey" 
-    #_MODE = "4rooms" 
-    #_MODE = "Maze" 
 
-    if _MODE=="Predator_Prey":
-        _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
-        _DEFAULT_FORBIDDEN_POSITION = np.array([])
-        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]]) 
-    elif _MODE=="4rooms":
-        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
-        _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
-        _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
-        _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
-        _DEFAULT_FORBIDDEN_POSITION = np.array(_DEFAULT_FORBIDDEN_POSITION) 
-
-        _DEFAULT_GOAL_POSITION = np.array([[8, 8], [1, 8], [8, 1]])
-    else:
-        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
-        _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
-        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
 
     eps = 1e-25
     goal_pos = _DEFAULT_GOAL_POSITION
@@ -160,69 +141,37 @@ def parse_args():
     return args
 
 filename = "disc_actor"
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-49",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-50",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_calcMF/seed-45",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_calcMF/seed-51",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-48",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-43",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs/seed-45",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs/seed-44",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-48",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_svf/seed-46",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-15-15-15_svf/seed-43",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_particle_common-1000-1000-1000_svf/seed-44",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_svf/seed-44",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs_svf/seed-46",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_15trajs_svf/seed-50",
-            #"/mnt/shunsuke/result/icaart/proposed_method/multi_maze2_dxy_mu-divided_value_1000trajs_svf/seed-45",
-pathes = [
-            "/mnt/shunsuke/result/1209/predator_prey_group0_mu/seed-42",
-            "/mnt/shunsuke/result/1209/predator_prey_group1_mu/seed-42",
-            "/mnt/shunsuke/result/1209/predator_prey_group2_mu/seed-42",
-         ] 
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_1000trajs/seed-42",
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_dxy_mu-divided_value_selectable_common2",
-            #"/mnt/shunsuke/result/master_middle/multi_maze2_airl_deltaxy_onlySelfMu",
-            #"/mnt/shunsuke/result/0726/multi_maze2_dxy_mu-divided_value_selectable_common",
 
-            # "/mnt/shunsuke/result/0627/multi_maze2_s_mu_a",
-            # "/mnt/shunsuke/result/0627/multi_maze2_sa_mu",
-            # "/mnt/shunsuke/result/0627/multi_maze2_s_mua",
-            # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mu_a",
-            # "/mnt/shunsuke/result/0627/multi_maze2_dxya_mu",
-            # "/mnt/shunsuke/result/0627/multi_maze2_dxy_mua",
-            #"/mnt/shunsuke/result/0627/multi_maze2_mfairl_time",
-            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs",
-            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_time",
-            #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl",
-            #"/mnt/shunsuke/result/0614/multi_maze2_airl_basicfuncs_episode1",
-            #"/mnt/shunsuke/result/0614/185pc/multi_maze2_airl_1episode",
-           #"/mnt/shunsuke/result/0614/185pc/multi_maze1_airl_basicfuncs_time",
-                #"MF-AIRL_15trajs-best",
-                #"MF-AIRL_1000trajs-best",
-                #"MF-AIRL_15trajs-worst",
-                #"MF-AIRL_1000trajs-worst",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-best",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-best",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_MF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_MF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-best",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-best",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_MF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_MF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF-best",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_SVF-best",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_Sharing_SVF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_Sharing_SVF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-best",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-best",
-                #"MF-AIRL_dxy_mu-divided_value_15trajs_notSharing_SVF-worst",
-                #"MF-AIRL_dxy_mu-divided_value_1000trajs_notSharing_SVF-worst",
+_MODE = "4rooms"
+
+if _MODE=="Predator_Prey":
+    _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
+    _DEFAULT_FORBIDDEN_POSITION = np.array([])
+    _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]]) 
+elif _MODE=="4rooms":
+    _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+    _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
+    _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
+    _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
+    _DEFAULT_FORBIDDEN_POSITION = np.array(_DEFAULT_FORBIDDEN_POSITION) 
+
+    _DEFAULT_GOAL_POSITION = np.array([[8, 8], [1, 8], [8, 1]])
+else:
+    _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+    _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+    _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+
+pathes = [
+            "/mnt/shunsuke/result/share_master/1231/4rooms_maze_dxy_mu-divided_values_1-1-1000trajs/seed-42",
+            "/mnt/shunsuke/result/share_master/1231/4rooms_maze_dxy_mu-divided_values_1-1000-1000trajs/seed-42",
+            "/mnt/shunsuke/result/share_master/1231/4rooms_maze_dxy_mu-divided_values_1trajs/seed-42",
+            "/mnt/shunsuke/result/share_master/1231/4rooms_maze_dxy_mu-divided_values_1000trajs/seed-42",
+         ] 
 pathnames = [
-                "MF-AIRL_mu-divided_value_group0",
-                "MF-AIRL_mu-divided_value_group1",
-                "MF-AIRL_mu-divided_value_group2",
+                "MF-AITL_dxy_mu-divided_value_1-1-1000",
+                "MF-AITL_dxy_mu-divided_value_1-1000-1000",
+                "MF-AITL_dxy_mu-divided_value_1",
+                "MF-AITL_dxy_mu-divided_value_1000",
             ] 
                 #"MF-AIRL"
                 #"MF-AITL_dxy_mu-divided_value-common",
@@ -234,6 +183,14 @@ pathnames = [
                 #"MF-AITL_dxya_mu",
                 #"MF-AITL_dxy_mua",
 update_infos = [
+                "1600_15",
+                "1600_15",
+                "1600_15",
+                "1600_15",
+                "14000_139",
+                "14000_139",
+                "14000_139",
+                "14000_139",
                 "16700_167",
                 "16700_167",
                 "16700_167",
@@ -476,7 +433,7 @@ if __name__ == "__main__":
                     if args.use_rate:
                         rewards, output = multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
                     else:
-                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}", mode=_MODE)
                 else:
                     rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
                 for j in range(n_nets):

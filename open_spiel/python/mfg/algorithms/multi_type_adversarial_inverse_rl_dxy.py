@@ -320,7 +320,7 @@ class MultiTypeAIRL(object):
                         self._generator[i].save(self._game, filename=fname)
                         self._discriminator[i].save(filename=fname)
                         path = osp.join(logger.get_dir(), fname)
-                        rewards = multi_render_reward(self._mu_dists, self._size, self._nacs, self._horizon, inputs[i], self._discriminator[i], i, False, False, False, False, dxyinput=True, save=True, filename=path)
+                        #rewards = multi_render_reward(self._mu_dists, self._size, self._nacs, self._horizon, inputs[i], self._discriminator[i], i, False, False, False, False, dxyinput=True, save=True, filename=path)
                         gp = np.array([[5, 4], [4, 5], [5, 5]])
                         rew = self._discriminator[i].get_reward(
                             torch.from_numpy(np.array([[0.0, 0.0, 0.0]])).to(self._device),

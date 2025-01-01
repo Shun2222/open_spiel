@@ -42,15 +42,17 @@ from open_spiel.python import policy as policy_std
 from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
+#from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
+from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo_discrew import *
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 
 
-#def save_parametric_distribution(dist: distribution.ParametricDistribution,
-#                                 filename: str):
-#  """Saves the parametric distribution to a Pickle file."""
-#  with gfile.Open(filename, "wb") as f:
-#    pickle.dump(dist.get_params(), f, protocol=pickle.DEFAULT_PROTOCOL)
+def save_parametric_distribution(dist: distribution.ParametricDistribution,
+                                 filename: str):
+  """Saves the parametric distribution to a Pickle file."""
+  with gfile.Open(filename, "wb") as f:
+    pickle.dump(dist.get_params(), f, protocol=pickle.DEFAULT_PROTOCOL)
 
 def onehot(value, depth):
     a = np.zeros([depth])
@@ -81,4 +83,3 @@ def create_env(seed=0):
         envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
         envs[-1].seed(seed)
     return game, envs
-
