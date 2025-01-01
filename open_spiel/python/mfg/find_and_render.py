@@ -211,239 +211,236 @@ def render(game, envs, pathes, pathnames, update_infos):
     res = []
     outputs = []
     for p in range(len(pathes)):
-        try:
-            is_nets = is_networks(pathnames[p]) 
+        is_nets = is_networks(pathnames[p]) 
+        if is_nets:
+            net_input = get_net_input(pathnames[p])
+            net_labels = get_net_labels(net_input)
+            is_divided = is_divided_value(pathnames[p])
+            if not is_divided:
+                assert False, "is_net is true but, is_divided is false"
+        else:
+            from open_spiel.python.mfg.algorithms.discriminator import Discriminator
+
+        update_info = update_eps_info = f'{update_infos[p]}'
+
+        env = envs[0]
+        nacs = env.action_spec()['num_actions']
+        nobs = env.observation_spec()['info_state'][0]
+        horizon = env.game.get_parameters()['horizon']
+
+        nmu = num_agent
+        size = env.game.get_parameters()['size']
+        state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+
+        agents = []
+        actor_models = []
+        critic_models = []
+        ppo_policies = []
+        mfg_dists = []
+        discriminators = []
+        for i in range(num_agent):
+            agent = Agent(nobs, nacs).to(device)
+            actor_model = agent.actor
+            critic_model = agent.critic
+
+            fname = copy.deepcopy(actor_filename+update_eps_info)
+            fname = fname + f'-{i}.pth' 
+            actor_path = osp.join(pathes[p], fname)
+            actor_model.load_state_dict(torch.load(actor_path))
+            actor_model.eval()
+            print("load actor model from", actor_path)
+
+            fname = copy.deepcopy('critic'+update_eps_info)
+            fname = fname + f'-{i}.pth' 
+            critic_path = osp.join(pathes[p], fname)
+            critic_model.load_state_dict(torch.load(critic_path))
+            critic_model.eval()
+            print("load critic model from", critic_path)
+
+            agents.append(agent)
+            actor_models.append(actor_model)
+            critic_models.append(critic_model)
+
+            ppo_policies.append(PPOpolicy(game, agent, None, device))
+            mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+            mfg_dists.append(mfg_dist)
+
             if is_nets:
-                net_input = get_net_input(pathnames[p])
-                net_labels = net_labels(net_input)
-                is_divided = is_divided_value(pathnames[p])
-                if not is_divided:
-                    assert False, "is_net is true but, is_divided is false"
+                inputs = get_input_shape(net_input, env, num_agent)
+                labels = get_net_labels(net_input)
+                num_hidden = get_num_hidden(pathnames[p])
+                if len(labels)==1:
+                    discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                if len(labels)==2:
+                    discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
+                if len(labels)==3:
+                    discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, kum_hidden=num_hidden)
             else:
-                from open_spiel.python.mfg.algorithms.discriminator import Discriminator
-
-            update_info = update_eps_info = f'{update_infos[p]}'
-
-            env = envs[0]
-            nacs = env.action_spec()['num_actions']
-            nobs = env.observation_spec()['info_state'][0]
-            horizon = env.game.get_parameters()['horizon']
-
-            nmu = num_agent
-            size = env.game.get_parameters()['size']
-            state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-            obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-
-            agents = []
-            actor_models = []
-            critic_models = []
-            ppo_policies = []
-            mfg_dists = []
-            discriminators = []
-            for i in range(num_agent):
-                agent = Agent(nobs, nacs).to(device)
-                actor_model = agent.actor
-                critic_model = agent.critic
-
-                fname = copy.deepcopy(actor_filename+update_eps_info)
-                fname = fname + f'-{i}.pth' 
-                actor_path = osp.join(pathes[p], fname)
-                actor_model.load_state_dict(torch.load(actor_path))
-                actor_model.eval()
-                print("load actor model from", actor_path)
-
-                fname = copy.deepcopy('critic'+update_eps_info)
-                fname = fname + f'-{i}.pth' 
-                critic_path = osp.join(pathes[p], fname)
-                critic_model.load_state_dict(torch.load(critic_path))
-                critic_model.eval()
-                print("load critic model from", critic_path)
-
-                agents.append(agent)
-                actor_models.append(actor_model)
-                critic_models.append(critic_model)
-
-                ppo_policies.append(PPOpolicy(game, agent, None, device))
-                mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
-                mfg_dists.append(mfg_dist)
-
-                if is_nets:
-                    inputs = get_input_shape(net_input, env, num_agent)
-                    labels = get_net_labels(net_input)
-                    num_hidden = get_num_hidden(pathnames[p])
-                    if len(labels)==1:
-                        discriminator = Discriminator(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
-                    if len(labels)==2:
-                        discriminator = Discriminator_2nets(inputs, obs_xym_size, labels, device, num_hidden=num_hidden)
-                    if len(labels)==3:
-                        discriminator = Discriminator_3nets(inputs, obs_xym_size, labels, device, kum_hidden=num_hidden)
-                else:
-                    discriminator = Discriminator(3, nacs, True, device)
-                reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
-                value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
-
-                if is_nets:
-                    discriminator.load(pathes[p], f'{update_eps_info}-{i}', use_eval=True)
-                    save_path = os.path.join(pathes[p], filename+str(update_info)+f'weights-{i}.png')
-                    discriminator.savefig_weights(save_path)
-                    discriminator.print_weights()
-                else:
-                    discriminator.load(reward_path, value_path, use_eval=True)
-                discriminators.append(discriminator)
-
-            merge_dist = distribution.MergeDistribution(game, mfg_dists)
-            for env in envs:
-              env.update_mfg_distribution(merge_dist)
-
-            agent_dist = np.zeros((horizon,size,size))
-            mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
-
-            for k,v in merge_dist.distribution.items():
-                if "mu" in k:
-                    tt = k.split(",")
-                    pop = int(tt[0][-1])
-                    t = int(tt[1].split('=')[1].split('_')[0])
-                    xy = tt[2].split(" ")
-                    x = int(xy[1].split("[")[-1])
-                    y = int(xy[2].split("]")[0])
-                    mu_dists[pop][t,y,x] = v
-
-            mu_dists = np.array(mu_dists)
-            save_path = os.path.join(target_path, f"actor.gif")
-            print(np.array(mu_dists).shape)
-            multi_render(mu_dists[:, :, :], save_path, [f'Group {i}' for i in range(num_agent)])
-
+                discriminator = Discriminator(3, nacs, True, device)
+            reward_path = osp.join(pathes[p], reward_filename+update_eps_info + f'-{i}.pth')
+            value_path = osp.join(pathes[p], value_filename+update_eps_info + f'-{i}.pth')
 
             if is_nets:
-                inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
+                discriminator.load(pathes[p], f'{update_eps_info}-{i}', use_eval=True)
+                save_path = os.path.join(pathes[p], filename+str(update_info)+f'weights-{i}.png')
+                discriminator.savefig_weights(save_path)
+                discriminator.print_weights()
             else:
-                inputs = create_rew_input([size, size], nacs, horizon, mu_dists, False, False, state_only=False)
+                discriminator.load(reward_path, value_path, use_eval=True)
+            discriminators.append(discriminator)
 
-            save_path = os.path.join(pathes[p], filename+str(update_info))
+        merge_dist = distribution.MergeDistribution(game, mfg_dists)
+        for env in envs:
+          env.update_mfg_distribution(merge_dist)
 
-            true_reward, true_reward_xy, true_reward_mu = calc_true_reward([size, size], horizon, mu_dists)
+        agent_dist = np.zeros((horizon,size,size))
+        mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
 
-            path = osp.join(save_path + f'-true_reward.gif')
-            labels = [f'Group {i}' for i in range(num_agent)]
-            multi_render(true_reward, path, labels, use_kde=False)
+        for k,v in merge_dist.distribution.items():
+            if "mu" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                t = int(tt[1].split('=')[1].split('_')[0])
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                mu_dists[pop][t,y,x] = v
 
-            path = osp.join(save_path + f'-true_reward_xy.gif')
-            multi_render(true_reward_xy, path, labels, use_kde=False)
+        mu_dists = np.array(mu_dists)
+        save_path = os.path.join(target_path, f"actor.gif")
+        print(np.array(mu_dists).shape)
+        multi_render(mu_dists[:, :, :], save_path, [f'Group {i}' for i in range(num_agent)])
 
-            path = osp.join(save_path + f'-true_reward_mu.gif')
-            multi_render(true_reward_mu, path, labels, use_kde=False)
 
-            datas = []
-            outs = []
+        if is_nets:
+            inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
+        else:
+            inputs = create_rew_input([size, size], nacs, horizon, mu_dists, False, False, state_only=False)
+
+        save_path = os.path.join(pathes[p], filename+str(update_info))
+
+        true_reward, true_reward_xy, true_reward_mu = calc_true_reward([size, size], horizon, mu_dists)
+
+        path = osp.join(save_path + f'-true_reward.gif')
+        labels = [f'Group {i}' for i in range(num_agent)]
+        multi_render(true_reward, path, labels, use_kde=False)
+
+        path = osp.join(save_path + f'-true_reward_xy.gif')
+        multi_render(true_reward_xy, path, labels, use_kde=False)
+
+        path = osp.join(save_path + f'-true_reward_mu.gif')
+        multi_render(true_reward_mu, path, labels, use_kde=False)
+
+        datas = []
+        outs = []
+        if is_nets:
+            n_nets = discriminators[0].get_num_nets()
+            outs = [[] for _ in range(n_nets)]
+        for i in range(num_agent):
             if is_nets:
-                n_nets = discriminators[0].get_num_nets()
-                outs = [[] for _ in range(n_nets)]
-            for i in range(num_agent):
-                if is_nets:
-                    if is_divided:
-                        use_rate = False
-                        if use_rate:
-                            rewards, output = multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
-                        else:
-                            rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}", mode=_MODE)
+                if is_divided:
+                    use_rate = False
+                    if use_rate:
+                        rewards, output = multi_render_weighted_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], rates[p], save=True, filename=save_path+f"-{i}")
                     else:
-                        rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
-                    for j in range(n_nets):
-                        outs[j].append(np.mean(output[j], axis=3))
+                        rewards, output = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}", mode=_MODE)
                 else:
-                    rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs[i], discriminators[i], i, False, False, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
-                datas.append(np.mean(rewards, axis=3))
+                    rewards, output = multi_render_reward_nets(size, nacs, horizon, inputs[i], discriminators[i], save=True, filename=save_path+f"-{i}")
+                for j in range(n_nets):
+                    outs[j].append(np.mean(output[j], axis=3))
+            else:
+                rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs[i], discriminators[i], i, False, False, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
+            datas.append(np.mean(rewards, axis=3))
 
-            res.append(datas)
-            outputs.append(outs)
-            path = osp.join(save_path + f'-mean.gif')
+        res.append(datas)
+        outputs.append(outs)
+        path = osp.join(save_path + f'-mean.gif')
+        labels = [f'Group {i}' for i in range(num_agent)]
+        print(np.array(datas).shape)
+        multi_render(datas, path, labels, use_kde=False)
+        if is_nets:
             labels = [f'Group {i}' for i in range(num_agent)]
-            print(np.array(datas).shape)
-            multi_render(datas, path, labels, use_kde=False)
-            if is_nets:
-                labels = [f'Group {i}' for i in range(num_agent)]
-                net_labels = get_net_labels(net_input)
-                for i in range(n_nets):
-                    path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
-                    output = np.array(outs[i])
-                    print(output.shape)
-                    multi_render(output, path, labels, use_kde=False)
+            net_labels = get_net_labels(net_input)
+            for i in range(n_nets):
+                path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
+                output = np.array(outs[i])
+                print(output.shape)
+                multi_render(output, path, labels, use_kde=False)
 
-            for i in range(num_agent):
-                plt.rcParams["font.size"] = 8 
-                fig = plt.figure(figsize=(16, 12))
+        for i in range(num_agent):
+            plt.rcParams["font.size"] = 8 
+            fig = plt.figure(figsize=(16, 12))
+            ax = fig.add_subplot(1, 1, 1)
+            points = datas[i]
+            col = 1
+            for s in range(len(points[0].shape)):
+                col *= points[0].shape[s]
+            points = points.reshape(len(points), col).T
+            bp = ax.boxplot(points)
+            plt.xlabel(r"$\mu_{time}$")
+            save_path = os.path.join(pathes[p], filename+f'-mutime-box-{i}.png')
+            plt.savefig(save_path)
+            plt.close()
+            print(f'saved {save_path} ')
+            if is_nets:
+                for j in range(n_nets):
+                    fig = plt.figure(figsize=(16, 12))
+                    ax = fig.add_subplot(1, 1, 1)
+                    points = np.array(outs[j][i])
+                    col = 1
+                    for s in range(len(points[0].shape)):
+                        col *= points[0].shape[s]
+                    points = points.reshape(len(points), col).T
+                    bp = ax.boxplot(points)
+                    plt.xlabel(r"$\mu_{time}$")
+                    plt.ylabel(fr"{net_labels[j]} value")
+                    save_path = os.path.join(pathes[p], filename+f'-mutime-box-{net_labels[j]}-{i}.png')
+                    plt.savefig(save_path)
+                    plt.close()
+                    print(f'saved {save_path} ')
+
+
+            figsizes = [(16, 12), (64, 12)]
+            fontsizes = [8, 24]
+            for j in range(len(figsizes)):
+                plt.rcParams["font.size"] = fontsizes[j]
+                fig = plt.figure(figsize=figsizes[j])
                 ax = fig.add_subplot(1, 1, 1)
                 points = datas[i]
                 col = 1
                 for s in range(len(points[0].shape)):
                     col *= points[0].shape[s]
-                points = points.reshape(len(points), col).T
+                points = points.reshape(len(points), col)
                 bp = ax.boxplot(points)
-                plt.xlabel(r"$\mu_{time}$")
-                save_path = os.path.join(pathes[p], filename+f'-mutime-box-{i}.png')
+                plt.xlabel(r"State")
+                save_path = os.path.join(pathes[p], filename+f'-box-{j}-{i}.png')
                 plt.savefig(save_path)
                 plt.close()
                 print(f'saved {save_path} ')
                 if is_nets:
-                    for j in range(n_nets):
-                        fig = plt.figure(figsize=(16, 12))
+                    for k in range(n_nets):
+                        fig = plt.figure(figsize=figsizes[j])
                         ax = fig.add_subplot(1, 1, 1)
-                        points = np.array(outs[j][i])
+                        points = np.array(outs[k][i])
                         col = 1
                         for s in range(len(points[0].shape)):
                             col *= points[0].shape[s]
-                        points = points.reshape(len(points), col).T
+                        points = points.reshape(len(points), col)
                         bp = ax.boxplot(points)
-                        plt.xlabel(r"$\mu_{time}$")
-                        plt.ylabel(fr"{net_labels[j]} value")
-                        save_path = os.path.join(pathes[p], filename+f'-mutime-box-{net_labels[j]}-{i}.png')
+                        plt.xlabel(r"State")
+                        plt.ylabel(fr"{net_labels[k]} value")
+                        save_path = os.path.join(pathes[p], filename+f'-box-{net_labels[k]}-{i}.png')
                         plt.savefig(save_path)
                         plt.close()
                         print(f'saved {save_path} ')
+     
 
-
-                figsizes = [(16, 12), (64, 12)]
-                fontsizes = [8, 24]
-                for j in range(len(figsizes)):
-                    plt.rcParams["font.size"] = fontsizes[j]
-                    fig = plt.figure(figsize=figsizes[j])
-                    ax = fig.add_subplot(1, 1, 1)
-                    points = datas[i]
-                    col = 1
-                    for s in range(len(points[0].shape)):
-                        col *= points[0].shape[s]
-                    points = points.reshape(len(points), col)
-                    bp = ax.boxplot(points)
-                    plt.xlabel(r"State")
-                    save_path = os.path.join(pathes[p], filename+f'-box-{j}-{i}.png')
-                    plt.savefig(save_path)
-                    plt.close()
-                    print(f'saved {save_path} ')
-                    if is_nets:
-                        for k in range(n_nets):
-                            fig = plt.figure(figsize=figsizes[j])
-                            ax = fig.add_subplot(1, 1, 1)
-                            points = np.array(outs[k][i])
-                            col = 1
-                            for s in range(len(points[0].shape)):
-                                col *= points[0].shape[s]
-                            points = points.reshape(len(points), col)
-                            bp = ax.boxplot(points)
-                            plt.xlabel(r"State")
-                            plt.ylabel(fr"{net_labels[k]} value")
-                            save_path = os.path.join(pathes[p], filename+f'-box-{net_labels[k]}-{i}.png')
-                            plt.savefig(save_path)
-                            plt.close()
-                            print(f'saved {save_path} ')
-         
-
-        #labels = [f"Group {n}" for n in range(num_agent)] 
-        #if all_nets:
-        #    for j in range(n_nets):
-        #        output_pathnames = [f'{net_labels[j]}-'+p for p in pathnames] 
-        #        diff_render_distance_plot(np.array(outputs[j]), pathes, output_pathnames, labels)
-        except:
-            print(f"Error")
+    #labels = [f"Group {n}" for n in range(num_agent)] 
+    #if all_nets:
+    #    for j in range(n_nets):
+    #        output_pathnames = [f'{net_labels[j]}-'+p for p in pathnames] 
+    #        diff_render_distance_plot(np.array(outputs[j]), pathes, output_pathnames, labels)
 
 
 
