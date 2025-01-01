@@ -209,7 +209,7 @@ def is_divided_value(filename):
         return True
     return False
 
-def get_net_input(filename):
+def get_net_input(filename, print_info=True):
     net_inputs = get_net_inputs()
     detected_input = []
     ignore_words = ["multi"]
@@ -225,7 +225,8 @@ def get_net_input(filename):
     if len(detected_input)>0:
         num = [len(d) for d in detected_input]
         idx = np.argmax(num)
-        print(f'Detected model as {detected_input[idx]}')
+        if print_info:
+            print(f'Detected model as {detected_input[idx]}')
         return detected_input[idx]
     else:
         return None

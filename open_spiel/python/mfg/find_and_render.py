@@ -42,13 +42,13 @@ from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 #from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo import *
 from open_spiel.python.mfg.algorithms.multi_type_mfg_ppo_discrew import *
-from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
 from open_spiel.python.mfg.multi_render_reward import * 
 from open_spiel.python.mfg.games import factory
 from games.predator_prey import *
 from open_spiel.python.mfg import value
 from diff_utils import *
 from gif_maker import *
+from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
 
 plt.rcParams["font.size"] = 20
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
@@ -474,9 +474,64 @@ def find_max_number_in_filenames(base_dir, keyword):
 
             # 最大値を更新
             if file_max is not None and (max_value is None or file_max > max_value):
+                is_exist = True
+                for i in range(3):
+                    fname = reward_filename
+                    fname = fname + f'{logname[0]}-{i}.pth' 
+                    fpath = osp.join(root, fname)
+                    is_exist = osp.isfile(fpath)
+                    if not is_exist:
+                        break
+
+
+                    fname = actor_filename
+                    fname = fname + f'{logname[0]}-{i}.pth' 
+                    fpath = osp.join(root, fname)
+                    is_exist = osp.isfile(fpath)
+                    if not is_exist:
+                        break
+
+                    net_input = get_net_input(root.split("/")[-2], print_info=False)
+                    if net_input:
+                        net_labels = get_net_labels(net_input)
+                        if is_divided_value(root.split("/")[-2]):
+                            for label in net_labels:
+                                fname = f'disc_{label}'
+                                fname = fname + f'{logname[0]}-{i}.pth' 
+                                fpath = osp.join(root, fname)
+                                is_exist = osp.isfile(fpath)
+                                if not is_exist:
+                                    break
+
+                                fname = value_filename
+                                fname = fname + f"_{label}" + f'{logname[0]}-{i}.pth' 
+                                fpath = osp.join(root, fname)
+                                is_exist = osp.isfile(fpath)
+                                if not is_exist:
+                                    break
+                        else:
+                            fname = value_filename
+                            fname = fname + f'{logname[0]}-{i}.pth' 
+                            fpath = osp.join(root, fname)
+                            is_exist = osp.isfile(fpath)
+                            if not is_exist:
+                                break
+                            for label in net_labels:
+                                fname = f'disc_{label}'
+                                fname = fname + f'{logname[0]}-{i}.pth' 
+                                fpath = osp.join(root, fname)
+                                is_exist = osp.isfile(fpath)
+                                if not is_exist:
+                                    break
+                if not is_exist:
+                    print(f'Checked path: NG')
+                    continue
+
+                print(f'Checked path: OK')
                 max_value = file_max
                 max_file = os.path.join(root, file)
                 max_logname = logname[0]
+
 
 
         # 最大値を記録
@@ -484,6 +539,7 @@ def find_max_number_in_filenames(base_dir, keyword):
             # ファイルの最終更新日時を取得
             last_modified_timestamp = os.path.getmtime(max_file)
             last_modified_time = datetime.fromtimestamp(last_modified_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
 
             results.append((root, max_file, max_value, last_modified_time, max_logname))
             pathes.append(root)
