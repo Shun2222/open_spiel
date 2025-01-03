@@ -379,7 +379,7 @@ def render(game, envs, pathes, pathnames, update_infos):
                 #print(output.shape)
                 #multi_render(output, path, labels, use_kde=False)
                 connected_data.append(output)
-                connected_label.append([f'Est Reward (net_labels[i])' for j in range(num_agent)])
+                connected_label.append([f'Est Reward ({net_labels[i]})' for j in range(num_agent)])
         path = osp.join(pathes[p], f'connected_result.gif')
         multi_render_set_pos(connected_data, connected_label, path)
 
