@@ -479,8 +479,6 @@ def find_max_number_in_filenames(base_dir, keyword):
         max_logname = None
         if not keyword in root:  # 特定の条件でフォルダをスキップ
             continue
-        if not "airl" in root:
-            continue
 
         # 各ファイル名を処理
         for file in files:
