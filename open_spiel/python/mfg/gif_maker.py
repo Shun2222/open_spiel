@@ -400,7 +400,7 @@ def calc_kde(prob_datas, num_agent=1000):
 
     return X, Y, Z, n_data
 
-def multi_render_set_pos(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', use_kde=True, kde_agents=1000):
+def multi_render_set_pos(datas, labels, filename, vmin=None, vmax=None, cmap='viridis', use_kde=True, kde_agents=1000):
 
     n_datas = len(datas)*len(datas[1])
     pos = [len(datas), len(datas[0])]
