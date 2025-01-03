@@ -200,21 +200,22 @@ class MultiTypeAIRL(object):
                     e_obs_mu, e_actions, e_nobs, e_all_obs, _ = self._experts[idx].get_next_batch(batch_step)
                     g_obs_mu, g_actions, g_nobs, g_all_obs, _ = buffer[idx].get_next_batch(batch_step)
 
-                    g_obs_svf = []
-                    for ob_mu in g_obs_mu[0]: 
-                        x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
-                        x = x[0][0]
-                        y = y[0][0]
-                        t = t[0][0]
-                        svf_xyt = [self._svf[idx][t, y, x]] 
-                        for k in range(self._num_agent):
-                            if k!=idx:
-                                svf_xyt.append(self._svf[k][t, y, x])
-                        assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
-                        ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
-                        assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
-                        g_obs_svf.append(ob_svf)
-                    g_obs_mu = [np.array(g_obs_svf)]
+                    if self._use_svf:
+                        g_obs_svf = []
+                        for ob_mu in g_obs_mu[0]: 
+                            x, y, t, _ = divide_obs(ob_mu, self._size, use_argmax=True)
+                            x = x[0][0]
+                            y = y[0][0]
+                            t = t[0][0]
+                            svf_xyt = [self._svf[idx][t, y, x]] 
+                            for k in range(self._num_agent):
+                                if k!=idx:
+                                    svf_xyt.append(self._svf[k][t, y, x])
+                            assert len(svf_xyt)==self._num_agent, f"Not match svf_xyt length ({len(svf_xyt)})"
+                            ob_svf = np.array(list(ob_mu[:-3]) + list(svf_xyt))
+                            assert ob_mu.shape==ob_svf.shape, f"Not match shape (ob_mu.shape={ob_mu.shape}, ob_svf.shape={ob_svf.shape})"
+                            g_obs_svf.append(ob_svf)
+                        g_obs_mu = [np.array(g_obs_svf)]
 
                     e_a = [np.argmax(e_actions[k], axis=1) for k in range(len(e_actions))]
                     g_a = [np.argmax(g_actions[k], axis=1) for k in range(len(g_actions))]

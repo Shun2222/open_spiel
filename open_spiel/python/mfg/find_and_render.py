@@ -63,7 +63,7 @@ distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
 
-_MODE = "Maze"
+_MODE = "4rooms"
 if _MODE=="Predator_Prey":
     _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
     _DEFAULT_FORBIDDEN_POSITION = np.array([])
@@ -379,7 +379,7 @@ def render(game, envs, pathes, pathnames, update_infos):
                 #print(output.shape)
                 #multi_render(output, path, labels, use_kde=False)
                 connected_data.append(output)
-                connected_label.append([f'Est Reward (net_labels[i])' for j in range(num_agent)])
+                connected_label.append([f'Est Reward ({net_labels[i]})' for j in range(num_agent)])
         path = osp.join(pathes[p], f'connected_result.gif')
         multi_render_set_pos(connected_data, connected_label, path)
 
@@ -478,6 +478,8 @@ def find_max_number_in_filenames(base_dir, keyword):
         max_file = None
         max_logname = None
         if not keyword in root:  # 特定の条件でフォルダをスキップ
+            continue
+        if not "airl" in root:
             continue
 
         # 各ファイル名を処理
