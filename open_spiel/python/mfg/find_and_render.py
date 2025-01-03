@@ -167,6 +167,7 @@ def render(game, envs, pathes, pathnames, update_infos):
     print(f'len pathes = {len(pathes)}')
     print(f'len pathnames = {len(pathnames)}')
     connected_data = []
+    connected_label = []
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename
