@@ -39,19 +39,20 @@ import pickle as pkl
 
 from open_spiel.python import rl_environment
 from open_spiel.python import policy as policy_std
-from open_spiel.python.mfg.algorithms import distribution
 from open_spiel.python.mfg.algorithms.nash_conv import NashConv
 from open_spiel.python.mfg.algorithms import policy_value
 from open_spiel.python.mfg.games import factory
 from open_spiel.python.mfg import value
 
 
-#def save_parametric_distribution(dist: distribution.ParametricDistribution,
-#                                 filename: str):
-#  """Saves the parametric distribution to a Pickle file."""
-#  with gfile.Open(filename, "wb") as f:
-#    pickle.dump(dist.get_params(), f, protocol=pickle.DEFAULT_PROTOCOL)
+from open_spiel.python.mfg import distribution
+def save_parametric_distribution(dist: distribution.ParametricDistribution,
+                                 filename: str):
+    """Saves the parametric distribution to a Pickle file."""
+    with gfile.Open(filename, "wb") as f:
+        pickle.dump(dist.get_params(), f, protocol=pickle.DEFAULT_PROTOCOL)
 
+from open_spiel.python.mfg.algorithms import distribution
 def onehot(value, depth):
     a = np.zeros([depth])
     a[value] = 1
