@@ -280,7 +280,7 @@ def multi_render_reward_nets(size, nacs, horizon, inputs, discriminator, save=Fa
 
     return rewards, output_rewards
 
-def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, dxyinput=False, save=False, filename="agent_dist"):
+def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, pop, single, notmu, basicfuncs, basicfuncs_time, dxyinput=False, save=False, filename="agent_dist", mode="Maze"):
     from open_spiel.python.mfg.algorithms.discriminator import Discriminator
 
     # this functions is used to generate an animated video of the distribuiton propagating throught the game 
@@ -332,7 +332,6 @@ def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, po
                     dxy = np.array([dx, dy]+mus)
                     dxy = np.array([dxy for _ in range(nacs)])
                     obs_input = np.array([obs_input for _ in range(nacs)])
-                    
                 else:
                     obs_input = inputs[f"{x}-{y}-{t}-m"]
                     obs_input = np.array([obs_input for _ in range(nacs)])
@@ -366,6 +365,24 @@ def multi_render_reward(mu_dists, size, nacs, horizon, inputs, discriminator, po
                     if basicfuncs:
                         dist_rewards[t, y, x, a] = dist_rew[a]
                         mu_rewards[t, y, x, a] = mu_rew[a]
+    _MODE = mode 
+    if _MODE=="Predator_Prey":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]]) 
+    elif _MODE=="4rooms":
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
+        _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
+        _DEFAULT_FORBIDDEN_POSITION = np.array(_DEFAULT_FORBIDDEN_POSITION) 
+
+        _DEFAULT_GOAL_POSITION = np.array([[8, 8], [1, 8], [8, 1]])
+    else:
+        _DEFAULT_REWARD_MATRIX = np.array([[0, -50, -50], [-50, 0, -50], [-50, -50, 0]])
+        _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
+        _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
+    dfp = _DEFAULT_FORBIDDEN_POSITION
     for xy in dfp:
         rewards[:, xy[1], xy[0], :] = None
 

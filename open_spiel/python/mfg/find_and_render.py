@@ -50,7 +50,7 @@ from diff_utils import *
 from gif_maker import *
 from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import * 
 
-plt.rcParams["font.size"] = 20
+plt.rcParams["font.size"] = 10
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 num_agent = 3
@@ -166,8 +166,6 @@ def create_rew_with_tieme_input(obs_shape, nacs, horizon, mu_dists, single, notm
 def render(game, envs, pathes, pathnames, update_infos):
     print(f'len pathes = {len(pathes)}')
     print(f'len pathnames = {len(pathnames)}')
-    connected_data = []
-    connected_label = []
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename
@@ -213,6 +211,8 @@ def render(game, envs, pathes, pathnames, update_infos):
     res = []
     outputs = []
     for p in range(len(pathes)):
+        connected_data = []
+        connected_label = []
         is_nets = is_networks(pathnames[p]) 
         if is_nets:
             net_input = get_net_input(pathnames[p])
@@ -334,11 +334,11 @@ def render(game, envs, pathes, pathnames, update_infos):
         #path = osp.join(save_path + f'-true_reward_mu.gif')
         #multi_render(true_reward_mu, path, labels, use_kde=False)
         connected_data.append(true_reward)
-        connected_label.append([f'True Reward Group {i}' for i in range(num_agent)])
+        connected_label.append([f'True Reward' for i in range(num_agent)])
         connected_data.append(true_reward_xy)
-        connected_label.append([f'True Reward (xy) Group {i}' for i in range(num_agent)])
+        connected_label.append([f'True Reward (xy)' for i in range(num_agent)])
         connected_data.append(true_reward_mu)
-        connected_label.append([f'True Reward (mf) Group {i}' for i in range(num_agent)])
+        connected_label.append([f'True Reward (mf)' for i in range(num_agent)])
 
         datas = []
         outs = []
@@ -358,7 +358,7 @@ def render(game, envs, pathes, pathnames, update_infos):
                 for j in range(n_nets):
                     outs[j].append(np.mean(output[j], axis=3))
             else:
-                rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs[i], discriminators[i], i, False, False, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}")
+                rewards = multi_render_reward(mu_dists, size, nacs, horizon, inputs[i], discriminators[i], i, False, False, False, False, dxyinput=True, save=True, filename=save_path+f"-{i}", mode=_MODE)
             datas.append(np.mean(rewards, axis=3))
 
         res.append(datas)
@@ -368,7 +368,7 @@ def render(game, envs, pathes, pathnames, update_infos):
         #print(np.array(datas).shape)
         #multi_render(datas, path, labels, use_kde=False)
         connected_data.append(datas)
-        connected_label.append([f'Est Reward Group {i}' for i in range(num_agent)])
+        connected_label.append([f'Est Reward' for i in range(num_agent)])
         if is_nets:
             labels = [f'Group {i}' for i in range(num_agent)]
             net_labels = get_net_labels(net_input)
@@ -378,8 +378,8 @@ def render(game, envs, pathes, pathnames, update_infos):
                 #print(output.shape)
                 #multi_render(output, path, labels, use_kde=False)
                 connected_data.append(output)
-                connected_label.append([f'Est Reward (net_labels[i]) Group {i}' for i in range(num_agent)])
-        path = osp.join(save_path, f'connected_result.gif')
+                connected_label.append([f'Est Reward (net_labels[i])' for j in range(num_agent)])
+        path = osp.join(pathes[p], f'connected_result.gif')
         multi_render_set_pos(connected_data, connected_label, path)
 
         for i in range(num_agent):
