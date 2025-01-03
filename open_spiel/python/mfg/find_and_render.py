@@ -166,6 +166,7 @@ def create_rew_with_tieme_input(obs_shape, nacs, horizon, mu_dists, single, notm
 def render(game, envs, pathes, pathnames, update_infos):
     print(f'len pathes = {len(pathes)}')
     print(f'len pathnames = {len(pathnames)}')
+    connected_data = []
     for ip, target_path in enumerate(pathes):
         for i in range(3):
             fname = reward_filename
@@ -308,9 +309,11 @@ def render(game, envs, pathes, pathnames, update_infos):
                 mu_dists[pop][t,y,x] = v
 
         mu_dists = np.array(mu_dists)
-        save_path = os.path.join(target_path, f"actor.gif")
-        print(np.array(mu_dists).shape)
-        multi_render(mu_dists[:, :, :], save_path, [f'Group {i}' for i in range(num_agent)])
+        #save_path = os.path.join(target_path, f"actor.gif")
+        #print(np.array(mu_dists).shape)
+        #multi_render(mu_dists[:, :, :], save_path, [f'Group {i}' for i in range(num_agent)])
+        connected_data.append(mu_dists[:, :, :])
+        connected_label.append([f'MF Group {i}' for i in range(num_agent)])
 
 
         if is_nets:
@@ -323,14 +326,18 @@ def render(game, envs, pathes, pathnames, update_infos):
         true_reward, true_reward_xy, true_reward_mu = calc_true_reward([size, size], horizon, mu_dists)
 
         path = osp.join(save_path + f'-true_reward.gif')
-        labels = [f'Group {i}' for i in range(num_agent)]
-        multi_render(true_reward, path, labels, use_kde=False)
-
-        path = osp.join(save_path + f'-true_reward_xy.gif')
-        multi_render(true_reward_xy, path, labels, use_kde=False)
-
-        path = osp.join(save_path + f'-true_reward_mu.gif')
-        multi_render(true_reward_mu, path, labels, use_kde=False)
+        #labels = [f'Group {i}' for i in range(num_agent)]
+        #multi_render(true_reward, path, labels, use_kde=False)
+        #path = osp.join(save_path + f'-true_reward_xy.gif')
+        #multi_render(true_reward_xy, path, labels, use_kde=False)
+        #path = osp.join(save_path + f'-true_reward_mu.gif')
+        #multi_render(true_reward_mu, path, labels, use_kde=False)
+        connected_data.append(true_reward)
+        connected_label.append([f'True Reward Group {i}' for i in range(num_agent)])
+        connected_data.append(true_reward_xy)
+        connected_label.append([f'True Reward (xy) Group {i}' for i in range(num_agent)])
+        connected_data.append(true_reward_mu)
+        connected_label.append([f'True Reward (mf) Group {i}' for i in range(num_agent)])
 
         datas = []
         outs = []
@@ -355,18 +362,24 @@ def render(game, envs, pathes, pathnames, update_infos):
 
         res.append(datas)
         outputs.append(outs)
-        path = osp.join(save_path + f'-mean.gif')
-        labels = [f'Group {i}' for i in range(num_agent)]
-        print(np.array(datas).shape)
-        multi_render(datas, path, labels, use_kde=False)
+        #path = osp.join(save_path + f'-mean.gif')
+        #labels = [f'Group {i}' for i in range(num_agent)]
+        #print(np.array(datas).shape)
+        #multi_render(datas, path, labels, use_kde=False)
+        connected_data.append(datas)
+        connected_label.append([f'Est Reward Group {i}' for i in range(num_agent)])
         if is_nets:
             labels = [f'Group {i}' for i in range(num_agent)]
             net_labels = get_net_labels(net_input)
             for i in range(n_nets):
-                path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
+                #path = osp.join(save_path + f'-mean-{net_labels[i]}.gif')
                 output = np.array(outs[i])
-                print(output.shape)
-                multi_render(output, path, labels, use_kde=False)
+                #print(output.shape)
+                #multi_render(output, path, labels, use_kde=False)
+                connected_data.append(output)
+                connected_label.append([f'Est Reward (net_labels[i]) Group {i}' for i in range(num_agent)])
+        path = osp.join(save_path, f'connected_result.gif')
+        multi_render_set_pos(connected_data, connected_label, path)
 
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 

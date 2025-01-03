@@ -308,68 +308,6 @@ def calc_kde(prob_datas, num_agent=1000):
     #plt.legend()
     #plt.show()
 
-def multi_render2(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', use_kde=False):
-
-    n_datas = len(datas)
-
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
-    ims = []
-    if not vmin or not vmax:
-        vmax = np.nanmax(datas)
-        vmin = np.nanmin(datas)
-    for t in range(len(datas[0])):
-        imt = []
-        for i in range(n_datas):
-            axes[i].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            im = axes[i].imshow(datas[i][t], animated=True, vmin=vmin, vmax=vmax, cmap=cmap) 
-            if t==0 and i==n_datas-1:
-                axes[n_datas].axis('off')
-                fig.colorbar(im, ax=axes[n_datas])
-            if use_kde:
-                X, Y, Z, _ = calc_kde(datas[i][t])
-                cs = axes[i].contour(X+0.5, Y+0.5, Z, 10)
-                im = cs.collections
-            imt.append(im)
-        ims.append(imt)
-        #ims += [[axes[i].imshow(datas[i][t], animated=True, cmap=cmap) for i in range(n_datas)]]
-    ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-    for i in range(n_datas):
-        axes[i].set_title(labels[i])
-    path = filename
-    ani.save(path, writer="ffmpeg", fps=5)
-    plt.close()
-    print(f"Save {path}")
-
-    fig, axes = plt.subplots(1, n_datas+1, figsize = (12, 6))
-    ims = []
-    for t in range(len(datas[0])):
-        imt = []
-        for i in range(n_datas):
-            axes[i].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
-            vmin = np.nanmin(datas[i][t])
-            vmax = np.nanmax(datas[i][t])
-            if np.abs(vmin)>np.abs(vmax):
-                vmax = np.abs(vmin)
-            else:
-                vmin = -np.abs(vmax)
-            im = axes[i].imshow(datas[i][t], animated=True, vmin=vmin, vmax=vmax, cmap=cmap) 
-            if t==0 and i==n_datas-1:
-                axes[n_datas].axis('off')
-                #fig.colorbar(im, ax=axes[n_datas])
-            if use_kde:
-                X, Y, Z, _ = calc_kde(datas[i][t])
-                cs = axes[i].contour(X+0.5, Y+0.5, Z, 10)
-                im = cs.collections
-            imt.append(im)
-        ims.append(imt)
-        #ims += [[axes[i].imshow(datas[i][t], animated=True, cmap=cmap) for i in range(n_datas)]]
-    ani = animation.ArtistAnimation(fig, ims, blit=True, interval = 200)
-    for i in range(n_datas):
-        axes[i].set_title(labels[i])
-    path =filename[:-4] + 'vimin-max' + filename[-4:]
-    ani.save(path, writer="ffmpeg", fps=5)
-    plt.close()
-    print(f"Save {path}")
 
 class GifMaker():
     def __init__(self):
@@ -461,6 +399,63 @@ def calc_kde(prob_datas, num_agent=1000):
     Z = Z2
 
     return X, Y, Z, n_data
+
+def multi_render_set_pos(datas, filename, labels, vmin=None, vmax=None, cmap='viridis', use_kde=True, kde_agents=1000):
+
+    n_datas = len(datas)*len(datas[1])
+    pos = [len(datas), len(datas[0])]
+    print(f"gif (datas shape)={pos}")
+
+    fig, axes = plt.subplots(pos[0], pos[1], figsize = (3*(pos[1]), 3*pos[0]))
+
+    if pos[0]==1:
+        multi_render(datas, filename, labels, vmin, vmax, cmap, use_kde, kde_agents)
+    else:
+        imgs = []
+        contours = []
+        for n in range(pos[0]):
+            for m in range(pos[1]):
+                axes[n, m].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+        for n in range(len(datas)):
+            ims = []
+            for m in range(len(datas[n])):
+                vmin = np.nanmin(datas[n][m][0])
+                vmax = np.nanmax(datas[n][m][0])
+                if np.abs(vmin)>np.abs(vmax):
+                    vmax = np.abs(vmin)
+                else:
+                    vmin = -np.abs(vmax)
+                im = axes[n, m].imshow(datas[n][m][0], vmin=vmin, vmax=vmax, cmap=cmap, animated=True) 
+                ims.append(im)
+            imgs.append(ims)
+
+        def animate(i, imgs, contours, datas):
+            for n in range(len(datas)):
+                for m in range(len(datas[n])):
+                    vmin = np.nanmin(datas[n][m][i])
+                    vmax = np.nanmax(datas[n][m][i])
+                    if np.abs(vmin)>np.abs(vmax):
+                        vmax = np.abs(vmin)
+                    else:
+                        vmin = -np.abs(vmax)
+                    axes[n, m].tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+                    imgs[n][m].set_array(datas[n][m][i])
+                    norm = Normalize(vmin=vmin, vmax=vmax)
+                    imgs[n][m].set_norm(norm)
+                    imgs[n][m].autoscale()
+            return imgs, contours 
+
+        ani = animation.FuncAnimation(fig, animate, fargs=(imgs, contours, datas), frames=range(len(datas[0][0])), blit=False, interval = 200)
+
+        for i in range(len(datas)):
+            for j in range(len(datas[i])):
+                axes[i, j].set_title(labels[i][j], pad=5)
+
+    path =filename[:-4] + 'vimin-max2' + filename[-4:]
+    ani.save(path, writer="ffmpeg", fps=5)
+    plt.close()
+    print(f"Save {path}")
+
 
 
 if __name__=="__main__":
