@@ -63,7 +63,7 @@ distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
 
-_MODE = "4rooms"
+_MODE = "Maze"
 if _MODE=="Predator_Prey":
     _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
     _DEFAULT_FORBIDDEN_POSITION = np.array([])
@@ -218,6 +218,7 @@ def render(game, envs, pathes, pathnames, update_infos):
             net_input = get_net_input(pathnames[p])
             net_labels = get_net_labels(net_input)
             is_divided = is_divided_value(pathnames[p])
+            from open_spiel.python.mfg.algorithms.discriminator_networks_divided_value import Discriminator, Discriminator_2nets, Discriminator_3nets
             if not is_divided:
                 assert False, "is_net is true but, is_divided is false"
         else:

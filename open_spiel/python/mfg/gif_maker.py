@@ -449,7 +449,7 @@ def multi_render_set_pos(datas, labels, filename, vmin=None, vmax=None, cmap='vi
 
         for i in range(len(datas)):
             for j in range(len(datas[i])):
-                axes[i, j].set_title(labels[i][j], pad=5, fontsize=5)
+                axes[i, j].set_title(labels[i][j], pad=5, fontsize=10)
 
     path =filename[:-4] + 'vimin-max2' + filename[-4:]
     ani.save(path, writer="ffmpeg", fps=5)
