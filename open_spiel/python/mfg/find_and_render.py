@@ -488,7 +488,7 @@ def find_max_number_in_filenames(base_dir, keyword):
             file_max = max(numbers, default=None)
 
             # 最大値を更新
-            if file_max is not None and (max_value is None or file_max > max_value):
+            if file_max is not None and (max_value is None or file_max > max_value) and len(logname)>0:
                 is_exist = True
                 for i in range(3):
                     fname = reward_filename
@@ -610,4 +610,5 @@ if __name__ == "__main__":
     # ターゲットディレクトリの取得
     target_directory = args.directory
     keyword = args.keyword
+    print(f"Keyword: \"{keyword}\"")
     results = find_max_number_in_filenames(target_directory, keyword)
