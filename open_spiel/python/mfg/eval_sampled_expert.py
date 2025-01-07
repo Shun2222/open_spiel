@@ -17,15 +17,17 @@ import matplotlib.pyplot as plt
 
 from gif_maker import *
 
-path = r"/mnt/shunsuke/result/0726/multi_maze2_expert"
+#path = r"/mnt/shunsuke/result/0726/multi_maze2_expert"
+path = r"/mnt/shunsuke/result/1209/4rooms_maze_expert_low_collision_4000"
 
 expert_mu_pkl = rf"expert-conv_dists.pkl"
 expert_mu_pkl = osp.join(path, expert_mu_pkl)
 
 
 #sampled_expert_pkl = [rf"expert-1000tra-{i}.pkl" for i in range(3)]
-#sampled_expert_pkl = [rf"expert-15traj-{i}.pkl" for i in range(3)]
+#sampled_expert_pkl = [rf"expert-10traj-{i}.pkl" for i in range(3)]
 sampled_expert_pkl = [rf"expert-selected-1traj-{i}.pkl" for i in range(3)]
+
 sampled_expert_pkl = [osp.join(path, sampled_expert_pkl[i]) for i in range(3)]
 
 def parse_args():
@@ -225,21 +227,22 @@ if __name__ == '__main__':
 
 
     # print one traj
-    #svf = save_svf_onetraj(10)
+    svf = save_svf_onetraj(5)
 
     # create new expert pkl
     #se = [load_pkl(sampled_expert_pkl[i]) for i in range(3)]
-    #se0 = [se[0][0]]
+    #select_traj = [1, 1, 1]
+    #se0 = [se[0][select_traj[0]]]
     #savepath = osp.join(path, f"expert-selected-1traj-0.pkl")
     #pkl.dump(se0, open(savepath, 'wb'))
-    #se1 = [se[1][3]]
+    #se1 = [se[1][select_traj[1]]]
     #savepath = osp.join(path, f"expert-selected-1traj-1.pkl")
     #pkl.dump(se1, open(savepath, 'wb'))
-    #se2 = [se[2][3]]
+    #se2 = [se[2][select_traj[2]]]
     #savepath = osp.join(path, f"expert-selected-1traj-2.pkl")
     #pkl.dump(se2, open(savepath, 'wb'))
 
-    svf = save_svf(1)
+    #svf = save_svf(1)
 
     
 

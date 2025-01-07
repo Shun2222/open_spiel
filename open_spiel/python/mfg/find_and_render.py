@@ -63,7 +63,7 @@ distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
 
-_MODE = "4rooms"
+_MODE = "Maze"
 if _MODE=="Predator_Prey":
     _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
     _DEFAULT_FORBIDDEN_POSITION = np.array([])

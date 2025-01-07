@@ -20,7 +20,7 @@ from open_spiel.python.mfg.multi_render_reward import multi_render_reward
 
 
 class MultiTypeAIRL(object):
-    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, use_mf=False):
+    def __init__(self, game, envs, merge_dist, conv_dist, device, experts, ppo_policies, use_mf=False, share=False):
         self._game = game
         self._envs = envs
         self._device = device
@@ -33,11 +33,16 @@ class MultiTypeAIRL(object):
         self._nobs = env.observation_spec()['info_state'][0]
         self._horizon = env.game.get_parameters()['horizon']
         self._nmu  = self._num_agent 
+        self._share = share
 
         #self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i, expert_policy=ppo_policies[i]) for i in range(self._num_agent)]
         self._generator = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, device, player_id=i) for i in range(self._num_agent)]
         obs_input_size = 3 # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
-        self._discriminator = [Discriminator(obs_input_size, self._nacs, True, device) for _ in range(self._num_agent)]
+        if not self._share:
+            self._discriminator = [Discriminator(obs_input_size, self._nacs, True, device) for _ in range(self._num_agent)]
+        else:
+            discriminator = Discriminator(obs_input_size, self._nacs, True, device)
+            self._discriminator = [discriminator, discriminator, discriminator]
 
         for i in range(self._num_agent):
             fname = f"0_0-{i}"
