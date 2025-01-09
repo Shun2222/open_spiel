@@ -759,7 +759,10 @@ if __name__ == "__main__":
                 #logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
                 #logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i]))
 
-                fname = f'{niter}_{neps}-{i}'
-                mfgppo[i].save(game, fname)
+                if(niter%25==0):
+                    fname = f'{niter}_{neps}-{i}'
+                    mfgppo[i].save(game, fname)
             logger.dump_tabular()
+        fname = f'{niter}_{neps}-{i}'
+        mfgppo[i].save(game, fname)
             
