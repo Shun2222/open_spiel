@@ -471,7 +471,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1000, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_ppo_xxx_static_mf", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_ppo_1-45-45trajs_static_mf", help="logdir")
 
     parser.add_argument("--save_disc_reward", action='store_true')
     parser.add_argument("--single", action='store_true')
@@ -497,7 +497,7 @@ disc_path = [
             ]
                  #[ "/mnt/shunsuke/result/1209/predator_prey_mu-divided_value_group2/seed-42", "14400_143-2"],
 
-rew_indexes = [[0, 1], [-1], [-1]]
+rew_indexes = [[-1], [-1], [-1]]
 
 if __name__ == "__main__":
 
@@ -511,7 +511,8 @@ if __name__ == "__main__":
     #combinations = np.vstack([grid.ravel() for grid in grids]).T
     #print(combinations.shape)
     #for seed in range(30):
-    combinations = [[1.0, 1.0], [1.0, 0.8], [1.0, 0.6]]
+    #combinations = [[1.0, 1.0], [1.0, 0.8], [1.0, 0.6]]
+    combinations = [[1.0, 1.0]]
     for rate in combinations:
         rates = [rate, [1.0, 1.0], [1.0, 1.0]]
         logger.reset()
@@ -625,11 +626,11 @@ if __name__ == "__main__":
             actor_model = agent.actor
             critic_model = agent.critic
 
-            actor_path = osp.join({disc_path[i][0][0]}, actor{disc_path[i][0][1]}.pth)
+            actor_path = osp.join(f"{disc_path[i][0][0]}", f"actor{disc_path[i][0][1]}.pth")
             actor_model.load_state_dict(torch.load(actor_path))
             actor_model.eval()
 
-            critic_path = osp.join({disc_path[i][0][0]}, critic{disc_path[i][0][1]}.pth)
+            critic_path = osp.join(f"{disc_path[i][0][0]}", f"critic{disc_path[i][0][1]}.pth")
             critic_model.load_state_dict(torch.load(critic_path))
             critic_model.eval()
             print("load actor model from", actor_path)
