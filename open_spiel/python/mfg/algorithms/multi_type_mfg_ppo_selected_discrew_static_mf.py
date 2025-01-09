@@ -389,15 +389,15 @@ class MultiTypeMFGPPO(object):
         # iter agent の更新
         self._iter_agent.load_state_dict(self._eps_agent.state_dict())
 
-        self._mu_dist = conv_dist
-        env.update_mfg_distribution(merge_dist)
+        #self._mu_dist = conv_dist
+        #env.update_mfg_distribution(merge_dist)
 
         nashc_ppo = None
-        root_state = game.new_initial_state_for_population(population)
-        if nashc:
-            pi_value = policy_value.PolicyValue(game, merge_dist, self._ppo_policy, value.TabularValueFunction(game))
-            nashc_ppo = NashC(game, merge_dist, pi_value, root_state=root_state).nash_conv()
-            #nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
+        #root_state = game.new_initial_state_for_population(population)
+        #if nashc:
+        #    pi_value = policy_value.PolicyValue(game, merge_dist, self._ppo_policy, value.TabularValueFunction(game))
+        #    nashc_ppo = NashC(game, merge_dist, pi_value, root_state=root_state).nash_conv()
+        #    nashc_ppo = NashC(game, merge_dist, pi_value).nash_conv()
         return nashc_ppo
 
     def calc_nashc(self, game, merge_dist, use_expert_policy=False, population=0):
@@ -471,7 +471,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1000, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/multi_maze2_ppo_dxy_mu-1-45-45trajs_mf2-usePP", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_ppo_xxx_static_mf", help="logdir")
 
     parser.add_argument("--save_disc_reward", action='store_true')
     parser.add_argument("--single", action='store_true')
@@ -487,7 +487,6 @@ def parse_args():
 disc_path = [
                 [
                  [ "/mnt/shunsuke/result/1209/4rooms_maze_dxy_mu-divided_value_1-45-45trajs_mf2/seed-42", "16700_167-0"],
-                 [ "/mnt/shunsuke/result/1209/predator_prey_mu-divided_value_group2/seed-42", "14400_143-2"],
                 ],
                 [
                  [ "/mnt/shunsuke/result/1209/4rooms_maze_dxy_mu-divided_value_1-45-45trajs_mf2/seed-42", "16700_167-1"],
@@ -496,8 +495,9 @@ disc_path = [
                  [ "/mnt/shunsuke/result/1209/4rooms_maze_dxy_mu-divided_value_1-45-45trajs_mf2/seed-42", "16700_167-2"],
                 ],
             ]
+                 #[ "/mnt/shunsuke/result/1209/predator_prey_mu-divided_value_group2/seed-42", "14400_143-2"],
 
-rew_indexes = [[0, 0], [-1], [-1]]
+rew_indexes = [[0, 1], [-1], [-1]]
 
 if __name__ == "__main__":
 
@@ -564,7 +564,6 @@ if __name__ == "__main__":
             envs.append(rl_environment.Environment(game, mfg_distribution=merge_dist, mfg_population=i))
             envs[-1].seed(args.seed)
         
-        conv_dist = convert_distrib(envs, merge_dist)
         device = torch.device("cpu")
 
         env = envs[0]
@@ -616,8 +615,36 @@ if __name__ == "__main__":
             discriminators.append(discriminator)
 
         from multi_render_reward import multi_render_reward_nets_divided_value
-        mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
-        for k,v in merge_dist.distribution.items():
+
+        agents = []
+        actor_models = []
+        ppo_policies = []
+        gen_mfg_dists = []
+        for i in range(num_agent):
+            agent = Agent(nobs, nacs).to(device)
+            actor_model = agent.actor
+            critic_model = agent.critic
+
+            actor_path = osp.join({disc_path[i][0][0]}, actor{disc_path[i][0][1]}.pth)
+            actor_model.load_state_dict(torch.load(actor_path))
+            actor_model.eval()
+
+            critic_path = osp.join({disc_path[i][0][0]}, critic{disc_path[i][0][1]}.pth)
+            critic_model.load_state_dict(torch.load(critic_path))
+            critic_model.eval()
+            print("load actor model from", actor_path)
+
+            agents.append(agent)
+            actor_models.append(actor_model)
+
+            ppo_policies.append(PPOpolicy(game, agent, None, device))
+            gen_mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+            gen_mfg_dists.append(gen_mfg_dist)
+        gen_merge_dist = distribution.MergeDistribution(game, gen_mfg_dists)
+        env.update_mfg_distribution(gen_merge_dist)
+
+        gen_mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
+        for k,v in gen_merge_dist.distribution.items():
             if "mu" in k:
                 tt = k.split(",")
                 pop = int(tt[0][-1])
@@ -625,45 +652,10 @@ if __name__ == "__main__":
                 xy = tt[2].split(" ")
                 x = int(xy[1].split("[")[-1])
                 y = int(xy[2].split("]")[0])
-                mu_dists[pop][t,y,x] = v
+                gen_mu_dists[pop][t,y,x] = v
+        gen_conv_dist = convert_distrib(envs, gen_merge_dist)
 
         if args.save_disc_reward:
-            agents = []
-            actor_models = []
-            ppo_policies = []
-            gen_mfg_dists = []
-            for i in range(num_agent):
-                agent = Agent(nobs, nacs).to(device)
-                actor_model = agent.actor
-                critic_model = agent.critic
-
-                actor_path = fr"{disc_path[i][0][0]}/actor{disc_path[i][0][1]}.pth"
-                actor_model.load_state_dict(torch.load(actor_path))
-                actor_model.eval()
-
-                critic_path = fr"{disc_path[i][0][0]}/critic{disc_path[i][0][1]}.pth"
-                critic_model.load_state_dict(torch.load(critic_path))
-                critic_model.eval()
-                print("load actor model from", actor_path)
-
-                agents.append(agent)
-                actor_models.append(actor_model)
-
-                ppo_policies.append(PPOpolicy(game, agent, None, device))
-                gen_mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
-                gen_mfg_dists.append(gen_mfg_dist)
-            gen_merge_dist = distribution.MergeDistribution(game, gen_mfg_dists)
-
-            gen_mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
-            for k,v in gen_merge_dist.distribution.items():
-                if "mu" in k:
-                    tt = k.split(",")
-                    pop = int(tt[0][-1])
-                    t = int(tt[1].split('=')[1].split('_')[0])
-                    xy = tt[2].split(" ")
-                    x = int(xy[1].split("[")[-1])
-                    y = int(xy[2].split("]")[0])
-                    gen_mu_dists[pop][t,y,x] = v
             for target_i in [0]:
                 rewards = np.zeros((horizon, size, size, nacs))
                 rewards0 = np.zeros((horizon, size, size, nacs))
@@ -741,12 +733,7 @@ if __name__ == "__main__":
                     print(np.array(datas).shape)
                     multi_render(np.array(datas), path, action_str, use_kde=False)
 
-        
-        """
-        inputs = discriminators[0].create_inputs([size, size], nacs, horizon, mu_dists)
-        disc_rewards, disc_outputs = multi_render_reward_nets_divided_value(size, nacs, horizon, inputs[0], discriminators[0], save=False, filename='test_disc_reward')
-        """
-        mfgppo = [MultiTypeMFGPPO(game, envs[i], merge_dist, conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=all_net_input[i], rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
+        mfgppo = [MultiTypeMFGPPO(game, envs[i], gen_merge_dist, gen_conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=all_net_input[i], rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
 
         batch_step = args.batch_step
         for niter in tqdm(range(args.num_iterations)):
@@ -764,21 +751,11 @@ if __name__ == "__main__":
                     logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i][-1]))
                     #print(f'Exp. ret{i} {np.mean(ret)}')
 
-            mfg_dists = []
-            for i in range(num_agent):
-                policy = mfgppo[i]._ppo_policy
-                start = time.time()
-                mfg_dist = distribution.DistributionPolicy(game, policy)
-                end = time.time()
-                print(f'time: {end - start}s')
-                mfg_dists.append(mfg_dist)
             
-            merge_dist = distribution.MergeDistribution(game, mfg_dists)
-            conv_dist = convert_distrib(envs, merge_dist)
             for i in range(num_agent):
                 print(f'update iter {i}')
-                nashc_ppo = mfgppo[i].update_iter(game, envs[i], merge_dist, conv_dist, nashc=True, population=i)
-                logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
+                nashc_ppo = mfgppo[i].update_iter(game, envs[i], gen_merge_dist, gen_conv_dist, nashc=True, population=i)
+                #logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
                 #logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i]))
 
                 fname = f'{niter}_{neps}-{i}'

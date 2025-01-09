@@ -63,7 +63,7 @@ distance_filename = 'disc_distance'
 mu_filename = 'disc_mu'
 actor_filename = 'actor'
 
-_MODE = "Maze"
+_MODE = "4rooms"
 if _MODE=="Predator_Prey":
     _DEFAULT_REWARD_MATRIX = np.array([[0, 100, 100], [-100, 0, 100], [-100, -100, 0]])
     _DEFAULT_FORBIDDEN_POSITION = np.array([])
@@ -162,6 +162,105 @@ def create_rew_with_tieme_input(obs_shape, nacs, horizon, mu_dists, single, notm
                     xytm_onehot = xy_onehot + onehot(t, horizon).tolist() + [0.0] + [mu_dists[i][t, y, x] for i in range(len(mu_dists))]
                     inputs[f'{x}-{y}-{t}-m'] = xytm_onehot
     return inputs
+
+def actor_render(game, envs, pathes, pathnames, update_infos):
+    print(f'len pathes = {len(pathes)}')
+    print(f'len pathnames = {len(pathnames)}')
+    for ip, target_path in enumerate(pathes):
+        for i in range(3):
+            fname = actor_filename
+            fname = fname + f'{update_infos[ip]}-{i}.pth' 
+            fpath = osp.join(target_path, fname)
+            assert osp.isfile(fpath), f'isFileError: {fpath}'
+    print(f'Checked path: OK')
+
+
+    res = []
+    outputs = []
+    for p in range(len(pathes)):
+        connected_data = []
+        connected_label = []
+
+        update_info = update_eps_info = f'{update_infos[p]}'
+        env = envs[0]
+        nacs = env.action_spec()['num_actions']
+        nobs = env.observation_spec()['info_state'][0]
+        horizon = env.game.get_parameters()['horizon']
+
+        nmu = num_agent
+        size = env.game.get_parameters()['size']
+        state_size = nobs -1 - horizon # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+        obs_xym_size = nobs -1 - horizon + nmu # nobs-1: obs size (exposed own mu), nmu: all agent mu size, horizon: horizon size
+
+        agents = []
+        actor_models = []
+        critic_models = []
+        ppo_policies = []
+        mfg_dists = []
+        for i in range(num_agent):
+            agent = Agent(nobs, nacs).to(device)
+            actor_model = agent.actor
+            critic_model = agent.critic
+
+            fname = copy.deepcopy(actor_filename+update_eps_info)
+            fname = fname + f'-{i}.pth' 
+            actor_path = osp.join(pathes[p], fname)
+            actor_model.load_state_dict(torch.load(actor_path))
+            actor_model.eval()
+            print("load actor model from", actor_path)
+
+            fname = copy.deepcopy('critic'+update_eps_info)
+            fname = fname + f'-{i}.pth' 
+            critic_path = osp.join(pathes[p], fname)
+            critic_model.load_state_dict(torch.load(critic_path))
+            critic_model.eval()
+            print("load critic model from", critic_path)
+
+            agents.append(agent)
+            actor_models.append(actor_model)
+            critic_models.append(critic_model)
+
+            ppo_policies.append(PPOpolicy(game, agent, None, device))
+            mfg_dist = distribution.DistributionPolicy(game, ppo_policies[-1])
+            mfg_dists.append(mfg_dist)
+
+
+        merge_dist = distribution.MergeDistribution(game, mfg_dists)
+        for env in envs:
+          env.update_mfg_distribution(merge_dist)
+
+        agent_dist = np.zeros((horizon,size,size))
+        mu_dists= [np.zeros((horizon,size,size)) for _ in range(num_agent)]
+
+        for k,v in merge_dist.distribution.items():
+            if "mu" in k:
+                tt = k.split(",")
+                pop = int(tt[0][-1])
+                t = int(tt[1].split('=')[1].split('_')[0])
+                xy = tt[2].split(" ")
+                x = int(xy[1].split("[")[-1])
+                y = int(xy[2].split("]")[0])
+                mu_dists[pop][t,y,x] = v
+
+        mu_dists = np.array(mu_dists)
+        save_path = os.path.join(pathes[p], f"actor.gif")
+        multi_render(mu_dists[:, :, :], save_path, [f'Group {i}' for i in range(num_agent)])
+
+        fig = plt.figure()
+        for i in range(num_agent):
+            ax = fig.add_subplot(1, num_agent, i+1)
+            ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False, bottom=False, left=False, right=False, top=False)
+            ax.imshow(np.mean(mu_dists[i], axis=0))
+            ax.set_title(f'Group{i}')
+        save_path = os.path.join(pathes[p], f"mu_dists.png")
+        plt.savefig(save_path)
+        print(f"Saved in {save_path}")
+
+        #connected_data.append(mu_dists[:, :, :])
+        #connected_label.append([f'MF Group {i}' for i in range(num_agent)])
+        #path = osp.join(pathes[p], f'connected_result.gif')
+        #multi_render_set_pos(connected_data, connected_label, path)
+
 
 def render(game, envs, pathes, pathnames, update_infos):
     print(f'len pathes = {len(pathes)}')
@@ -460,7 +559,7 @@ def render(game, envs, pathes, pathnames, update_infos):
 
 
 
-def find_max_number_in_filenames(base_dir, keyword):
+def find_max_number_in_filenames(base_dir, keywords, actor_only=False):
     # ディレクトリの確認
     if not os.path.isdir(base_dir):
         print(f"Error: {base_dir} is not a valid directory.")
@@ -477,7 +576,12 @@ def find_max_number_in_filenames(base_dir, keyword):
         max_value = None
         max_file = None
         max_logname = None
-        if not keyword in root:  # 特定の条件でフォルダをスキップ
+        exist_keyword = True
+        for keyword in keywords: 
+            if not keyword in root:  # 特定の条件でフォルダをスキップ
+                exist_keyword = False
+                continue
+        if not exist_keyword:
             continue
 
         # 各ファイル名を処理
@@ -491,13 +595,6 @@ def find_max_number_in_filenames(base_dir, keyword):
             if file_max is not None and (max_value is None or file_max > max_value) and len(logname)>0:
                 is_exist = True
                 for i in range(3):
-                    fname = reward_filename
-                    fname = fname + f'{logname[0]}-{i}.pth' 
-                    fpath = osp.join(root, fname)
-                    is_exist = osp.isfile(fpath)
-                    if not is_exist:
-                        break
-
 
                     fname = actor_filename
                     fname = fname + f'{logname[0]}-{i}.pth' 
@@ -506,38 +603,46 @@ def find_max_number_in_filenames(base_dir, keyword):
                     if not is_exist:
                         break
 
-                    net_input = get_net_input(root.split("/")[-2], print_info=False)
-                    if net_input:
-                        net_labels = get_net_labels(net_input)
-                        if is_divided_value(root.split("/")[-2]):
-                            for label in net_labels:
-                                fname = f'disc_{label}'
-                                fname = fname + f'{logname[0]}-{i}.pth' 
-                                fpath = osp.join(root, fname)
-                                is_exist = osp.isfile(fpath)
-                                if not is_exist:
-                                    break
+                    if not actor_only:
+                        fname = reward_filename
+                        fname = fname + f'{logname[0]}-{i}.pth' 
+                        fpath = osp.join(root, fname)
+                        is_exist = osp.isfile(fpath)
+                        if not is_exist:
+                            break
 
+                        net_input = get_net_input(root.split("/")[-2], print_info=False)
+                        if net_input:
+                            net_labels = get_net_labels(net_input)
+                            if is_divided_value(root.split("/")[-2]):
+                                for label in net_labels:
+                                    fname = f'disc_{label}'
+                                    fname = fname + f'{logname[0]}-{i}.pth' 
+                                    fpath = osp.join(root, fname)
+                                    is_exist = osp.isfile(fpath)
+                                    if not is_exist:
+                                        break
+
+                                    fname = value_filename
+                                    fname = fname + f"_{label}" + f'{logname[0]}-{i}.pth' 
+                                    fpath = osp.join(root, fname)
+                                    is_exist = osp.isfile(fpath)
+                                    if not is_exist:
+                                        break
+                            else:
                                 fname = value_filename
-                                fname = fname + f"_{label}" + f'{logname[0]}-{i}.pth' 
-                                fpath = osp.join(root, fname)
-                                is_exist = osp.isfile(fpath)
-                                if not is_exist:
-                                    break
-                        else:
-                            fname = value_filename
-                            fname = fname + f'{logname[0]}-{i}.pth' 
-                            fpath = osp.join(root, fname)
-                            is_exist = osp.isfile(fpath)
-                            if not is_exist:
-                                break
-                            for label in net_labels:
-                                fname = f'disc_{label}'
                                 fname = fname + f'{logname[0]}-{i}.pth' 
                                 fpath = osp.join(root, fname)
                                 is_exist = osp.isfile(fpath)
                                 if not is_exist:
                                     break
+                                for label in net_labels:
+                                    fname = f'disc_{label}'
+                                    fname = fname + f'{logname[0]}-{i}.pth' 
+                                    fpath = osp.join(root, fname)
+                                    is_exist = osp.isfile(fpath)
+                                    if not is_exist:
+                                        break
                 if not is_exist:
                     print(f'Checked path: NG')
                     continue
@@ -558,7 +663,10 @@ def find_max_number_in_filenames(base_dir, keyword):
 
             results.append((root, max_file, max_value, last_modified_time, max_logname))
             pathes.append(root)
-            filenames.append(root.split("/")[-2])
+            if "seed" in root:
+                filenames.append(root.split("/")[-2])
+            else:
+                filenames.append(root.split("/")[-1])
             update_infos.append(max_logname)
 
             print(f"----------------------------------------------------------------")
@@ -574,8 +682,11 @@ def find_max_number_in_filenames(base_dir, keyword):
     horizon = env.game.get_parameters()['horizon']
     nacs = env.action_spec()['num_actions']
     nobs = env.observation_spec()['info_state'][0]
-        
-    render(game, envs, pathes, filenames, update_infos)
+    
+    if actor_only:
+        actor_render(game, envs, pathes, filenames, update_infos)
+    else:
+        render(game, envs, pathes, filenames, update_infos)
     return results
 
 if __name__ == "__main__":
@@ -588,15 +699,19 @@ if __name__ == "__main__":
         help="The target directory to search."
     )
     parser.add_argument(
-        "-k", "--keyword", 
-        type=str, 
-        default="seed-42",
-    )
-    parser.add_argument(
         "-s", "--seed", 
         type=int, 
         default=0,
     )
+    parser.add_argument(
+        "--actor_only", 
+        action='store_true'
+    )
+    parser.add_argument(
+        "-k", "--keyword", 
+        nargs='+', 
+        type=str, 
+        default=["seed-42"])
     args = parser.parse_args()
 
     # Set the seed 
@@ -611,4 +726,4 @@ if __name__ == "__main__":
     target_directory = args.directory
     keyword = args.keyword
     print(f"Keyword: \"{keyword}\"")
-    results = find_max_number_in_filenames(target_directory, keyword)
+    results = find_max_number_in_filenames(target_directory, keyword, args.actor_only)
