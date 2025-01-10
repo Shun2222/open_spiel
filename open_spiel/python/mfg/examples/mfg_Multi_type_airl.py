@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument("--expert_path", type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_expert_low_collision_4000/expert-15traj", help="expert path")
     parser.add_argument("--expert_actor_path", type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_expert_low_collision_4000/actor3094_19", help="expert actor path")
 
-    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_airl_15trajs_dxdy_mf2_share", help="log path")
+    parser.add_argument("--logdir", type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_airl_15trajs_dxdy_svf2_share", help="log path")
     parser.add_argument("--use_mf", action='store_true')
     parser.add_argument("--share", action='store_true')
 
@@ -62,7 +62,7 @@ def parse_args():
     parser.add_argument("--game-setting", type=str, default="crowd_modelling_2d_four_rooms", help="Set the game to benchmark options:(crowd_modelling_2d_four_rooms) and (crowd_modelling_2d_maze)")
     parser.add_argument("--cuda", action='store_true', help="cpu or cuda")
     #parser.add_argument("--cpu", action='store_true', help="cpu or cuda")
-    parser.add_argument("--seed", type=int, default=42, help="set a random seed")
+    parser.add_argument("--seed", type=int, default=52, help="set a random seed")
     parser.add_argument("--num_seed", type=int, default=10, help="set a random seed")
     parser.add_argument("--batch_step", type=int, default=1200, help="set a step batch size")
     parser.add_argument("--traj_limitation", type=int, default=10000, help="set a traj limitation")

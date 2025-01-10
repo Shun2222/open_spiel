@@ -559,7 +559,7 @@ def render(game, envs, pathes, pathnames, update_infos):
 
 
 
-def find_max_number_in_filenames(base_dir, keywords, actor_only=False):
+def find_max_number_in_filenames(base_dir, keywords, min_number, actor_only=False, exist_skip=False):
     # ディレクトリの確認
     if not os.path.isdir(base_dir):
         print(f"Error: {base_dir} is not a valid directory.")
@@ -583,6 +583,15 @@ def find_max_number_in_filenames(base_dir, keywords, actor_only=False):
                 continue
         if not exist_keyword:
             continue
+        
+        fname = f'mu_dists.png' 
+        fpath = osp.join(root, fname)
+        is_exist = osp.isfile(fpath)
+        if is_exist:
+            print(f"Exist {fpath}")
+            if exist_skip:
+                print(f"Skip {root}")
+                continue
 
         # 各ファイル名を処理
         for file in files:
@@ -656,6 +665,8 @@ def find_max_number_in_filenames(base_dir, keywords, actor_only=False):
 
         # 最大値を記録
         if max_file is not None:
+            if max_value<min_number:
+                continue
             # ファイルの最終更新日時を取得
             last_modified_timestamp = os.path.getmtime(max_file)
             last_modified_time = datetime.fromtimestamp(last_modified_timestamp).strftime('%Y-%m-%d %H:%M:%S')
@@ -704,7 +715,11 @@ if __name__ == "__main__":
         default=0,
     )
     parser.add_argument(
-        "--actor_only", 
+        "-a","--actor_only", 
+        action='store_true'
+    )
+    parser.add_argument(
+        "-e", "--exist_skip", 
         action='store_true'
     )
     parser.add_argument(
@@ -712,6 +727,10 @@ if __name__ == "__main__":
         nargs='+', 
         type=str, 
         default=["seed-42"])
+    parser.add_argument(
+        "-m", "--min_number", 
+        type=int, 
+        default=0)
     args = parser.parse_args()
 
     # Set the seed 
@@ -726,4 +745,4 @@ if __name__ == "__main__":
     target_directory = args.directory
     keyword = args.keyword
     print(f"Keyword: \"{keyword}\"")
-    results = find_max_number_in_filenames(target_directory, keyword, args.actor_only)
+    results = find_max_number_in_filenames(target_directory, keyword, args.min_number, args.actor_only, args.exist_skip)

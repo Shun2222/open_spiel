@@ -292,11 +292,11 @@ class Discriminator(nn.Module):
 
     def forward(self, input1, input1_next, path_probs):
         #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-        output = self.net1(input1.to(torch.float32)) 
-        reward = self.reward_net(output.to(torch.float32)) 
+        output = self.net1(input1.to(torch.float32).to(self._device)) 
+        reward = self.reward_net(output.to(torch.float32).to(self._device)) 
 
-        value_fn = self.value_net1(input1.to(torch.float32))
-        value_fn_next = self.value_next_net1(input1_next.to(torch.float32))
+        value_fn = self.value_net1(input1.to(torch.float32).to(self._device))
+        value_fn_next = self.value_next_net1(input1_next.to(torch.float32).to(self._device))
 
         ws = self.get_weights()
         value_fn = ws[0] * value_fn
@@ -333,13 +333,13 @@ class Discriminator(nn.Module):
                 return None
             else:
                 input1 = inputs[0]
-                output1 = self.net1(input1.to(torch.float32)) 
+                output1 = self.net1(input1.to(torch.float32).to(self._device)) 
                 if len(output1.shape)==1:
                     output1 = output1.reshape(1, 1)
-                score = self.reward_net(output1.to(torch.float32))
+                score = self.reward_net(output1.to(torch.float32).to(self._device))
                 outputs = [output1]
         if weighted_rew:
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             outputs = [output1]
             outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
             return score, outputs 
@@ -352,7 +352,7 @@ class Discriminator(nn.Module):
     def get_value(self, inputs, only_value=True, weighted_value=False):
         with torch.no_grad():
             input1 = inputs[0]
-            value_fn1 = self.value_net1(input1.to(torch.float32))
+            value_fn1 = self.value_net1(input1.to(torch.float32).to(self._device))
 
             ws = self.get_weights()
             value = ws[0] * value_fn1 
@@ -366,13 +366,13 @@ class Discriminator(nn.Module):
     def get_reward_weighted(self, inputs, rate=[0.1, 0.1]):
         with torch.no_grad():
             input1 = inputs[0]
-            output1 = self.net1(input1.to(torch.float32)) 
+            output1 = self.net1(input1.to(torch.float32).to(self._device)) 
             if len(output1.shape)==1:
                 output1 = output1.reshape(1, 1)
-            reward = self.reward_net(output1.to(torch.float32)).numpy()
+            reward = self.reward_net(output1.to(torch.float32).to(self._device)).cpu().numpy()
 
-            outputs = output1.numpy()
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            outputs = output1.cpu().numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             for i in range(len(weights)):
                 weights[i] = weights[i]*np.array(rate[i])
 
@@ -387,13 +387,13 @@ class Discriminator(nn.Module):
         with torch.no_grad():
             input1 = inputs[0]
             input1_next = inputs_next[0]
-            output1 = self.net1(input1.to(torch.float32)) 
+            output1 = self.net1(input1.to(torch.float32).to(self._device)) 
             if len(output1.shape)==1:
                 output1 = output1.reshape(1, 1)
-            reward = self.reward_net(output1.to(torch.float32)).numpy()
+            reward = self.reward_net(output1.to(torch.float32).to(self._device)).cpu().numpy()
 
-            outputs = output1.numpy()
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            outputs = output1.cpu().numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             weights = weights*np.array(rate)
 
             #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
@@ -403,8 +403,8 @@ class Discriminator(nn.Module):
             p_tau = None
             p_tau2 = None
             if expert_prob:
-                value_fn1 = self.value_net1(input1.to(torch.float32)).numpy()
-                value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32)).numpy()
+                value_fn1 = self.value_net1(input1.to(torch.float32).to(self._device)).cpu().numpy()
+                value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32).to(self._device)).cpu().numpy()
 
                 ws = self.get_weights()
                 value_fn = ws[0] * value_fn1
@@ -472,7 +472,7 @@ class Discriminator(nn.Module):
 
     def savefig_weights(self, path):
         net = self.reward_net
-        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy()).reshape(1, self.n_networks)[0]
+        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy()).reshape(1, self.n_networks)[0]
         data = list(weights)
         label = self.labels
 
@@ -486,7 +486,7 @@ class Discriminator(nn.Module):
         print(f'Not exist weight.')
 
     def get_weights(self, only_rew=True):
-        return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+        return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
 
     def print_weights(self, only_rew=True):
         if only_rew:
@@ -620,15 +620,15 @@ class Discriminator_2nets(nn.Module):
 
     def forward(self, input1, input2, input1_next, input2_next, path_probs):
         #rew_input = obs if self.state_only else torch.cat([obs, acs], dim=1)
-        output1 = self.net1(input1.to(torch.float32)) 
-        output2 = self.net2(input2.to(torch.float32)) 
+        output1 = self.net1(input1.to(torch.float32).to(self._device)) 
+        output2 = self.net2(input2.to(torch.float32).to(self._device)) 
         outputs = torch.cat((output1, output2), dim=1)
-        reward = self.reward_net(outputs.to(torch.float32))
+        reward = self.reward_net(outputs.to(torch.float32).to(self._device))
 
-        value_fn1 = self.value_net1(input1.to(torch.float32))
-        value_fn2 = self.value_net2(input2.to(torch.float32))
-        value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32))
-        value_fn_next2 = self.value_next_net2(input2_next.to(torch.float32))
+        value_fn1 = self.value_net1(input1.to(torch.float32).to(self._device))
+        value_fn2 = self.value_net2(input2.to(torch.float32).to(self._device))
+        value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32).to(self._device))
+        value_fn_next2 = self.value_next_net2(input2_next.to(torch.float32).to(self._device))
 
         ws = self.get_weights()
         value_fn = ws[0] * value_fn1 + ws[1] * value_fn2
@@ -666,17 +666,17 @@ class Discriminator_2nets(nn.Module):
             else:
                 input1 = inputs[0]
                 input2 = inputs[1]
-                output1 = self.net1(input1.to(torch.float32)) 
+                output1 = self.net1(input1.to(torch.float32).to(self._device)) 
                 if len(output1.shape)==1:
                     output1 = output1.reshape(1, 1)
-                output2 = self.net2(input2.to(torch.float32)) 
+                output2 = self.net2(input2.to(torch.float32).to(self._device)) 
                 if len(output2.shape)==1:
                     output2 = output2.reshape(1, 1)
                 rew_inputs = torch.cat((output1, output2), dim=1)
-                score = self.reward_net(rew_inputs.to(torch.float32))
+                score = self.reward_net(rew_inputs.to(torch.float32).to(self._device))
                 outputs = [output1, output2]
         if weighted_rew:
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             outputs = [output1, output2]
             outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
             return score, outputs 
@@ -690,8 +690,8 @@ class Discriminator_2nets(nn.Module):
         with torch.no_grad():
             input1 = inputs[0]
             input2 = inputs[1]
-            value_fn1 = self.value_net1(input1.to(torch.float32))
-            value_fn2 = self.value_net2(input2.to(torch.float32))
+            value_fn1 = self.value_net1(input1.to(torch.float32).to(self._device))
+            value_fn2 = self.value_net2(input2.to(torch.float32).to(self._device))
 
             ws = self.get_weights()
             value = ws[0] * value_fn1 + ws[1] * value_fn2
@@ -707,17 +707,17 @@ class Discriminator_2nets(nn.Module):
         with torch.no_grad():
             input1 = inputs[0]
             input2 = inputs[1]
-            output1 = self.net1(input1.to(torch.float32)) 
+            output1 = self.net1(input1.to(torch.float32).to(self._device)) 
             if len(output1.shape)==1:
                 output1 = output1.reshape(1, 1)
-            output2 = self.net2(input2.to(torch.float32)) 
+            output2 = self.net2(input2.to(torch.float32).to(self._device)) 
             if len(output2.shape)==1:
                 output2 = output2.reshape(1, 1)
             rew_inputs = torch.cat((output1, output2), dim=1)
-            reward = self.reward_net(rew_inputs.to(torch.float32)).numpy()
+            reward = self.reward_net(rew_inputs.to(torch.float32)).cpu().numpy()
 
-            outputs = rew_inputs.numpy()
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            outputs = rew_inputs.cpu().numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             for i in range(len(weights)):
                 weights[i] = weights[i]*np.array(rate[i])
 
@@ -734,17 +734,17 @@ class Discriminator_2nets(nn.Module):
             input2 = inputs[1]
             input1_next = inputs_next[0]
             input2_next = inputs_next[1]
-            output1 = self.net1(input1.to(torch.float32)) 
+            output1 = self.net1(input1.to(torch.float32).to(self._device)) 
             if len(output1.shape)==1:
                 output1 = output1.reshape(1, 1)
-            output2 = self.net2(input2.to(torch.float32)) 
+            output2 = self.net2(input2.to(torch.float32).to(self._device)) 
             if len(output2.shape)==1:
                 output2 = output2.reshape(1, 1)
             rew_inputs = torch.cat((output1, output2), dim=1)
-            reward = self.reward_net(rew_inputs.to(torch.float32)).numpy()
+            reward = self.reward_net(rew_inputs.to(torch.float32)).cpu().numpy()
 
-            outputs = rew_inputs.numpy()
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            outputs = rew_inputs.cpu().numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             weights = weights*np.array(rate)
 
             #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
@@ -754,10 +754,10 @@ class Discriminator_2nets(nn.Module):
             p_tau = None
             p_tau2 = None
             if expert_prob:
-                value_fn1 = self.value_net1(input1.to(torch.float32)).numpy()
-                value_fn2 = self.value_net2(input2.to(torch.float32)).numpy()
-                value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32)).numpy()
-                value_fn_next2 = self.value_next_net2(input2_next.to(torch.float32)).numpy()
+                value_fn1 = self.value_net1(input1.to(torch.float32).to(self._device)).cpu().numpy()
+                value_fn2 = self.value_net2(input2.to(torch.float32).to(self._device)).cpu().numpy()
+                value_fn_next1 = self.value_next_net1(input1_next.to(torch.float32).to(self._device)).cpu().numpy()
+                value_fn_next2 = self.value_next_net2(input2_next.to(torch.float32).to(self._device)).cpu().numpy()
 
                 ws = self.get_weights()
                 value_fn = ws[0] * value_fn1 + ws[1] * value_fn2
@@ -838,7 +838,7 @@ class Discriminator_2nets(nn.Module):
 
     def savefig_weights(self, path):
         net = self.reward_net
-        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy()).reshape(1, self.n_networks)[0]
+        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy()).reshape(1, self.n_networks)[0]
         #bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].numpy()).reshape(1, 1)[0]
         #data = list(weights)+list(bias)
         data = list(weights)
@@ -852,7 +852,7 @@ class Discriminator_2nets(nn.Module):
         print(f'Saved as {path}')
 
     def get_weights(self, only_rew=True):
-        return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+        return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
 
     def print_weights(self, only_rew=True):
         if only_rew:
@@ -1050,7 +1050,7 @@ class Discriminator_3nets(nn.Module):
                 rew_inputs = torch.cat((output1, output2, output3), dim=1)
                 score = self.reward_net(rew_inputs.to(torch.float32))
         if weighted_rew:
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             outputs = [output1, output2, output3]
             outputs = [weights[i]*outputs[i] for i in range(len(outputs))]
             return score, outputs 
@@ -1094,10 +1094,10 @@ class Discriminator_3nets(nn.Module):
             if len(output3.shape)==1:
                 output3 = output3.reshape(1, 1)
             rew_inputs = torch.cat((output1, output2, output3), dim=1)
-            reward = self.reward_net(rew_inputs.to(torch.float32)).numpy()
+            reward = self.reward_net(rew_inputs.to(torch.float32)).cpu().numpy()
 
-            outputs = rew_inputs.numpy()
-            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+            outputs = rew_inputs.cpu().numpy()
+            weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
             weights = weights*np.array(rate)
 
             #bias = self.reward_net.state_dict()['0.bias'][0].numpy()
@@ -1107,12 +1107,12 @@ class Discriminator_3nets(nn.Module):
             p_tau = None
             p_tau2 = None
             if expert_prob:
-                value_fn1 = self.value_net1(input1.to(torch.float32)).numpy()
-                value_fn2 = self.value_net2(input2.to(torch.float32)).numpy()
-                value_fn3 = self.value_net3(input3.to(torch.float32)).numpy()
-                value_fn_next1 = self.value_next_net1(input1_next).numpy()
-                value_fn_next2 = self.value_next_net2(input2_next).numpy()
-                value_fn_next3 = self.value_next_net3(input3_next).numpy()
+                value_fn1 = self.value_net1(input1.to(torch.float32)).cpu().numpy()
+                value_fn2 = self.value_net2(input2.to(torch.float32)).cpu().numpy()
+                value_fn3 = self.value_net3(input3.to(torch.float32)).cpu().numpy()
+                value_fn_next1 = self.value_next_net1(input1_next).cpu().numpy()
+                value_fn_next2 = self.value_next_net2(input2_next).cpu().numpy()
+                value_fn_next3 = self.value_next_net3(input3_next).cpu().numpy()
 
                 ws = self.get_weights()
                 value_fn = ws[0] * value_fn1 + ws[1] * value_fn2 + ws[2] * value_fn3
@@ -1207,8 +1207,8 @@ class Discriminator_3nets(nn.Module):
 
     def savefig_weights(self, path):
         net = self.reward_net
-        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy()).reshape(1, self.n_networks)[0]
-        bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].numpy()).reshape(1, 1)[0]
+        weights = copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy()).reshape(1, self.n_networks)[0]
+        bias = copy.deepcopy(self.reward_net.state_dict()['0.bias'][0].cpu().numpy()).reshape(1, 1)[0]
         data = list(weights)+list(bias)
         label = self.labels + ['bias']
         plt.figure()
@@ -1219,7 +1219,7 @@ class Discriminator_3nets(nn.Module):
         print(f'Saved as {path}')
 
     def get_weights(self, only_rew=True):
-        return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].numpy())
+        return copy.deepcopy(self.reward_net.state_dict()['0.weight'][0].cpu().numpy())
 
     def print_weights(self, only_rew=True):
         if only_rew:

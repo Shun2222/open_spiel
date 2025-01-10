@@ -161,7 +161,7 @@ class PPOpolicy(policy_std.Policy):
         return {action:probs[legal_actions.index(action)] for action in legal_actions}
 
 class MultiTypeMFGPPO(object):
-    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, agent, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_indexes=None, rates=np.ones(2)):
+    def __init__(self, game, env, merge_dist, conv_dist, discriminator, device, player_id=0, expert_policy=None, is_nets=True, net_input=None, rew_indexes=None, rates=np.ones(2)):
         self._device = device
         self._rew_indexes = rew_indexes
 
@@ -171,11 +171,9 @@ class MultiTypeMFGPPO(object):
         self._player_id = player_id
         self._rates = rates
 
-        self._eps_agent = agent.to(self._device) 
+        self._eps_agent = Agent(info_state_size,num_actions).to(self._device) 
         self._ppo_policy = PPOpolicy(game, self._eps_agent, None, self._device) 
         self._iter_agent = Agent(info_state_size,num_actions).to(self._device)
-        self._iter_agent.load_state_dict(self._eps_agent.state_dict())
-
         self._optimizer_actor = optim.Adam(self._eps_agent.actor.parameters(), lr=1e-3,eps=1e-5)
         self._optimizer_critic = optim.Adam(self._eps_agent.critic.parameters(), lr=1e-3,eps=1e-5)
         self._discriminator = discriminator
@@ -391,8 +389,8 @@ class MultiTypeMFGPPO(object):
         # iter agent の更新
         self._iter_agent.load_state_dict(self._eps_agent.state_dict())
 
-        self._mu_dist = conv_dist
-        env.update_mfg_distribution(merge_dist)
+        #self._mu_dist = conv_dist
+        #env.update_mfg_distribution(merge_dist)
 
         nashc_ppo = None
         #root_state = game.new_initial_state_for_population(population)
@@ -473,7 +471,7 @@ def parse_args():
     parser.add_argument("--num_episodes", type=int, default=20, help="set the number of episodes of the inner loop")
     parser.add_argument("--num_iterations", type=int, default=1000, help="Set the number of global update steps of the outer loop")
     
-    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_ppo_1-45-45trajs_group2_settingAgent", help="logdir")
+    parser.add_argument('--logdir', type=str, default="/mnt/shunsuke/result/1209/4rooms_maze_ppo_1-45-45trajs_group2_static_mf", help="logdir")
 
     parser.add_argument("--save_disc_reward", action='store_true')
     parser.add_argument("--single", action='store_true')
@@ -501,7 +499,6 @@ disc_path = [
                  #[ "/mnt/shunsuke/result/1209/predator_prey_mu-divided_value_group2/seed-42", "14400_143-2"],
 
 rew_indexes = [[0, 1], [-1], [-1]]
-train_group = [0]
 
 if __name__ == "__main__":
 
@@ -516,7 +513,6 @@ if __name__ == "__main__":
     #print(combinations.shape)
     #for seed in range(30):
     combinations = [[1.0, 1.0], [1.0, 0.8], [1.0, 0.6]]
-    #combinations = [[1.0, 0.8]]
     #combinations = [[1.0, 1.0]]
     for rate in combinations:
         rates = [rate, [1.0, 1.0], [1.0, 1.0]]
@@ -672,11 +668,7 @@ if __name__ == "__main__":
                 inputs = discriminators[target_i][0].create_inputs([size, size], nacs, horizon, gen_mu_dists)[0]
                 #inputs = discriminators[target_i][0].create_inputs([size, size], nacs, horizon, mu_dists)[0]
 
-                #_DEFAULT_FORBIDDEN_POSITION = dfp = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
-                _DEFAULT_FORBIDDEN_POSITION = [[5, i] for i in [1, 3, 4, 5, 6, 8]]
-                _DEFAULT_FORBIDDEN_POSITION += [[i, 4] for i in [0, 2, 4]]
-                _DEFAULT_FORBIDDEN_POSITION += [[i, 5] for i in [6, 8]]
-                _DEFAULT_FORBIDDEN_POSITION = dfp = np.array(_DEFAULT_FORBIDDEN_POSITION) 
+                _DEFAULT_FORBIDDEN_POSITION = dfp = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
                 for t in range(horizon):
                     for x in range(size):
                         for y in range(size):
@@ -689,7 +681,7 @@ if __name__ == "__main__":
                                     only_rew=False,
                                     weighted_rew=True) # For competitive tasks, log(D) - log(1-D) empirically works better (discrim_score=True)
 
-                                reward1, outputs1 = discriminators[target_i][1].get_reward(
+                                reward1, outputs1 = discriminators[i][0].get_reward(
                                     rew_input,
                                     discrim_score=False,
                                     only_rew=False,
@@ -743,7 +735,7 @@ if __name__ == "__main__":
                     print(np.array(datas).shape)
                     multi_render(np.array(datas), path, action_str, use_kde=False)
 
-        mfgppo = [MultiTypeMFGPPO(game, envs[i], gen_merge_dist, gen_conv_dist, discriminators[i], device, agents[i], player_id=i, is_nets=is_nets, net_input=all_net_input[i], rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
+        mfgppo = [MultiTypeMFGPPO(game, envs[i], gen_merge_dist, gen_conv_dist, discriminators[i], device, player_id=i, is_nets=is_nets, net_input=all_net_input[i], rew_indexes=rew_indexes[i], rates=rates[i]) for i in range(num_agent)]
 
         batch_step = args.batch_step
         for niter in tqdm(range(args.num_iterations)):
@@ -752,8 +744,6 @@ if __name__ == "__main__":
                 logger.record_tabular(f"num_iteration", niter)
                 logger.record_tabular(f"num_episodes", neps)
                 for i in range(num_agent):
-                    if not i in train_group:
-                        continue
                     obs_pth, actions_pth, logprobs_pth, rewards, true_rewards_pth, dones_pth, values_pth, entropies_pth, t_actions_pth, t_logprobs_pth, mu, ret \
                         = mfgppo[i].rollout(envs[i], args.batch_step)
                     adv_pth, returns = mfgppo[i].cal_Adv(rewards, values_pth, dones_pth)
@@ -765,8 +755,7 @@ if __name__ == "__main__":
 
             
             for i in range(num_agent):
-                if i in train_group:
-                    print(f'update iter {i}')
+                print(f'update iter {i}')
                 nashc_ppo = mfgppo[i].update_iter(game, envs[i], gen_merge_dist, gen_conv_dist, nashc=True, population=i)
                 #logger.record_tabular(f'NashC ppo{i}', nashc_ppo)
                 #logger.record_tabular(f'Exp. Ret{i}', np.mean(exp_ret[i]))
