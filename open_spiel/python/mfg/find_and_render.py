@@ -81,6 +81,20 @@ else:
     _DEFAULT_FORBIDDEN_POSITION = np.array([[2, 4], [2, 5], [4, 2], [4, 7], [5, 2], [5, 7], [7, 4], [7, 5]])
     _DEFAULT_GOAL_POSITION = np.array([[5, 4], [4, 5], [5, 5]])
 
+def render_sequence(datas, axshape, save_path, axtitles):
+    fig, axes = plt.subplots(axshape[0], axshape[1], figsize=(axshape[1]*4+4, axshape[0]*4))
+    for i in range(axshape[0]):
+        for j in range(axshape[1]):
+            axes[i][j].axis('off')
+
+    for i in range(len(datas)):
+        j = i%axshape[1]
+        k = i//axshape[1]
+        axes[k][j].imshow(datas[i])
+        axes[k][j].set_title(axtitles[i])
+    plt.savefig(save_path)
+
+
 def calc_true_reward(obs_shape, horizon, mu_dists):
     inputs = [{} for _ in range(len(mu_dists))]
     rew = [np.zeros((horizon, obs_shape[0], obs_shape[1])) for _ in range(len(mu_dists))]
@@ -482,6 +496,26 @@ def render(game, envs, pathes, pathnames, update_infos):
         path = osp.join(pathes[p], f'connected_result.gif')
         multi_render_set_pos(connected_data, connected_label, path)
 
+        cds = np.array([])
+        each = 5
+        for cd in connected_data:
+            if len(cds)==0:
+                cdsi = np.concatenate([cd[::each], np.array([cd[-1]])])
+                cds = cdsi
+                cds_label = [f"t={i}" for i in range(0, len(cds)-1, each)]
+                cds_label.append(f"t={len(cd)}")
+            else:
+                cdsi = np.concatenate([cd[::each], np.array([cd[-1]])])
+                cds = np.concatenate([cds, cdsi])
+                cds_label += [f"t={i}" for i in range(0, len(cds)-1, each)]
+                cds_label.append(f"t={len(cd)}")
+        
+        axshape = [0, 9]
+        axshape[0] = len(cds)//axshape[1] + 1
+        path = osp.join(pathes[p], f'connected_sequence_result.png')
+        render_sequence(cds, axshape, path, cds_label)
+
+
         for i in range(num_agent):
             plt.rcParams["font.size"] = 8 
             fig = plt.figure(figsize=(16, 12))
@@ -698,6 +732,7 @@ def find_max_number_in_filenames(base_dir, keywords, min_number, actor_only=Fals
         actor_render(game, envs, pathes, filenames, update_infos)
     else:
         render(game, envs, pathes, filenames, update_infos)
+        actor_render(game, envs, pathes, filenames, update_infos)
     return results
 
 if __name__ == "__main__":
