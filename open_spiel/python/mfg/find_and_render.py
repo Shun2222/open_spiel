@@ -91,7 +91,7 @@ def render_sequence(datas, axshape, save_path, axtitles):
         j = i%axshape[1]
         k = i//axshape[1]
         axes[k][j].imshow(datas[i])
-        axes[k][j].set_title(axtitles[i])
+        axes[k][j].set_title(axtitles[i], fontsize=18)
     plt.savefig(save_path)
 
 
@@ -496,24 +496,25 @@ def render(game, envs, pathes, pathnames, update_infos):
         path = osp.join(pathes[p], f'connected_result.gif')
         multi_render_set_pos(connected_data, connected_label, path)
 
-        cds = np.array([])
         each = 5
-        for cd in connected_data:
-            if len(cds)==0:
-                cdsi = np.concatenate([cd[::each], np.array([cd[-1]])])
-                cds = cdsi
-                cds_label = [f"t={i}" for i in range(0, len(cds)-1, each)]
-                cds_label.append(f"t={len(cd)}")
-            else:
-                cdsi = np.concatenate([cd[::each], np.array([cd[-1]])])
-                cds = np.concatenate([cds, cdsi])
-                cds_label += [f"t={i}" for i in range(0, len(cds)-1, each)]
-                cds_label.append(f"t={len(cd)}")
-        
-        axshape = [0, 9]
-        axshape[0] = len(cds)//axshape[1] + 1
-        path = osp.join(pathes[p], f'connected_sequence_result.png')
-        render_sequence(cds, axshape, path, cds_label)
+        for ai in range(3):
+            cds = np.array([])
+            for cd in connected_data:
+                if len(cds)==0:
+                    cdsi = np.concatenate([cd[ai][::each], np.array([cd[ai][-1]])])
+                    cds = cdsi
+                    cds_label = [f"t={i*each}" for i in range(0, len(cdsi)-1)]
+                    cds_label.append(f"t={len(cd[ai])}")
+                else:
+                    cdsi = np.concatenate([cd[ai][::each], np.array([cd[ai][-1]])])
+                    cds = np.concatenate([cds, cdsi])
+                    cds_label += [f"t={i*each}" for i in range(0, len(cdsi)-1)]
+                    cds_label.append(f"t={len(cd[ai])}")
+            
+            axshape = [0, 9]
+            axshape[0] = len(cds)//axshape[1] + 1
+            path = osp.join(pathes[p], f'connected_sequence_result-pop{ai}.png')
+            render_sequence(cds, axshape, path, cds_label)
 
 
         for i in range(num_agent):
